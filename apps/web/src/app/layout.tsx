@@ -1,16 +1,20 @@
 import type { Metadata } from 'next';
-import { Cinzel, Roboto } from 'next/font/google';
+import { Cinzel, Inter } from 'next/font/google';
 import './globals.css';
+
+// Force dynamic rendering for all pages - no static generation
+export const dynamic = 'force-dynamic';
 
 const cinzel = Cinzel({
   subsets: ['latin'],
   variable: '--font-cinzel',
+  display: 'swap',
 });
 
-const roboto = Roboto({
+const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '500', '700'],
-  variable: '--font-roboto',
+  variable: '--font-inter',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -24,8 +28,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${cinzel.variable} ${roboto.variable}`}>
-      <body className="bg-bg-dark text-text-primary font-roboto min-h-screen">
+    <html lang="en" className={`${cinzel.variable} ${inter.variable}`} suppressHydrationWarning>
+      <body className="bg-bg-primary text-text-primary font-body min-h-screen antialiased" suppressHydrationWarning>
         {children}
       </body>
     </html>

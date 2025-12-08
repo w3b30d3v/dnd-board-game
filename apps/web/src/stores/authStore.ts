@@ -1,7 +1,7 @@
 'use client';
 
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create, StateCreator } from 'zustand';
+import { persist, createJSONStorage, PersistOptions } from 'zustand/middleware';
 import { api } from '@/lib/api';
 
 export interface User {
@@ -29,6 +29,7 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   isInitialized: boolean;
+  _hasHydrated: boolean;
 
   // Actions
   register: (
@@ -42,10 +43,16 @@ interface AuthState {
   refreshAccessToken: () => Promise<boolean>;
   clearError: () => void;
   initialize: () => void;
+  setHasHydrated: (state: boolean) => void;
 }
 
+type AuthPersist = (
+  config: StateCreator<AuthState>,
+  options: PersistOptions<AuthState, Pick<AuthState, 'user' | 'token' | 'refreshToken'>>
+) => StateCreator<AuthState>;
+
 export const useAuthStore = create<AuthState>()(
-  persist(
+  (persist as AuthPersist)(
     (set, get) => ({
       user: null,
       token: null,
@@ -53,6 +60,11 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       error: null,
       isInitialized: false,
+      _hasHydrated: false,
+
+      setHasHydrated: (state: boolean) => {
+        set({ _hasHydrated: state });
+      },
 
       register: async (email, username, password, displayName) => {
         set({ isLoading: true, error: null });
@@ -157,11 +169,25 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      storage: createJSONStorage(() => {
+        // Return a no-op storage during SSR
+        if (typeof window === 'undefined') {
+          return {
+            getItem: () => null,
+            setItem: () => {},
+            removeItem: () => {},
+          };
+        }
+        return localStorage;
+      }),
       partialize: (state) => ({
         user: state.user,
         token: state.token,
         refreshToken: state.refreshToken,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

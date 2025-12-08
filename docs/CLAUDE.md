@@ -79,11 +79,14 @@ All specifications are in the `/docs/` directory. **Read in this order:**
 ### AI-Powered Graphics & Media (FOR IMPRESSIVE VISUALS)
 | Document | Purpose |
 |----------|---------|
-| `35_AI_Image_Generation_Guide.md` | **Complete prompt engineering for characters, locations, items** |
-| `36_Dynamic_Scene_Generation.md` | **Turn DM descriptions into animated parallax scenes** |
-| `37_VFX_Effects_Library.md` | **Complete spell/combat effects with Canvas/particle code** |
-| `38_AI_Voice_Narration_System.md` | **TTS voices for DM narration and NPC dialogue** |
-| `39_Dynamic_Music_Audio_System.md` | **Adaptive music system that responds to gameplay** |
+| `40_DnD_Immersive_Design_System.md` | **CRITICAL: The complete D&D visual language - textures, borders, cards, animations** |
+| `41_Authentic_DnD_Visual_Elements.md` | **CRITICAL: Iconic D&D elements - stat blocks, spell cards, read-aloud boxes, death saves** |
+| `42_DnD_Ceremony_Moments.md` | **CRITICAL: Sacred D&D moments - dice physics, initiative, advantage/disadvantage, concentration** |
+| `35_AI_Image_Generation_Guide.md` | Complete prompt engineering for characters, locations, items |
+| `36_Dynamic_Scene_Generation.md` | Turn DM descriptions into animated parallax scenes |
+| `37_VFX_Effects_Library.md` | Complete spell/combat effects with Canvas/particle code |
+| `38_AI_Voice_Narration_System.md` | TTS voices for DM narration and NPC dialogue |
+| `39_Dynamic_Music_Audio_System.md` | Adaptive music system that responds to gameplay |
 
 ### Interactive Prototypes (OPEN THESE TO SEE THE FEEL)
 **CRITICAL: These HTML files show the EXACT animations, timings, and interactions expected. Open them in a browser before building any component.**
@@ -377,6 +380,25 @@ AWS_REGION=us-east-1
 MEDIA_BUCKET=dnd-media
 CDN_URL=https://cdn.yourdomain.com
 ```
+
+---
+
+## The D&D Immersion Checklist (MANDATORY)
+
+**Every screen MUST pass this checklist before being considered complete:**
+
+- [ ] **Background has 3+ layers** (texture gradient, color orbs, vignette, noise)
+- [ ] **Floating particles are present** (dust, embers, or magic sparkles)
+- [ ] **Borders are dimensional** (multiple shadows, gradient borders, corner accents)
+- [ ] **Cards have depth** (inner glow, outer shadow, texture, hover glow)
+- [ ] **Headings use Cinzel font** with text shadows and decorative underlines
+- [ ] **Gold accents appear** on all interactive elements
+- [ ] **Hover states add magical glow** (not just color change)
+- [ ] **Elements animate in** (fade + slide + scale, staggered)
+- [ ] **Nothing is static** (subtle pulse, float, or flicker animations)
+- [ ] **Screen feels like an enchanted artifact**, not a generic dark-mode app
+
+**Open `mockups/40_ultimate_immersive_prototype.html` to see the target feel.**
 
 ---
 

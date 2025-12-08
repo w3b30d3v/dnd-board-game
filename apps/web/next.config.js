@@ -14,6 +14,11 @@ const nextConfig = {
       },
     ],
   },
+  // Experimental features that help with SSR
+  experimental: {
+    // Skip static generation errors and handle them at runtime
+    missingSuspenseWithCSRBailout: false,
+  },
 };
 
 module.exports = nextConfig;

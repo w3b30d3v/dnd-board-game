@@ -76,19 +76,44 @@ All specifications are in the `/docs/` directory. **Read in this order:**
 | `15_Wireframes.md` | Screen layouts (ASCII) |
 | `23_User_Journeys_Onboarding.md` | Player & DM user flows |
 
+### AI-Powered Graphics & Media (FOR IMPRESSIVE VISUALS)
+| Document | Purpose |
+|----------|---------|
+| `40_DnD_Immersive_Design_System.md` | **CRITICAL: The complete D&D visual language - textures, borders, cards, animations** |
+| `41_Authentic_DnD_Visual_Elements.md` | **CRITICAL: Iconic D&D elements - stat blocks, spell cards, read-aloud boxes, death saves** |
+| `42_DnD_Ceremony_Moments.md` | **CRITICAL: Sacred D&D moments - dice physics, initiative, advantage/disadvantage, concentration** |
+| `35_AI_Image_Generation_Guide.md` | Complete prompt engineering for characters, locations, items |
+| `36_Dynamic_Scene_Generation.md` | Turn DM descriptions into animated parallax scenes |
+| `37_VFX_Effects_Library.md` | Complete spell/combat effects with Canvas/particle code |
+| `38_AI_Voice_Narration_System.md` | TTS voices for DM narration and NPC dialogue |
+| `39_Dynamic_Music_Audio_System.md` | Adaptive music system that responds to gameplay |
+
 ### Interactive Prototypes (OPEN THESE TO SEE THE FEEL)
+**CRITICAL: These HTML files show the EXACT animations, timings, and interactions expected. Open them in a browser before building any component.**
+
 | Prototype | What It Shows |
 |-----------|---------------|
 | `mockups/00_immersive_prototype.html` | Core feel: particles, cards, dice, spells |
+| `mockups/00_interactive_mockup.html` | Overall UI interaction patterns |
+| `mockups/01_dashboard.html` | Main dashboard layout |
+| `mockups/02_game_board.html` | Basic board layout |
 | `mockups/02_combat_board_prototype.html` | Game board with tokens, fog of war, targeting |
-| `mockups/03_character_builder_prototype.html` | Full character creation flow |
+| `mockups/03_character_builder.html` | Character creation basics |
+| `mockups/03_character_builder_prototype.html` | Full character creation with animations |
+| `mockups/04_spells_abilities.html` | Spells list view |
 | `mockups/04_spell_system_prototype.html` | Spell cards, casting animations, schools |
-| `mockups/05_dm_builder_prototype.html` | Campaign/map editor interface |
+| `mockups/05_dm_campaign_builder.html` | DM builder basics |
+| `mockups/05_dm_builder_prototype.html` | Campaign/map editor with full features |
 | `mockups/06_dice_ceremony_prototype.html` | D20 rolling with physics & celebrations |
 | `mockups/07_multiplayer_lobby_prototype.html` | Party formation, ready checks |
 | `mockups/08_initiative_tracker_prototype.html` | Turn order, active player highlight |
 | `mockups/09_inventory_system_prototype.html` | Equipment, drag-drop, item tooltips |
 | `mockups/10_combat_vfx_prototype.html` | Attack animations, damage numbers, deaths |
+| `mockups/11_character_sheet_prototype.html` | Full character sheet with ability rolls |
+| `mockups/12_levelup_celebration_prototype.html` | Level up sequence with particles, rewards |
+| `mockups/13_death_save_prototype.html` | Death save with tension, heartbeat |
+| `mockups/14_cutscene_dialogue_prototype.html` | Visual novel style dialogue, choices |
+| `mockups/15_victory_defeat_prototype.html` | Combat end sequences
 
 ### Testing & DevOps
 | Document | Purpose |
@@ -99,7 +124,74 @@ All specifications are in the `/docs/` directory. **Read in this order:**
 
 ---
 
-## Implementation Phases
+## Frontend Implementation Rules
+
+**MANDATORY for all UI work:**
+
+### Before Writing ANY Frontend Code:
+1. Read `33_Complete_Animation_Specification.md` - contains exact Framer Motion code
+2. Read `29_Design_System.md` - exact colors, typography, spacing
+3. Open the relevant prototype HTML in a browser to see the feel
+4. Read `31_Asset_Requirements.md` for placeholder strategies
+
+### Animation Requirements (NON-NEGOTIABLE):
+- **Every component** must use Framer Motion
+- **Every button** must have hover + tap animations
+- **Every modal** must animate in/out with spring physics
+- **Every list** must use staggered animations
+- **Every page transition** must fade + scale
+- **Critical hits** must have particle explosions
+- **Dice rolls** must have anticipation → roll → result phases
+
+### Code Pattern (use for ALL components):
+```tsx
+import { motion, AnimatePresence } from 'framer-motion';
+import { EASINGS, DURATIONS, STAGGER } from '@/lib/animations';
+
+const variants = {
+  initial: { opacity: 0, y: 20 },
+  animate: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: DURATIONS.normal, ease: EASINGS.smooth }
+  },
+  exit: { opacity: 0, y: -10 }
+};
+
+export function MyComponent() {
+  return (
+    <motion.div
+      variants={variants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+    >
+      {/* content */}
+    </motion.div>
+  );
+}
+```
+
+### Color Usage (from 29_Design_System.md):
+- Background: `#0F0D13` (darkest), `#1E1B26` (cards), `#2A2735` (elevated)
+- Gold (primary): `#F59E0B` - use for CTAs, important elements
+- Purple (magic): `#8B5CF6` - use for spells, mystical elements
+- Red (danger): `#EF4444` - use for damage, warnings
+- Green (health): `#22C55E` - use for healing, success
+- Text: `#F4F4F5` (primary), `#A1A1AA` (secondary)
+
+### What Makes It Feel "D&D":
+- Particles floating in backgrounds
+- Gold glows on important elements
+- Spring physics on interactions
+- Sound effects on every click
+- Dramatic pauses before dice results
+- Screen shake on critical hits
+- Celebration effects on victories
+
+---
 
 **CRITICAL: Complete each phase fully before moving to the next.**
 
@@ -291,18 +383,43 @@ CDN_URL=https://cdn.yourdomain.com
 
 ---
 
+## The D&D Immersion Checklist (MANDATORY)
+
+**Every screen MUST pass this checklist before being considered complete:**
+
+- [ ] **Background has 3+ layers** (texture gradient, color orbs, vignette, noise)
+- [ ] **Floating particles are present** (dust, embers, or magic sparkles)
+- [ ] **Borders are dimensional** (multiple shadows, gradient borders, corner accents)
+- [ ] **Cards have depth** (inner glow, outer shadow, texture, hover glow)
+- [ ] **Headings use Cinzel font** with text shadows and decorative underlines
+- [ ] **Gold accents appear** on all interactive elements
+- [ ] **Hover states add magical glow** (not just color change)
+- [ ] **Elements animate in** (fade + slide + scale, staggered)
+- [ ] **Nothing is static** (subtle pulse, float, or flicker animations)
+- [ ] **Screen feels like an enchanted artifact**, not a generic dark-mode app
+
+**Open `mockups/40_ultimate_immersive_prototype.html` to see the target feel.**
+
+---
+
 ## Getting Help
 
 If stuck on implementation:
 
-1. **Re-read the relevant document** - Most answers are in the 34 documents
+1. **Re-read the relevant document** - Most answers are in the 39 documents
 2. **For UI/Animation work** - Read `33_Complete_Animation_Specification.md` FIRST (exact code for every animation)
 3. **For video/cutscenes** - Read `34_Video_Cutscene_Storyboard.md` (frame-by-frame sequences)
-4. **Open the prototypes** - See the mockups/ folder for working examples
-5. **Check Document 24** - Phase-specific troubleshooting
-6. **Search order:**
+4. **For AI image generation** - Read `35_AI_Image_Generation_Guide.md` (complete prompts for all asset types)
+5. **For dynamic scenes** - Read `36_Dynamic_Scene_Generation.md` (parallax, atmospheric effects)
+6. **For spell/combat VFX** - Read `37_VFX_Effects_Library.md` (Canvas, particles, shaders)
+7. **For voice/narration** - Read `38_AI_Voice_Narration_System.md` (TTS integration)
+8. **For dynamic music** - Read `39_Dynamic_Music_Audio_System.md` (adaptive audio)
+9. **Open the prototypes** - See the mockups/ folder for working examples
+10. **Check Document 24** - Phase-specific troubleshooting
+11. **Search order:**
    - `33_Complete_Animation_Specification.md` (exact animation code)
    - `34_Video_Cutscene_Storyboard.md` (video sequences)
+   - `35-39` (AI graphics and audio systems)
    - `24_Phased_Implementation_Guide.md` (implementation steps)
    - `30_UI_Component_Specification.md` (how to build components)
    - `31_Asset_Requirements.md` (what assets to use/create)

@@ -59,62 +59,78 @@ export function RegisterForm({ onSubmit, isLoading, error }: RegisterFormProps) 
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+    <form
+      onSubmit={handleSubmit(handleFormSubmit)}
+      className="space-y-4"
+    >
       {error && (
-        <div className="p-3 bg-danger/10 border border-danger rounded-lg text-danger text-sm">
+        <div className="p-4 bg-error/10 border border-error/50 rounded-lg text-error text-sm flex items-center gap-2 animate-shake">
+          <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
           {error}
         </div>
       )}
 
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-1">
+      <div className="animate-fade-in-up animation-delay-100">
+        <label htmlFor="email" className="label">
           Email
         </label>
         <input
           id="email"
           type="email"
           {...register('email')}
-          className="input"
+          className={`input transition-transform duration-150 focus:scale-[1.01] ${errors.email ? 'input-error' : ''}`}
           placeholder="adventurer@example.com"
           disabled={isLoading}
         />
-        {errors.email && <p className="mt-1 text-sm text-danger">{errors.email.message}</p>}
+        {errors.email && (
+          <p className="error-message animate-fade-in">
+            {errors.email.message}
+          </p>
+        )}
       </div>
 
-      <div>
-        <label htmlFor="username" className="block text-sm font-medium text-text-secondary mb-1">
+      <div className="animate-fade-in-up animation-delay-150">
+        <label htmlFor="username" className="label">
           Username
         </label>
         <input
           id="username"
           type="text"
           {...register('username')}
-          className="input"
+          className={`input transition-transform duration-150 focus:scale-[1.01] ${errors.username ? 'input-error' : ''}`}
           placeholder="dragon_slayer"
           disabled={isLoading}
         />
-        {errors.username && <p className="mt-1 text-sm text-danger">{errors.username.message}</p>}
+        {errors.username && (
+          <p className="error-message animate-fade-in">
+            {errors.username.message}
+          </p>
+        )}
       </div>
 
-      <div>
-        <label htmlFor="displayName" className="block text-sm font-medium text-text-secondary mb-1">
+      <div className="animate-fade-in-up animation-delay-200">
+        <label htmlFor="displayName" className="label">
           Display Name
         </label>
         <input
           id="displayName"
           type="text"
           {...register('displayName')}
-          className="input"
+          className={`input transition-transform duration-150 focus:scale-[1.01] ${errors.displayName ? 'input-error' : ''}`}
           placeholder="Sir Reginald the Brave"
           disabled={isLoading}
         />
         {errors.displayName && (
-          <p className="mt-1 text-sm text-danger">{errors.displayName.message}</p>
+          <p className="error-message animate-fade-in">
+            {errors.displayName.message}
+          </p>
         )}
       </div>
 
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-text-secondary mb-1">
+      <div className="animate-fade-in-up animation-delay-250">
+        <label htmlFor="password" className="label">
           Password
         </label>
         <div className="relative">
@@ -122,14 +138,14 @@ export function RegisterForm({ onSubmit, isLoading, error }: RegisterFormProps) 
             id="password"
             type={showPassword ? 'text' : 'password'}
             {...register('password')}
-            className="input pr-10"
+            className={`input pr-12 transition-transform duration-150 focus:scale-[1.01] ${errors.password ? 'input-error' : ''}`}
             placeholder="Min. 8 characters"
             disabled={isLoading}
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-primary p-1 rounded transition-all duration-200 hover:scale-110 active:scale-95"
           >
             {showPassword ? (
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -158,53 +174,66 @@ export function RegisterForm({ onSubmit, isLoading, error }: RegisterFormProps) 
             )}
           </button>
         </div>
-        {errors.password && <p className="mt-1 text-sm text-danger">{errors.password.message}</p>}
+        {errors.password && (
+          <p className="error-message animate-fade-in">
+            {errors.password.message}
+          </p>
+        )}
       </div>
 
-      <div>
-        <label
-          htmlFor="confirmPassword"
-          className="block text-sm font-medium text-text-secondary mb-1"
-        >
+      <div className="animate-fade-in-up animation-delay-300">
+        <label htmlFor="confirmPassword" className="label">
           Confirm Password
         </label>
         <input
           id="confirmPassword"
           type={showPassword ? 'text' : 'password'}
           {...register('confirmPassword')}
-          className="input"
+          className={`input transition-transform duration-150 focus:scale-[1.01] ${errors.confirmPassword ? 'input-error' : ''}`}
           placeholder="Confirm your password"
           disabled={isLoading}
         />
         {errors.confirmPassword && (
-          <p className="mt-1 text-sm text-danger">{errors.confirmPassword.message}</p>
+          <p className="error-message animate-fade-in">
+            {errors.confirmPassword.message}
+          </p>
         )}
       </div>
 
-      <button type="submit" className="btn-primary w-full" disabled={isLoading}>
-        {isLoading ? (
-          <span className="flex items-center justify-center">
-            <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-              />
-            </svg>
-            Creating account...
-          </span>
-        ) : (
-          'Create Account'
-        )}
-      </button>
+      <div className="animate-fade-in-up animation-delay-350">
+        <button
+          type="submit"
+          className="btn-primary w-full"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <span className="flex items-center justify-center">
+              <svg
+                className="-ml-1 mr-2 h-5 w-5 animate-spin"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
+              </svg>
+              Creating account...
+            </span>
+          ) : (
+            'Create Account'
+          )}
+        </button>
+      </div>
     </form>
   );
 }

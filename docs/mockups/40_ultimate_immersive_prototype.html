@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D Digital - Immersive Experience</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --gold-50: #FFFBEB;
+      --gold-100: #FEF3C7;
+      --gold-200: #FDE68A;
+      --gold-300: #FCD34D;
+      --gold-400: #FBBF24;
+      --gold-500: #F59E0B;
+      --gold-600: #D97706;
+      --gold-700: #B45309;
+      --gold-800: #92400E;
+      --gold-900: #78350F;
+      
+      --purple-400: #A78BFA;
+      --purple-500: #8B5CF6;
+      --purple-600: #7C3AED;
+      --purple-700: #6D28D9;
+      
+      --bg-deep: #07060a;
+      --bg-primary: #0a0810;
+      --bg-secondary: #12101a;
+      --bg-card: #1a1722;
+      --bg-elevated: #221f2d;
+      
+      --text-primary: #F4F4F5;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ==================== BACKGROUND LAYERS ==================== */
+    .page-background {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      
+      /* Layer 1: Deep gradient base */
+      background: 
+        /* Layer 5: Animated color orbs */
+        radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 80% 70%, rgba(245, 158, 11, 0.06) 0%, transparent 40%),
+        radial-gradient(circle at 60% 20%, rgba(239, 68, 68, 0.04) 0%, transparent 30%),
+        /* Layer 4: Subtle texture pattern */
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(255, 255, 255, 0.003) 2px,
+          rgba(255, 255, 255, 0.003) 4px
+        ),
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 2px,
+          rgba(255, 255, 255, 0.003) 2px,
+          rgba(255, 255, 255, 0.003) 4px
+        ),
+        /* Layer 3: Base gradient */
+        linear-gradient(180deg, #0a0810 0%, #07060a 50%, #0a0810 100%);
+    }
+
+    /* Animated fog/mist layer */
+    .fog-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      opacity: 0.4;
+      background: 
+        radial-gradient(ellipse 80% 50% at 20% 100%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 80% 0%, rgba(245, 158, 11, 0.08) 0%, transparent 50%);
+      animation: fog-drift 30s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+
+    @keyframes fog-drift {
+      0% { transform: translateX(-5%) translateY(0); }
+      100% { transform: translateX(5%) translateY(-5%); }
+    }
+
+    /* Vignette overlay */
+    .vignette {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      box-shadow: inset 0 0 200px 100px rgba(0, 0, 0, 0.6);
+      pointer-events: none;
+    }
+
+    /* Noise texture overlay */
+    .noise-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 3;
+      opacity: 0.015;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+
+    /* ==================== FLOATING PARTICLES ==================== */
+    .particles-container {
+      position: fixed;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .particle-dust {
+      width: 2px;
+      height: 2px;
+      background: rgba(245, 158, 11, 0.6);
+      box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+      animation: float-up 15s linear infinite;
+    }
+
+    .particle-magic {
+      width: 3px;
+      height: 3px;
+      background: rgba(139, 92, 246, 0.7);
+      box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+      animation: float-magic 20s ease-in-out infinite;
+    }
+
+    .particle-ember {
+      width: 2px;
+      height: 2px;
+      background: rgba(249, 115, 22, 0.8);
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.6);
+      animation: float-ember 8s ease-out infinite;
+    }
+
+    @keyframes float-up {
+      0% {
+        transform: translateY(100vh) translateX(0) scale(0);
+        opacity: 0;
+      }
+      10% {
+        opacity: 1;
+        transform: translateY(90vh) translateX(10px) scale(1);
+      }
+      90% {
+        opacity: 0.5;
+      }
+      100% {
+        transform: translateY(-10vh) translateX(-10px) scale(0.5);
+        opacity: 0;
+      }
+    }
+
+    @keyframes float-magic {
+      0%, 100% {
+        transform: translateY(0) translateX(0);
+        opacity: 0.5;
+      }
+      25% {
+        transform: translateY(-30px) translateX(20px);
+        opacity: 1;
+      }
+      50% {
+        transform: translateY(-10px) translateX(-10px);
+        opacity: 0.7;
+      }
+      75% {
+        transform: translateY(-40px) translateX(-20px);
+        opacity: 1;
+      }
+    }
+
+    @keyframes float-ember {
+      0% {
+        transform: translateY(100vh) translateX(0) scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-20vh) translateX(30px) scale(0);
+        opacity: 0;
+      }
+    }
+
+    /* ==================== MAIN CONTENT ==================== */
+    .main-content {
+      position: relative;
+      z-index: 10;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* ==================== EPIC HEADER ==================== */
+    .epic-header {
+      text-align: center;
+      padding: 4rem 2rem;
+      position: relative;
+    }
+
+    .logo-mark {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 2rem;
+      position: relative;
+    }
+
+    .logo-d20 {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      animation: logo-float 6s ease-in-out infinite;
+    }
+
+    .logo-d20::before {
+      content: '';
+      position: absolute;
+      inset: -10px;
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.3) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: logo-glow 3s ease-in-out infinite;
+    }
+
+    .logo-d20 svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.5));
+    }
+
+    @keyframes logo-float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(5deg); }
+    }
+
+    @keyframes logo-glow {
+      0%, 100% { opacity: 0.5; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.1); }
+    }
+
+    .main-title {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
+      
+      /* Metallic gold gradient text */
+      background: linear-gradient(
+        180deg,
+        #FEF3C7 0%,
+        #FBBF24 30%,
+        #D97706 60%,
+        #B45309 100%
+      );
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      
+      text-shadow: none;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+      
+      animation: title-shimmer 8s ease-in-out infinite;
+    }
+
+    @keyframes title-shimmer {
+      0%, 100% { filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5)) brightness(1); }
+      50% { filter: drop-shadow(0 4px 12px rgba(245, 158, 11, 0.3)) brightness(1.1); }
+    }
+
+    .subtitle {
+      font-family: 'Crimson Text', serif;
+      font-size: 1.25rem;
+      font-style: italic;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto 3rem;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Title decorative line */
+    .title-decoration {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 3rem;
+    }
+
+    .decoration-line {
+      width: 100px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold-600), transparent);
+    }
+
+    .decoration-diamond {
+      width: 8px;
+      height: 8px;
+      background: var(--gold-500);
+      transform: rotate(45deg);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+    }
+
+    /* ==================== ENCHANTED CARDS ==================== */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 2rem;
+      margin-bottom: 4rem;
+    }
+
+    .enchanted-card {
+      position: relative;
+      background: 
+        /* Inner glow from top */
+        radial-gradient(ellipse 80% 50% at 50% 0%, rgba(245, 158, 11, 0.05) 0%, transparent 50%),
+        /* Base gradient */
+        linear-gradient(
+          180deg,
+          rgba(26, 23, 34, 0.95) 0%,
+          rgba(18, 16, 26, 0.98) 100%
+        );
+      
+      border: 1px solid rgba(180, 83, 9, 0.2);
+      border-top-color: rgba(180, 83, 9, 0.3);
+      border-radius: 16px;
+      padding: 2rem;
+      
+      /* Dimensional shadows */
+      box-shadow:
+        0 4px 24px rgba(0, 0, 0, 0.5),
+        0 8px 48px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        inset 0 -2px 10px rgba(0, 0, 0, 0.3);
+      
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      
+      /* Entry animation */
+      opacity: 0;
+      transform: translateY(30px);
+      animation: card-enter 0.6s ease forwards;
+    }
+
+    .enchanted-card:nth-child(1) { animation-delay: 0.1s; }
+    .enchanted-card:nth-child(2) { animation-delay: 0.2s; }
+    .enchanted-card:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes card-enter {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Card top glow line */
+    .enchanted-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 15%;
+      right: 15%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.4), transparent);
+    }
+
+    /* Card hover magical effect */
+    .enchanted-card::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: inherit;
+      background: linear-gradient(
+        45deg,
+        rgba(245, 158, 11, 0.1),
+        rgba(139, 92, 246, 0.1),
+        rgba(245, 158, 11, 0.1)
+      );
+      background-size: 200% 200%;
+      opacity: 0;
+      z-index: -1;
+      transition: opacity 0.3s;
+      filter: blur(10px);
+    }
+
+    .enchanted-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(180, 83, 9, 0.4);
+      box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.6),
+        0 16px 64px rgba(0, 0, 0, 0.4),
+        0 0 40px rgba(245, 158, 11, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .enchanted-card:hover::after {
+      opacity: 1;
+      animation: magic-border 3s linear infinite;
+    }
+
+    @keyframes magic-border {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .card-icon {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+
+    .card-icon-inner {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, var(--gold-700) 0%, var(--gold-500) 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Icon shine animation */
+    .card-icon-inner::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        transparent 40%,
+        rgba(255, 255, 255, 0.2) 50%,
+        transparent 60%
+      );
+      animation: icon-shine 4s ease-in-out infinite;
+    }
+
+    @keyframes icon-shine {
+      0%, 100% { transform: translateX(-100%) rotate(45deg); }
+      50% { transform: translateX(100%) rotate(45deg); }
+    }
+
+    .card-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--gold-400);
+      margin-bottom: 0.75rem;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .card-description {
+      font-family: 'Crimson Text', serif;
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-stats {
+      display: flex;
+      gap: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(180, 83, 9, 0.15);
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-value {
+      font-family: 'Cinzel', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--gold-400);
+      text-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    /* ==================== CALL TO ADVENTURE BUTTON ==================== */
+    .cta-section {
+      text-align: center;
+      padding: 2rem;
+      margin-bottom: 4rem;
+    }
+
+    .btn-adventure {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1.25rem 3rem;
+      font-family: 'Cinzel', serif;
+      font-weight: 600;
+      font-size: 1.125rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--bg-deep);
+      text-decoration: none;
+      
+      /* Rich gold gradient */
+      background: linear-gradient(
+        180deg,
+        #FDE68A 0%,
+        #FBBF24 20%,
+        #F59E0B 50%,
+        #D97706 80%,
+        #B45309 100%
+      );
+      
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      
+      box-shadow:
+        0 0 30px rgba(245, 158, 11, 0.4),
+        0 4px 20px rgba(0, 0, 0, 0.5),
+        0 8px 40px rgba(0, 0, 0, 0.3),
+        inset 0 2px 0 rgba(255, 255, 255, 0.3),
+        inset 0 -2px 6px rgba(0, 0, 0, 0.2);
+      
+      transition: all 0.3s ease;
+      overflow: hidden;
+    }
+
+    .btn-adventure::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.15) 50%,
+        transparent 70%
+      );
+      transform: translateX(-100%) rotate(45deg);
+      transition: transform 0.6s ease;
+    }
+
+    .btn-adventure:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow:
+        0 0 50px rgba(245, 158, 11, 0.5),
+        0 8px 30px rgba(0, 0, 0, 0.6),
+        0 12px 50px rgba(0, 0, 0, 0.4),
+        inset 0 2px 0 rgba(255, 255, 255, 0.3),
+        inset 0 -2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-adventure:hover::before {
+      transform: translateX(100%) rotate(45deg);
+    }
+
+    .btn-adventure:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    .btn-icon {
+      font-size: 1.5rem;
+    }
+
+    /* ==================== CHARACTER SHOWCASE ==================== */
+    .character-showcase {
+      position: relative;
+      background: 
+        radial-gradient(ellipse at 50% 0%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+        linear-gradient(180deg, rgba(18, 16, 26, 0.9) 0%, rgba(12, 10, 18, 0.95) 100%);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 20px;
+      padding: 3rem;
+      margin-bottom: 4rem;
+      overflow: hidden;
+    }
+
+    .character-showcase::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 80% 20%, rgba(245, 158, 11, 0.03) 0%, transparent 40%);
+      pointer-events: none;
+    }
+
+    .showcase-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .showcase-title {
+      font-family: 'Cinzel', serif;
+      font-size: 2rem;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .showcase-subtitle {
+      font-family: 'Crimson Text', serif;
+      font-style: italic;
+      color: var(--purple-400);
+    }
+
+    .characters-row {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .character-card {
+      position: relative;
+      width: 180px;
+      text-align: center;
+      padding: 1.5rem;
+      background: rgba(18, 16, 26, 0.8);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 12px;
+      transition: all 0.4s ease;
+      cursor: pointer;
+    }
+
+    .character-card:hover {
+      transform: translateY(-10px);
+      border-color: rgba(139, 92, 246, 0.5);
+      box-shadow:
+        0 10px 40px rgba(0, 0, 0, 0.4),
+        0 0 30px rgba(139, 92, 246, 0.2);
+    }
+
+    .character-avatar {
+      width: 100px;
+      height: 100px;
+      margin: 0 auto 1rem;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--purple-700) 0%, var(--purple-500) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      box-shadow:
+        0 4px 16px rgba(0, 0, 0, 0.4),
+        0 0 20px rgba(139, 92, 246, 0.3),
+        inset 0 2px 4px rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Avatar ring animation */
+    .character-card:hover .character-avatar::before {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      background: linear-gradient(45deg, var(--purple-500), var(--gold-500), var(--purple-500)) border-box;
+      -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      animation: avatar-ring 2s linear infinite;
+    }
+
+    @keyframes avatar-ring {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .character-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+    }
+
+    .character-class {
+      font-size: 0.8rem;
+      color: var(--purple-400);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .character-level {
+      display: inline-block;
+      margin-top: 0.75rem;
+      padding: 0.25rem 0.75rem;
+      background: rgba(139, 92, 246, 0.2);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 20px;
+      font-size: 0.75rem;
+      color: var(--purple-400);
+    }
+
+    /* ==================== MAGICAL DIVIDER ==================== */
+    .magical-divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin: 4rem 0;
+      opacity: 0.6;
+    }
+
+    .divider-line {
+      flex: 1;
+      max-width: 200px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold-600), transparent);
+    }
+
+    .divider-rune {
+      font-family: serif;
+      font-size: 1.5rem;
+      color: var(--gold-500);
+      text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+      animation: rune-pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes rune-pulse {
+      0%, 100% { opacity: 0.6; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.1); }
+    }
+
+    /* ==================== DICE CEREMONY ==================== */
+    .dice-section {
+      text-align: center;
+      padding: 3rem;
+      margin-bottom: 4rem;
+    }
+
+    .dice-container {
+      position: relative;
+      display: inline-block;
+      padding: 4rem;
+    }
+
+    .dice-d20 {
+      width: 150px;
+      height: 150px;
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .dice-d20:hover {
+      transform: scale(1.1);
+    }
+
+    .dice-d20:active {
+      animation: dice-shake 0.5s ease;
+    }
+
+    @keyframes dice-shake {
+      0%, 100% { transform: rotate(0deg) scale(1.1); }
+      25% { transform: rotate(-15deg) scale(1.1); }
+      75% { transform: rotate(15deg) scale(1.1); }
+    }
+
+    .dice-face {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #1a1722 0%, #12101a 100%);
+      border: 2px solid var(--gold-600);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 4rem;
+      font-weight: 700;
+      color: var(--gold-400);
+      text-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+      box-shadow:
+        0 0 30px rgba(245, 158, 11, 0.2),
+        0 8px 32px rgba(0, 0, 0, 0.5),
+        inset 0 2px 4px rgba(255, 255, 255, 0.1),
+        inset 0 -4px 8px rgba(0, 0, 0, 0.3);
+      transform: rotate(5deg);
+    }
+
+    .dice-glow {
+      position: absolute;
+      inset: -20px;
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.3) 0%, transparent 70%);
+      animation: dice-glow 2s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes dice-glow {
+      0%, 100% { opacity: 0.5; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.1); }
+    }
+
+    .dice-label {
+      margin-top: 2rem;
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+      color: var(--text-secondary);
+    }
+
+    /* ==================== FOOTER ==================== */
+    .epic-footer {
+      text-align: center;
+      padding: 4rem 2rem;
+      border-top: 1px solid rgba(180, 83, 9, 0.1);
+    }
+
+    .footer-runes {
+      font-size: 1.5rem;
+      letter-spacing: 0.5em;
+      color: var(--gold-600);
+      opacity: 0.5;
+      margin-bottom: 1rem;
+    }
+
+    .footer-text {
+      font-family: 'Crimson Text', serif;
+      font-style: italic;
+      color: var(--text-muted);
+    }
+
+    /* ==================== TORCH LIGHT EFFECT ==================== */
+    .torch-flicker {
+      animation: torch-flicker 0.15s infinite;
+    }
+
+    @keyframes torch-flicker {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(0.97); }
+    }
+
+    /* ==================== RESPONSIVE ==================== */
+    @media (max-width: 768px) {
+      .main-title {
+        font-size: 2rem;
+      }
+      
+      .cards-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .characters-row {
+        gap: 1rem;
+      }
+      
+      .character-card {
+        width: 140px;
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background layers -->
+  <div class="page-background"></div>
+  <div class="fog-layer"></div>
+  <div class="vignette"></div>
+  <div class="noise-overlay"></div>
+  
+  <!-- Floating particles -->
+  <div class="particles-container" id="particles"></div>
+  
+  <!-- Main content -->
+  <div class="main-content">
+    <!-- Epic Header -->
+    <header class="epic-header">
+      <div class="logo-mark">
+        <div class="logo-d20">
+          <div class="dice-glow"></div>
+          <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="50,5 95,30 95,70 50,95 5,70 5,30" 
+                     fill="url(#goldGrad)" 
+                     stroke="#B45309" 
+                     stroke-width="2"/>
+            <polygon points="50,5 95,30 50,50 5,30" 
+                     fill="rgba(255,255,255,0.1)"/>
+            <text x="50" y="58" text-anchor="middle" 
+                  font-family="Cinzel" font-size="24" font-weight="bold" 
+                  fill="#0a0810">20</text>
+            <defs>
+              <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#FDE68A"/>
+                <stop offset="50%" style="stop-color:#F59E0B"/>
+                <stop offset="100%" style="stop-color:#B45309"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+      </div>
+      
+      <h1 class="main-title torch-flicker">Realms of Adventure</h1>
+      
+      <p class="subtitle">
+        Where heroes are forged, legends are born, and every roll of the dice shapes destiny.
+      </p>
+      
+      <div class="title-decoration">
+        <div class="decoration-line"></div>
+        <div class="decoration-diamond"></div>
+        <div class="decoration-line"></div>
+      </div>
+    </header>
+
+    <!-- Feature Cards -->
+    <section class="cards-grid">
+      <article class="enchanted-card">
+        <div class="card-icon">
+          <div class="card-icon-inner">⚔️</div>
+        </div>
+        <h2 class="card-title">Epic Combat</h2>
+        <p class="card-description">
+          Experience tactical combat with authentic D&D 5e rules. Every attack roll, 
+          saving throw, and spell effect follows the sacred texts.
+        </p>
+        <div class="card-stats">
+          <div class="stat">
+            <span class="stat-value">400+</span>
+            <span class="stat-label">Spells</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">200+</span>
+            <span class="stat-label">Monsters</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="enchanted-card">
+        <div class="card-icon">
+          <div class="card-icon-inner">🏰</div>
+        </div>
+        <h2 class="card-title">World Builder</h2>
+        <p class="card-description">
+          Forge dungeons, craft encounters, and weave tales of wonder. Your imagination 
+          becomes reality with our powerful creation tools.
+        </p>
+        <div class="card-stats">
+          <div class="stat">
+            <span class="stat-value">∞</span>
+            <span class="stat-label">Possibilities</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">AI</span>
+            <span class="stat-label">Assisted</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="enchanted-card">
+        <div class="card-icon">
+          <div class="card-icon-inner">🎭</div>
+        </div>
+        <h2 class="card-title">Live Together</h2>
+        <p class="card-description">
+          Unite with friends across realms. Real-time multiplayer brings the tabletop 
+          experience to life, wherever you are.
+        </p>
+        <div class="card-stats">
+          <div class="stat">
+            <span class="stat-value">6</span>
+            <span class="stat-label">Players</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">Live</span>
+            <span class="stat-label">Voice Chat</span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- CTA Button -->
+    <section class="cta-section">
+      <button class="btn-adventure" onclick="rollDice()">
+        <span class="btn-icon">🎲</span>
+        Begin Your Quest
+      </button>
+    </section>
+
+    <!-- Character Showcase -->
+    <section class="character-showcase">
+      <div class="showcase-header">
+        <h2 class="showcase-title">Your Adventuring Party</h2>
+        <p class="showcase-subtitle">Heroes await their destiny...</p>
+      </div>
+      
+      <div class="characters-row">
+        <div class="character-card">
+          <div class="character-avatar">🧙</div>
+          <div class="character-name">Eldrin</div>
+          <div class="character-class">Wizard</div>
+          <div class="character-level">Level 8</div>
+        </div>
+        
+        <div class="character-card">
+          <div class="character-avatar">⚔️</div>
+          <div class="character-name">Theron</div>
+          <div class="character-class">Paladin</div>
+          <div class="character-level">Level 8</div>
+        </div>
+        
+        <div class="character-card">
+          <div class="character-avatar">🏹</div>
+          <div class="character-name">Sylva</div>
+          <div class="character-class">Ranger</div>
+          <div class="character-level">Level 7</div>
+        </div>
+        
+        <div class="character-card">
+          <div class="character-avatar">🗡️</div>
+          <div class="character-name">Shadow</div>
+          <div class="character-class">Rogue</div>
+          <div class="character-level">Level 8</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Magical Divider -->
+    <div class="magical-divider">
+      <div class="divider-line"></div>
+      <span class="divider-rune">᚛</span>
+      <span class="divider-rune">ᚱ</span>
+      <span class="divider-rune">ᚢ</span>
+      <span class="divider-rune">ᚾ</span>
+      <span class="divider-rune">ᛖ</span>
+      <span class="divider-rune">᚜</span>
+      <div class="divider-line"></div>
+    </div>
+
+    <!-- Dice Section -->
+    <section class="dice-section">
+      <div class="dice-container">
+        <div class="dice-d20" id="dice" onclick="rollDice()">
+          <div class="dice-glow"></div>
+          <div class="dice-face" id="diceValue">20</div>
+        </div>
+      </div>
+      <p class="dice-label">Click to roll your fate</p>
+    </section>
+
+    <!-- Footer -->
+    <footer class="epic-footer">
+      <div class="footer-runes">᚛ ᚱ ᛖ ᚨ ᛚ ᛗ ᛊ ᚜</div>
+      <p class="footer-text">"Not all those who wander are lost."</p>
+    </footer>
+  </div>
+
+  <script>
+    // Create floating particles
+    function createParticles() {
+      const container = document.getElementById('particles');
+      const particleCount = 50;
+      
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        
+        // Random particle type
+        const types = ['particle-dust', 'particle-magic', 'particle-ember'];
+        const weights = [0.6, 0.25, 0.15]; // Dust most common
+        const random = Math.random();
+        let type;
+        if (random < weights[0]) type = types[0];
+        else if (random < weights[0] + weights[1]) type = types[1];
+        else type = types[2];
+        
+        particle.classList.add(type);
+        
+        // Random position
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.top = Math.random() * 100 + '%';
+        
+        // Random animation delay
+        particle.style.animationDelay = Math.random() * 15 + 's';
+        particle.style.animationDuration = (10 + Math.random() * 20) + 's';
+        
+        container.appendChild(particle);
+      }
+    }
+    
+    // Dice rolling
+    function rollDice() {
+      const dice = document.getElementById('dice');
+      const diceValue = document.getElementById('diceValue');
+      
+      // Add shake animation
+      dice.style.animation = 'none';
+      dice.offsetHeight; // Trigger reflow
+      dice.style.animation = 'dice-shake 0.5s ease';
+      
+      // Roll animation
+      let rolls = 0;
+      const maxRolls = 15;
+      const interval = setInterval(() => {
+        diceValue.textContent = Math.floor(Math.random() * 20) + 1;
+        rolls++;
+        
+        if (rolls >= maxRolls) {
+          clearInterval(interval);
+          const finalRoll = Math.floor(Math.random() * 20) + 1;
+          diceValue.textContent = finalRoll;
+          
+          // Highlight nat 20 or nat 1
+          if (finalRoll === 20) {
+            diceValue.style.color = '#22C55E';
+            diceValue.style.textShadow = '0 0 30px rgba(34, 197, 94, 0.8)';
+          } else if (finalRoll === 1) {
+            diceValue.style.color = '#EF4444';
+            diceValue.style.textShadow = '0 0 30px rgba(239, 68, 68, 0.8)';
+          } else {
+            diceValue.style.color = '#FBBF24';
+            diceValue.style.textShadow = '0 0 20px rgba(245, 158, 11, 0.5)';
+          }
+          
+          // Reset after delay
+          setTimeout(() => {
+            diceValue.style.color = '#FBBF24';
+            diceValue.style.textShadow = '0 0 20px rgba(245, 158, 11, 0.5)';
+          }, 2000);
+        }
+      }, 50);
+    }
+    
+    // Initialize
+    createParticles();
+    
+    // Parallax effect on mouse move
+    document.addEventListener('mousemove', (e) => {
+      const x = e.clientX / window.innerWidth - 0.5;
+      const y = e.clientY / window.innerHeight - 0.5;
+      
+      document.querySelector('.fog-layer').style.transform = 
+        `translateX(${x * 20}px) translateY(${y * 20}px)`;
+    });
+  </script>
+</body>
+</html>

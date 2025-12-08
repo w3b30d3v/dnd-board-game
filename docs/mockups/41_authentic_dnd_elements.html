@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D Authentic Elements</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:#0a0810;color:#F4F4F5;padding:2rem;min-height:100vh}
+    h1{font-family:'Cinzel Decorative',serif;text-align:center;font-size:2.5rem;color:#F59E0B;margin-bottom:3rem;text-shadow:0 0 30px rgba(245,158,11,0.3)}
+    .section{margin-bottom:4rem}
+    .section-title{font-family:'Cinzel',serif;font-size:1.5rem;color:#FBBF24;margin-bottom:1.5rem;padding-bottom:0.5rem;border-bottom:1px solid rgba(245,158,11,0.3)}
+    .grid{display:flex;flex-wrap:wrap;gap:2rem;justify-content:center}
+
+    /* STAT BLOCK - Exact PHB style */
+    .stat-block{background:linear-gradient(180deg,#FDF1DC,#EDE5C8);color:#1A1A1A;font-family:'Libre Baskerville',serif;font-size:0.85rem;line-height:1.4;width:350px;padding:0.8rem;border-top:4px solid #7A200D;border-bottom:4px solid #7A200D;box-shadow:0 0 15px rgba(0,0,0,0.4)}
+    .stat-block::before,.stat-block::after{content:'';display:block;height:6px;background:linear-gradient(90deg,transparent 0%,#B8472A 5%,#B8472A 95%,transparent 100%);clip-path:polygon(2% 50%,0 0,98% 0,100% 50%,98% 100%,0 100%)}
+    .monster-name{font-size:1.6rem;font-weight:700;color:#7A200D;margin-bottom:0}
+    .monster-type{font-style:italic;font-size:0.8rem;margin-bottom:0.3rem}
+    .stat-divider{height:2px;background:linear-gradient(90deg,transparent 0%,#7A200D 15%,#7A200D 85%,transparent 100%);margin:0.4rem 0}
+    .stat-line{margin:0.2rem 0}
+    .stat-line strong{color:#7A200D}
+    .abilities{display:flex;justify-content:space-between;text-align:center;padding:0.5rem 0;margin:0.3rem 0;border-top:1px solid rgba(122,32,13,0.2);border-bottom:1px solid rgba(122,32,13,0.2)}
+    .ability-name{font-size:0.7rem;font-weight:700;color:#7A200D}
+    .section-head{font-size:1rem;font-weight:700;color:#7A200D;border-bottom:1px solid #7A200D;margin:0.6rem 0 0.3rem}
+    .trait-name{font-style:italic;font-weight:700}
+
+    /* SPELL CARD */
+    .spell-card{width:260px;min-height:380px;border-radius:12px;padding:3px;background:linear-gradient(135deg,#EF4444,#991B1B);box-shadow:0 8px 32px rgba(0,0,0,0.5);transition:transform 0.3s}
+    .spell-card:hover{transform:translateY(-8px) rotateX(5deg)}
+    .spell-card.blue{background:linear-gradient(135deg,#3B82F6,#1E3A8A)}
+    .spell-card.purple{background:linear-gradient(135deg,#8B5CF6,#4C1D95)}
+    .spell-inner{background:linear-gradient(180deg,#1E1B26,#12101A);border-radius:10px;height:100%;padding:1rem;display:flex;flex-direction:column}
+    .spell-header{text-align:center;padding-bottom:0.75rem;border-bottom:1px solid rgba(255,255,255,0.1)}
+    .spell-name{font-family:'Cinzel',serif;font-size:1.1rem;font-weight:600;color:#FCA5A5;text-shadow:0 0 10px rgba(239,68,68,0.5)}
+    .spell-level{font-size:0.7rem;color:#A1A1AA;text-transform:uppercase;letter-spacing:0.1em}
+    .spell-icon{width:56px;height:56px;margin:1rem auto;display:flex;align-items:center;justify-content:center;font-size:2rem;border-radius:50%;background:radial-gradient(circle,rgba(239,68,68,0.3),transparent 70%);animation:glow 3s infinite}
+    @keyframes glow{0%,100%{box-shadow:0 0 20px currentColor}50%{box-shadow:0 0 40px currentColor}}
+    .spell-stats{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;padding:0.75rem 0;font-size:0.75rem;border-bottom:1px solid rgba(255,255,255,0.1)}
+    .spell-stat-label{color:#71717A;text-transform:uppercase;font-size:0.6rem}
+    .spell-desc{flex:1;padding:0.75rem 0;font-size:0.8rem;color:#A1A1AA;line-height:1.5}
+    .spell-comp{display:flex;justify-content:center;gap:0.5rem;padding-top:0.75rem;border-top:1px solid rgba(255,255,255,0.1)}
+    .comp{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:0.7rem;font-weight:600;background:rgba(255,255,255,0.1);color:#71717A}
+    .comp.on{background:#EF4444;color:#0F0D13}
+
+    /* READ ALOUD */
+    .read-aloud{max-width:600px;background:linear-gradient(135deg,rgba(251,240,217,0.03),rgba(241,220,180,0.05)),#1a1714;border-left:4px solid #7C3626;border-top:1px solid rgba(124,54,38,0.3);border-bottom:1px solid rgba(124,54,38,0.3);border-right:1px solid rgba(124,54,38,0.3);padding:1.5rem 1.5rem 1.5rem 2.5rem;box-shadow:inset 3px 0 15px rgba(0,0,0,0.3);font-family:'Crimson Text',serif;font-style:italic;font-size:1.1rem;line-height:1.8;color:#E8DCC4;position:relative}
+    .read-aloud::before{content:'"';position:absolute;top:0.5rem;left:0.75rem;font-family:'Cinzel Decorative',serif;font-size:3rem;font-style:normal;color:rgba(124,54,38,0.4)}
+
+    /* INITIATIVE */
+    .init-tracker{width:320px;background:linear-gradient(180deg,rgba(18,16,26,0.95),rgba(12,10,18,0.98));border:1px solid rgba(180,83,9,0.3);border-radius:12px;overflow:hidden}
+    .init-header{background:linear-gradient(90deg,#7A200D,#B8472A,#7A200D);color:#F4E4C1;font-family:'Cinzel',serif;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.15em;padding:0.75rem;text-align:center}
+    .init-list{padding:0.5rem}
+    .init-entry{display:flex;align-items:center;gap:0.75rem;padding:0.75rem;border-radius:8px;margin-bottom:0.5rem;background:rgba(26,23,34,0.5);position:relative}
+    .init-entry.active{background:radial-gradient(ellipse at left,rgba(245,158,11,0.15),transparent 70%),rgba(30,27,38,0.9);border:1px solid rgba(245,158,11,0.5);box-shadow:0 0 20px rgba(245,158,11,0.2);transform:scale(1.02)}
+    .init-entry.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:#F59E0B;border-radius:4px 0 0 4px;animation:pulse 1.5s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+    .init-entry.enemy{border-left:3px solid #EF4444}
+    .init-entry.ally{border-left:3px solid #22C55E}
+    .init-roll{width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);border-radius:6px;font-family:'Cinzel',serif;font-size:1.1rem;font-weight:700;color:#FBBF24}
+    .init-name{font-family:'Cinzel',serif;font-size:0.95rem}
+    .init-hp{font-size:0.75rem;color:#22C55E}
+    .init-hp.hurt{color:#EAB308}
+    .init-hp.crit{color:#EF4444;animation:pulse 1s infinite}
+    .round{text-align:center;padding:1rem;border-top:1px solid rgba(180,83,9,0.2);font-family:'Cinzel',serif;color:#A1A1AA}
+    .round-num{font-size:1.75rem;font-weight:700;color:#F59E0B;text-shadow:0 0 10px rgba(245,158,11,0.3)}
+  </style>
+</head>
+<body>
+  <h1>Authentic D&D Elements</h1>
+
+  <section class="section">
+    <h2 class="section-title">Monster Stat Block (Official PHB Format)</h2>
+    <div class="grid">
+      <div class="stat-block">
+        <h3 class="monster-name">Goblin</h3>
+        <p class="monster-type">Small humanoid (goblinoid), neutral evil</p>
+        <div class="stat-divider"></div>
+        <p class="stat-line"><strong>Armor Class</strong> 15 (leather armor, shield)</p>
+        <p class="stat-line"><strong>Hit Points</strong> 7 (2d6)</p>
+        <p class="stat-line"><strong>Speed</strong> 30 ft.</p>
+        <div class="abilities">
+          <div><div class="ability-name">STR</div><div>8 (-1)</div></div>
+          <div><div class="ability-name">DEX</div><div>14 (+2)</div></div>
+          <div><div class="ability-name">CON</div><div>10 (+0)</div></div>
+          <div><div class="ability-name">INT</div><div>10 (+0)</div></div>
+          <div><div class="ability-name">WIS</div><div>8 (-1)</div></div>
+          <div><div class="ability-name">CHA</div><div>8 (-1)</div></div>
+        </div>
+        <div class="stat-divider"></div>
+        <p class="stat-line"><strong>Skills</strong> Stealth +6</p>
+        <p class="stat-line"><strong>Senses</strong> darkvision 60 ft., passive Perception 9</p>
+        <p class="stat-line"><strong>Languages</strong> Common, Goblin</p>
+        <p class="stat-line"><strong>Challenge</strong> 1/4 (50 XP)</p>
+        <div class="stat-divider"></div>
+        <p><span class="trait-name">Nimble Escape.</span> The goblin can take the Disengage or Hide action as a bonus action.</p>
+        <h4 class="section-head">Actions</h4>
+        <p><span class="trait-name">Scimitar.</span> <em>Melee Weapon Attack:</em> +4 to hit, reach 5 ft. <em>Hit:</em> 5 (1d6 + 2) slashing damage.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Spell Cards (School Colors)</h2>
+    <div class="grid">
+      <div class="spell-card">
+        <div class="spell-inner">
+          <div class="spell-header">
+            <div class="spell-name">Fireball</div>
+            <div class="spell-level">3rd-level Evocation</div>
+          </div>
+          <div class="spell-icon">🔥</div>
+          <div class="spell-stats">
+            <div><div class="spell-stat-label">Casting Time</div><div>1 action</div></div>
+            <div><div class="spell-stat-label">Range</div><div>150 feet</div></div>
+            <div><div class="spell-stat-label">Duration</div><div>Instantaneous</div></div>
+            <div><div class="spell-stat-label">Save</div><div>DEX half</div></div>
+          </div>
+          <div class="spell-desc">A bright streak flashes to a point you choose and blossoms into an explosion. Each creature in a 20-foot-radius sphere takes 8d6 fire damage on a failed DEX save.</div>
+          <div class="spell-comp"><div class="comp on">V</div><div class="comp on">S</div><div class="comp on">M</div></div>
+        </div>
+      </div>
+      <div class="spell-card blue">
+        <div class="spell-inner">
+          <div class="spell-header">
+            <div class="spell-name" style="color:#93C5FD">Shield</div>
+            <div class="spell-level">1st-level Abjuration</div>
+          </div>
+          <div class="spell-icon" style="background:radial-gradient(circle,rgba(59,130,246,0.3),transparent 70%)">🛡️</div>
+          <div class="spell-stats">
+            <div><div class="spell-stat-label">Casting Time</div><div>1 reaction</div></div>
+            <div><div class="spell-stat-label">Range</div><div>Self</div></div>
+            <div><div class="spell-stat-label">Duration</div><div>1 round</div></div>
+            <div><div class="spell-stat-label">Save</div><div>None</div></div>
+          </div>
+          <div class="spell-desc">An invisible barrier of magical force appears. Until your next turn, you have +5 bonus to AC, including against the triggering attack.</div>
+          <div class="spell-comp"><div class="comp on" style="background:#3B82F6">V</div><div class="comp on" style="background:#3B82F6">S</div><div class="comp">M</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Read-Aloud Box (DM Narration)</h2>
+    <div class="grid">
+      <div class="read-aloud">
+        The ancient door creaks open, revealing a vast chamber shrouded in darkness. Your torchlight catches the glint of gold coins scattered across the floor, leading your eyes to a massive pile of treasure. Atop the hoard, scales gleaming like burnished copper, lies a dragon. One enormous eye opens. "Ah," rumbles a voice like grinding boulders, "visitors."
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Initiative Tracker</h2>
+    <div class="grid">
+      <div class="init-tracker">
+        <div class="init-header">⚔️ Initiative Order</div>
+        <div class="init-list">
+          <div class="init-entry ally active">
+            <div class="init-roll">18</div>
+            <div><div class="init-name">Eldrin the Wise</div><div class="init-hp">HP: 32/45</div></div>
+          </div>
+          <div class="init-entry enemy">
+            <div class="init-roll">15</div>
+            <div><div class="init-name">Goblin Boss</div><div class="init-hp hurt">HP: 12/21</div></div>
+          </div>
+          <div class="init-entry ally">
+            <div class="init-roll">14</div>
+            <div><div class="init-name">Theron</div><div class="init-hp crit">HP: 4/52</div></div>
+          </div>
+          <div class="init-entry enemy">
+            <div class="init-roll">12</div>
+            <div><div class="init-name">Goblin x3</div><div class="init-hp">HP: 7/7</div></div>
+          </div>
+        </div>
+        <div class="round">Round <span class="round-num">3</span></div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>
