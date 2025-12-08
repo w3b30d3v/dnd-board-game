@@ -147,80 +147,395 @@ function buildCharacterPrompt(
 ): { prompt: string; negativePrompt: string } {
   const { race, class: charClass, appearance } = character;
 
-  // Core description - Classic D&D style like official Wizards of the Coast artwork
-  const parts = [
-    // Art style reference - classic D&D look
-    'official Dungeons and Dragons character portrait',
-    'Wizards of the Coast art style',
-    'Players Handbook illustration style',
-    'classic fantasy RPG character art',
-    'oil painting style',
-    'realistic fantasy art',
+  // Build a comprehensive full-body D&D character prompt
+  const raceDetails = getFullRaceDescription(race);
+  const classDetails = getFullClassDescription(charClass);
 
-    // Race and class
-    getRaceDescription(race),
-    getClassAppearance(charClass),
-  ];
+  // Core art style - reference specific D&D artists and styles
+  const artStyle = [
+    'official Dungeons and Dragons 5th Edition character illustration',
+    'by Larry Elmore',
+    'by Keith Parkinson',
+    'by Todd Lockwood',
+    'Players Handbook cover art quality',
+    'Monster Manual illustration style',
+    'epic fantasy book cover art',
+    'traditional oil painting technique',
+    'rich color palette with deep shadows',
+  ].join(', ');
 
-  // Physical features
+  // Full body composition
+  const composition = style === 'action_pose'
+    ? 'dynamic action pose, mid-combat stance, weapon raised, dramatic motion blur on edges, intense expression'
+    : 'full body character design, standing heroic pose, weight on back foot ready for action, head to toe visible, facing three-quarter view';
+
+  // Environment/Background
+  const background = [
+    'dramatic fantasy environment background',
+    'torch-lit stone dungeon walls',
+    'mystical fog at feet',
+    'volumetric god rays from above',
+    'ancient carved stone pillars',
+  ].join(', ');
+
+  // Physical appearance details
+  let physicalDetails = '';
   if (appearance) {
-    if (appearance.hairColor) parts.push(`${appearance.hairColor} hair`);
-    if (appearance.hairStyle) parts.push(`${appearance.hairStyle} hairstyle`);
-    if (appearance.eyeColor) parts.push(`${appearance.eyeColor} eyes`);
-    if (appearance.skinTone) parts.push(`${appearance.skinTone} skin`);
-    if (appearance.facialHair) parts.push(appearance.facialHair);
-    if (appearance.distinguishingMarks) parts.push(appearance.distinguishingMarks);
+    const features = [];
+    if (appearance.hairColor) features.push(`${appearance.hairColor} colored hair`);
+    if (appearance.hairStyle) features.push(`${appearance.hairStyle} hair style`);
+    if (appearance.eyeColor) features.push(`piercing ${appearance.eyeColor} eyes`);
+    if (appearance.skinTone) features.push(`${appearance.skinTone} skin complexion`);
+    if (appearance.facialHair) features.push(appearance.facialHair);
+    if (appearance.distinguishingMarks) features.push(`distinctive ${appearance.distinguishingMarks}`);
+    physicalDetails = features.join(', ');
   }
 
-  // Style-specific terms
-  const styleTerms: Record<string, string> = {
-    portrait: 'dramatic portrait, three-quarter view, intense gaze, moody lighting, dark atmospheric background',
-    full_body: 'full body heroic stance, medieval fantasy setting, torch lit dungeon background',
-    action_pose: 'dynamic combat pose, spell effects, dramatic action scene, cinematic composition',
-  };
-  parts.push(styleTerms[style] || styleTerms.portrait);
+  // Quality and detail emphasis
+  const qualityTerms = [
+    'ultra high detail',
+    'intricate armor engravings and textures',
+    'visible leather stitching and metal rivets',
+    'realistic fabric folds and material textures',
+    'detailed facial features with expression',
+    'individual hair strands visible',
+    'scratches and wear on equipment',
+    'cinematic dramatic lighting',
+    'subsurface scattering on skin',
+    '8K resolution',
+    'award winning fantasy illustration',
+    'artstation trending',
+    'masterpiece',
+  ].join(', ');
 
-  // Classic D&D aesthetic terms
-  parts.push(
-    'medieval fantasy aesthetic',
-    'weathered battle-worn equipment',
-    'authentic period-accurate armor and weapons',
-    'rich earth tones and deep shadows',
-    'dramatic chiaroscuro lighting',
-    'textured brushwork',
-    'fully clothed in practical adventurer gear',
-    'heroic but realistic proportions'
-  );
+  // Combine all parts
+  const promptParts = [
+    artStyle,
+    composition,
+    raceDetails,
+    classDetails,
+    physicalDetails,
+    background,
+    qualityTerms,
+    'fully clothed and armored',
+    'appropriate medieval fantasy attire',
+  ].filter(Boolean);
 
-  // Quality terms
-  parts.push(
-    'masterpiece quality',
-    'highly detailed face and armor',
-    'sharp focus on character',
-    'professional fantasy illustration',
-    'museum quality artwork',
-    '8k resolution details'
-  );
+  const prompt = promptParts.join(', ');
 
-  const prompt = parts.filter(Boolean).join(', ');
-
-  // Negative prompt (mandatory for safety + avoiding non-D&D styles)
+  // Comprehensive negative prompt
   const negativePrompt = [
-    // Safety
-    'nude', 'naked', 'nsfw', 'sexual', 'suggestive', 'revealing clothing',
-    'bikini', 'lingerie', 'gore', 'excessive blood',
-    // Quality
-    'deformed', 'ugly', 'blurry', 'low quality', 'bad anatomy',
-    'extra limbs', 'mutated', 'watermark', 'signature', 'text',
-    // Style avoidance - keep it classic D&D
-    'anime', 'manga', 'cartoon', 'chibi', 'cute', 'kawaii',
-    'modern clothing', 'sci-fi', 'cyberpunk', 'steampunk',
-    'photo realistic', 'photography', 'real person',
-    'plastic', 'glossy', 'smooth skin', 'airbrushed',
-    'video game screenshot', 'CGI', '3D render'
+    // Anatomy issues
+    'bad anatomy', 'wrong anatomy', 'extra limbs', 'missing limbs', 'floating limbs',
+    'disconnected limbs', 'malformed hands', 'extra fingers', 'missing fingers',
+    'long neck', 'mutated', 'mutation', 'deformed', 'disfigured', 'poorly drawn face',
+    'cloned face', 'gross proportions', 'malformed limbs', 'fused fingers', 'too many fingers',
+
+    // Quality issues
+    'ugly', 'blurry', 'low quality', 'low resolution', 'worst quality', 'jpeg artifacts',
+    'pixelated', 'grainy', 'noisy image', 'out of frame', 'cropped', 'cut off',
+    'watermark', 'signature', 'text', 'logo', 'username', 'artist name',
+
+    // Wrong styles - NOT D&D
+    'anime', 'manga', 'cartoon', 'chibi', 'kawaii', 'disney', 'pixar',
+    'fortnite', 'overwatch', 'league of legends', 'world of warcraft stylized',
+    'mobile game art', 'casual game', 'childish', 'cute style',
+
+    // Wrong setting
+    'modern', 'contemporary', 'sci-fi', 'futuristic', 'cyberpunk', 'steampunk',
+    'guns', 'technology', 'electronics', 'cars', 'buildings',
+
+    // Wrong medium
+    'photography', 'photo', 'photorealistic', 'real person', 'real life',
+    '3d render', 'cgi', 'video game screenshot', 'unreal engine', 'unity',
+    'plastic', 'toy', 'figurine', 'miniature',
+
+    // Content safety
+    'nude', 'naked', 'nsfw', 'sexual', 'suggestive', 'revealing', 'bikini armor',
+    'chainmail bikini', 'exposed skin', 'cleavage', 'gore', 'blood', 'violent',
+
+    // Composition issues
+    'bad composition', 'amateur', 'beginner art', 'sketch', 'unfinished',
+    'simple background', 'white background', 'plain background',
   ].join(', ');
 
   return { prompt, negativePrompt };
+}
+
+function getFullRaceDescription(race: string): string {
+  const descriptions: Record<string, string> = {
+    human: `human warrior,
+      strong defined jawline with slight stubble,
+      weathered tanned skin showing years of adventure,
+      determined fierce eyes with crow's feet from squinting in sun,
+      battle scars across cheek and brow,
+      athletic muscular build,
+      approximately 6 feet tall,
+      shoulder-length brown hair tied back practically,
+      noble bearing despite rugged appearance`,
+
+    elf: `high elf,
+      tall slender elegant build approximately 6 feet,
+      impossibly graceful posture and movement,
+      elongated pointed ears extending 4 inches,
+      angular high cheekbones and narrow chin,
+      large almond-shaped eyes with slight luminescence,
+      flawless ageless pale skin with slight golden undertone,
+      long flowing silver or golden hair past shoulders,
+      ethereal otherworldly beauty,
+      ancient wisdom visible in expression`,
+
+    dwarf: `mountain dwarf,
+      short stocky powerful build approximately 4.5 feet tall,
+      extremely broad shoulders and barrel chest,
+      thick muscular arms like tree trunks,
+      magnificent long braided beard reaching belt with metal clan clasps,
+      weathered ruddy complexion from forge work,
+      deep-set fierce proud eyes under heavy brow,
+      prominent broad nose,
+      intricate braided hair with metal rings,
+      visible clan tattoos on arms`,
+
+    halfling: `lightfoot halfling,
+      small cheerful build approximately 3 feet tall,
+      round friendly youthful face with rosy cheeks,
+      large expressive bright eyes full of curiosity,
+      curly brown or auburn hair slightly wild,
+      pointed slightly furry ears,
+      large hairy bare feet with tough soles,
+      nimble quick appearance,
+      mischievous knowing smile`,
+
+    dragonborn: `dragonborn warrior,
+      tall imposing reptilian humanoid approximately 6.5 feet,
+      powerful muscular scaled body,
+      draconic head with elongated snout and sharp teeth,
+      scales colored metallic brass or chromatic red,
+      no tail but vestigial wing nubs on back,
+      yellow reptilian eyes with vertical slit pupils,
+      small horns sweeping back from skull,
+      proud noble bearing of dragon ancestry`,
+
+    tiefling: `tiefling,
+      humanoid with obvious infernal heritage,
+      large curved ram-like horns sweeping back from forehead,
+      solid colored eyes without visible pupils glowing faintly,
+      skin tinted deep crimson or purple,
+      long pointed prehensile tail,
+      sharp pointed teeth and slightly pointed ears,
+      supernaturally attractive yet unsettling features,
+      otherworldly dangerous allure`,
+
+    gnome: `rock gnome,
+      very small build approximately 3 feet tall,
+      disproportionately large head with huge curious eyes,
+      long prominent pointed nose,
+      wild unkempt colorful hair sticking in all directions,
+      weathered tan skin from outdoor tinkering,
+      animated excited expression,
+      various tools and gadgets hanging from belt,
+      nimble clever fingers`,
+
+    'half-elf': `half-elf,
+      blend of human and elven features,
+      approximately 5.5 feet tall with athletic build,
+      subtle pointed ears not as pronounced as full elf,
+      slightly angular facial features softened by human heritage,
+      bright intelligent eyes showing dual nature,
+      can pass for either race from distance,
+      natural grace combined with human adaptability`,
+
+    'half-orc': `half-orc,
+      large powerfully muscular build approximately 6.5 feet,
+      grayish-green skin tone with rough texture,
+      prominent lower tusks jutting from jaw,
+      heavy brow ridge over deep-set fierce eyes,
+      broad flat nose with flared nostrils,
+      coarse black hair often in warrior topknot,
+      ritual tribal scars on face and arms,
+      intimidating savage appearance`,
+  };
+
+  return descriptions[race.toLowerCase()] || 'fantasy humanoid adventurer with distinctive features';
+}
+
+function getFullClassDescription(charClass: string): string {
+  const descriptions: Record<string, string> = {
+    fighter: `experienced fighter warrior,
+      WEARING: heavy full plate armor with battle damage dents and scratches,
+      chainmail visible at joints,
+      steel pauldrons with heraldic engravings,
+      thick leather gloves with metal knuckles,
+      sturdy iron-shod boots,
+      EQUIPMENT: longsword in right hand with worn leather grip,
+      large kite shield on left arm with painted insignia,
+      backup dagger at belt,
+      traveling pack on back,
+      HEADGEAR: open-faced steel helm with cheek guards and nose guard,
+      red wool cloak fastened with bronze clasp,
+      DETAILS: military bearing, confident veteran stance, ready for battle`,
+
+    wizard: `powerful arcane wizard,
+      WEARING: flowing deep blue velvet robes with silver arcane runes embroidered,
+      wide sleeves with fur trim,
+      leather belt with many pouches for components,
+      soft leather boots,
+      EQUIPMENT: gnarled ancient wooden staff topped with glowing crystal orb,
+      leather-bound spellbook hanging from belt chain,
+      component pouches,
+      scroll case on back,
+      HEADGEAR: pointed wide-brimmed wizard hat with constellation patterns,
+      DETAILS: long grey beard, wise ancient eyes, one hand crackling with arcane energy,
+      mystical aura surrounding figure`,
+
+    rogue: `deadly rogue assassin,
+      WEARING: supple black leather armor form-fitting for stealth,
+      dark hooded cloak with deep cowl,
+      soft-soled boots for silent movement,
+      fingerless gloves for dexterity,
+      EQUIPMENT: twin daggers sheathed at hips,
+      hand crossbow on thigh,
+      lockpicks in wrist sheath,
+      grappling hook and rope at belt,
+      poison vials in hidden pockets,
+      HEADGEAR: deep hood casting face in shadow,
+      DETAILS: calculating eyes visible in shadow, half-smile,
+      ready to strike from darkness,
+      multiple hidden blade sheaths visible`,
+
+    cleric: `holy cleric of the light,
+      WEARING: polished steel breastplate over white holy vestments,
+      chainmail sleeves,
+      tabard with deity symbol prominently displayed,
+      heavy boots with greaves,
+      EQUIPMENT: ornate mace with holy symbol on head,
+      large round shield emblazoned with sun symbol,
+      holy symbol amulet glowing around neck,
+      prayer book at belt,
+      HEADGEAR: steel helm with religious iconography,
+      DETAILS: divine light emanating from figure,
+      righteous determined expression,
+      one hand raised channeling holy power`,
+
+    paladin: `noble paladin holy knight,
+      WEARING: gleaming ornate full plate armor with gold inlay,
+      white tabard with holy order symbol,
+      ceremonial pauldrons with religious engravings,
+      gauntlets with prayer inscriptions,
+      armored boots with spurs,
+      EQUIPMENT: magnificent two-handed holy sword glowing with divine light,
+      shield on back with deity symbol,
+      holy symbol incorporated into armor,
+      HEADGEAR: great helm with religious crest and white plume,
+      flowing white cape,
+      DETAILS: radiant aura, unwavering conviction in eyes,
+      commanding noble presence`,
+
+    ranger: `wilderness ranger tracker,
+      WEARING: practical worn green and brown leather armor,
+      fur-lined cloak in forest colors,
+      tall boots with animal fur trim,
+      archer's arm guard on left forearm,
+      EQUIPMENT: masterwork longbow in hand,
+      quiver with fletched arrows on back,
+      twin shortswords crossed on back,
+      hunting knife at belt,
+      snares and traps hanging from pack,
+      HEADGEAR: deep hood with ranger badge pinned,
+      DETAILS: alert watchful eyes scanning surroundings,
+      camouflage face paint,
+      wolf or hawk animal companion at side`,
+
+    barbarian: `fierce barbarian berserker,
+      WEARING: minimal fur and leather armor showing muscular physique,
+      war trophy bones and teeth as decoration,
+      leather bracers with metal studs,
+      fur boots and leg wraps,
+      EQUIPMENT: massive greataxe with notched blade held ready,
+      backup handaxes at belt,
+      drinking horn,
+      trophy skulls,
+      HEADGEAR: horned helm or bare head with wild mane of hair,
+      bear fur cloak,
+      DETAILS: tribal war paint on face and chest,
+      ritual scarification and tattoos,
+      wild eyes showing barely contained rage,
+      veins visible from battle fury`,
+
+    bard: `charismatic bard performer,
+      WEARING: fine colorful doublet in purple and gold,
+      flowing sleeves and cape,
+      polished leather boots with silver buckles,
+      decorative belt with instruments,
+      EQUIPMENT: masterwork lute or lyre held lovingly,
+      rapier at hip with ornate guard,
+      throwing daggers concealed in boot,
+      songbook in pouch,
+      HEADGEAR: feathered cap at rakish angle,
+      DETAILS: charming confident smile,
+      theatrical flourishing pose,
+      sparkle in eye,
+      fingers positioned on instrument ready to play`,
+
+    druid: `wise druid nature guardian,
+      WEARING: robes woven from living vines and leaves,
+      bark-like natural armor on shoulders,
+      no metal visible anywhere,
+      bare feet connected to earth,
+      EQUIPMENT: gnarled wooden staff topped with living crystal,
+      medicine pouch with herbs,
+      wooden holy symbol of nature,
+      HEADGEAR: crown of antlers or living flower wreath,
+      cloak of moss and lichen,
+      DETAILS: wild hair with twigs and feathers woven in,
+      one eye glowing with natural magic,
+      small woodland creatures nearby,
+      vines growing from ground toward feet`,
+
+    monk: `disciplined monk martial artist,
+      WEARING: simple practical robes in saffron or brown,
+      cloth wraps on hands and feet,
+      rope belt with meditation beads,
+      EQUIPMENT: quarterstaff across shoulders,
+      prayer beads around neck,
+      small pouch with few possessions,
+      HEADGEAR: bald shaved head or simple topknot,
+      DETAILS: athletic lean muscular build,
+      calloused bare hands and feet,
+      serene focused meditative expression,
+      perfect balanced martial arts stance,
+      ki energy subtly visible as slight glow`,
+
+    sorcerer: `powerful innate sorcerer,
+      WEARING: elegant but practical traveling clothes,
+      long coat with subtle scale pattern suggesting draconic heritage,
+      gloves with arcane sigils,
+      boots crackling with residual magic,
+      EQUIPMENT: arcane focus crystal floating near hand,
+      no spellbook needed - power is innate,
+      HEADGEAR: none - wild magic-touched hair floating slightly,
+      DETAILS: eyes glowing with inner magical power,
+      magical energy crackling between fingers,
+      confident powerful expression,
+      subtle draconic or wild magic features visible - slight scales or color shifts`,
+
+    warlock: `mysterious warlock pact-bound,
+      WEARING: dark robes covered in eldritch symbols and forbidden runes,
+      leather armor beneath,
+      boots with otherworldly design,
+      EQUIPMENT: pact weapon materialized from shadow - blade or rod,
+      tome of shadows chained to belt,
+      arcane focus glowing with patron's power,
+      HEADGEAR: deep hood with eyes glowing from within shadow,
+      DETAILS: haunted knowing expression,
+      patron's influence visible - tentacle patterns,
+      fiendish marks,
+      or fey glamour,
+      otherworldly presence,
+      shadows seem to bend toward figure`,
+  };
+
+  return descriptions[charClass.toLowerCase()] || 'seasoned adventurer with class-appropriate equipment and attire';
 }
 
 function getRaceDescription(race: string): string {
