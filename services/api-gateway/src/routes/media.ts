@@ -9,7 +9,7 @@ const router = Router();
 
 // Environment configuration
 const NANOBANANA_API_KEY = process.env.NANOBANANA_API_KEY;
-const NANOBANANA_API_URL = 'https://api.nanobananaapi.ai/v1';
+const NANOBANANA_API_URL = 'https://nanobananaapi.ai/api/v1/nanobanana';
 
 interface PortraitRequest {
   character: {
@@ -581,6 +581,7 @@ async function generateWithNanoBanana(
 ): Promise<string> {
   const fetch = (await import('node-fetch')).default;
 
+  // Use correct endpoint paths per NanoBanana API docs
   const endpoint = quality === 'high' ? '/generate-pro' : '/generate';
 
   const response = await fetch(`${NANOBANANA_API_URL}${endpoint}`, {
@@ -592,44 +593,63 @@ async function generateWithNanoBanana(
     body: JSON.stringify({
       prompt: promptConfig.prompt,
       negative_prompt: promptConfig.negativePrompt,
-      aspect_ratio: '1:1',
-      resolution: quality === 'high' ? '2k' : '1k',
-      output_format: 'png',
+      aspect_ratio: '2:3', // Portrait aspect ratio for full-body characters
+      size: quality === 'high' ? '1024x1536' : '768x1152',
     }),
   });
 
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error('NanoBanana API error response:', errorText);
     throw new Error(`NanoBanana API error: ${response.status}`);
   }
 
-  const data = (await response.json()) as { task_id: string; status: string; image_url?: string };
+  const data = (await response.json()) as {
+    task_id?: string;
+    taskId?: string;
+    status: string;
+    image_url?: string;
+    imageUrl?: string;
+    result?: { url?: string };
+  };
 
-  // If completed immediately
-  if (data.status === 'completed' && data.image_url) {
-    return data.image_url;
+  // If completed immediately (check multiple possible response formats)
+  const imageUrl = data.image_url || data.imageUrl || data.result?.url;
+  if ((data.status === 'completed' || data.status === 'success') && imageUrl) {
+    return imageUrl;
   }
 
   // Poll for completion
-  const taskId = data.task_id;
-  const maxWait = 60000; // 60 seconds
+  const taskId = data.task_id || data.taskId;
+  if (!taskId) {
+    throw new Error('No task ID returned from API');
+  }
+
+  const maxWait = 90000; // 90 seconds for high quality images
   const startTime = Date.now();
 
   while (Date.now() - startTime < maxWait) {
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
-    const statusResponse = await fetch(`${NANOBANANA_API_URL}/tasks/${taskId}`, {
+    const statusResponse = await fetch(`${NANOBANANA_API_URL}/record-info?taskId=${taskId}`, {
       headers: {
         Authorization: `Bearer ${NANOBANANA_API_KEY}`,
       },
     });
 
-    const statusData = (await statusResponse.json()) as { status: string; image_url?: string };
+    const statusData = (await statusResponse.json()) as {
+      status: string;
+      image_url?: string;
+      imageUrl?: string;
+      result?: { url?: string };
+    };
 
-    if (statusData.status === 'completed' && statusData.image_url) {
-      return statusData.image_url;
+    const resultUrl = statusData.image_url || statusData.imageUrl || statusData.result?.url;
+    if ((statusData.status === 'completed' || statusData.status === 'success') && resultUrl) {
+      return resultUrl;
     }
 
-    if (statusData.status === 'failed') {
+    if (statusData.status === 'failed' || statusData.status === 'error') {
       throw new Error('Image generation failed');
     }
   }
