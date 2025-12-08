@@ -2,8 +2,8 @@
 // Handles AI image generation for character portraits, locations, etc.
 
 import { Router, Request, Response } from 'express';
-import { authenticateToken } from '../middleware/auth';
-import { generatePersonalityContent, generateAllPersonalityContent } from '../services/personalityGenerator';
+import { auth } from '../middleware/auth.js';
+import { generatePersonalityContent, generateAllPersonalityContent } from '../services/personalityGenerator.js';
 
 const router = Router();
 
@@ -37,7 +37,7 @@ interface PortraitRequest {
 }
 
 // Generate character portrait
-router.post('/generate/portrait', authenticateToken, async (req: Request, res: Response) => {
+router.post('/generate/portrait', auth, async (req: Request, res: Response) => {
   try {
     const { character, style = 'portrait', quality = 'standard' } = req.body as PortraitRequest;
 
@@ -82,7 +82,7 @@ router.post('/generate/portrait', authenticateToken, async (req: Request, res: R
 });
 
 // Generate personality content
-router.post('/generate/personality', authenticateToken, async (req: Request, res: Response) => {
+router.post('/generate/personality', auth, async (req: Request, res: Response) => {
   try {
     const { field, race, class: charClass, background, name } = req.body;
 
@@ -115,7 +115,7 @@ router.post('/generate/personality', authenticateToken, async (req: Request, res
 });
 
 // Generate all personality fields at once
-router.post('/generate/personality/all', authenticateToken, async (req: Request, res: Response) => {
+router.post('/generate/personality/all', auth, async (req: Request, res: Response) => {
   try {
     const { race, class: charClass, background, name } = req.body;
 
