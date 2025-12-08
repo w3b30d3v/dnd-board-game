@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { getRaceById, getClassById, getBackgroundById } from '@/data';
+import { api } from '@/lib/api';
 import type { StepProps } from '../types';
 
 // Generic personality traits (clean language)
@@ -112,13 +113,19 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
   );
   const [portraitStyle, setPortraitStyle] = useState<string>('adventurer');
   const [showValidation, setShowValidation] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingPortrait, setIsGeneratingPortrait] = useState(false);
 
   const race = getRaceById(character.race || '');
   const classData = getClassById(character.class || '');
   const background = getBackgroundById(character.background || '');
 
-  // Get the portrait URL using DiceBear API
+  // Get the portrait URL using DiceBear API or return AI-generated URL
   const getPortraitUrl = useCallback((seed: string, style: string): string => {
+    // If the seed is already a full URL (from AI generation), return it directly
+    if (seed.startsWith('http://') || seed.startsWith('https://')) {
+      return seed;
+    }
     // DiceBear is a free avatar generation API
     return `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=1e1b26&size=200`;
   }, []);
@@ -207,6 +214,83 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
     }, 0);
   }, [handleRandomPersonalityTrait, handleRandomIdeal, handleRandomBond, handleRandomFlaw, race, classData, background, getRandomItem]);
 
+  // API-based personality generation (uses backend with race/class/background-specific templates)
+  const generateFromAPI = useCallback(async (field: string): Promise<string | null> => {
+    try {
+      const response = await api.post('/media/generate/personality', {
+        field,
+        race: character.race,
+        class: character.class,
+        background: character.background,
+        name: name || undefined,
+      });
+      if (response.data.success) {
+        return response.data.content;
+      }
+    } catch (error) {
+      console.warn('API generation failed, using local fallback:', error);
+    }
+    return null;
+  }, [character.race, character.class, character.background, name]);
+
+  // Generate all personality fields from API
+  const handleGenerateAllFromAPI = useCallback(async () => {
+    setIsGenerating(true);
+    try {
+      const response = await api.post('/media/generate/personality/all', {
+        race: character.race,
+        class: character.class,
+        background: character.background,
+        name: name || undefined,
+      });
+      if (response.data.success) {
+        setPersonalityTrait(response.data.personalityTrait);
+        setIdeal(response.data.ideal);
+        setBond(response.data.bond);
+        setFlaw(response.data.flaw);
+        setBackstory(response.data.backstory);
+      } else {
+        // Fallback to local generation
+        handleRandomizeAll();
+      }
+    } catch (error) {
+      console.warn('API generation failed, using local fallback:', error);
+      handleRandomizeAll();
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [character.race, character.class, character.background, name, handleRandomizeAll]);
+
+  // Generate AI portrait using NanoBanana API
+  const handleGenerateAIPortrait = useCallback(async () => {
+    setIsGeneratingPortrait(true);
+    try {
+      const response = await api.post('/media/generate/portrait', {
+        character: {
+          race: character.race,
+          class: character.class,
+          background: character.background,
+          name: name || undefined,
+        },
+        style: 'portrait',
+        quality: 'standard',
+      });
+      if (response.data.success && response.data.imageUrl) {
+        // Update the portrait seed to use the new URL
+        setPortraitSeed(response.data.imageUrl);
+        // If it's an AI-generated URL (not DiceBear), switch to 'ai' style indicator
+        if (response.data.source === 'nanobanana') {
+          setPortraitStyle('ai-generated');
+        }
+      }
+    } catch (error) {
+      console.warn('AI portrait generation failed:', error);
+      // Keep existing portrait
+    } finally {
+      setIsGeneratingPortrait(false);
+    }
+  }, [character.race, character.class, character.background, name]);
+
   const handleContinue = () => {
     if (name.trim()) {
       onUpdate({
@@ -268,11 +352,18 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                <span className="text-xs text-white">Click below to change</span>
-              </div>
+              {isGeneratingPortrait ? (
+                <div className="absolute inset-0 bg-black/70 rounded-lg flex flex-col items-center justify-center">
+                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs text-white mt-2">Generating...</span>
+                </div>
+              ) : (
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                  <span className="text-xs text-white">Click below to change</span>
+                </div>
+              )}
             </div>
-            <div className="flex gap-2 mt-3">
+            <div className="flex gap-2 mt-3 flex-wrap justify-center">
               <button
                 type="button"
                 onClick={handleRegeneratePortrait}
@@ -289,9 +380,18 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
               >
                 <span>🎨</span> Style
               </button>
+              <button
+                type="button"
+                onClick={handleGenerateAIPortrait}
+                disabled={isGeneratingPortrait}
+                className="text-xs px-3 py-1.5 rounded bg-accent/20 text-accent hover:bg-accent/30 transition-colors flex items-center gap-1 disabled:opacity-50"
+                title="Generate AI portrait (requires API key)"
+              >
+                <span>{isGeneratingPortrait ? '⏳' : '✨'}</span> {isGeneratingPortrait ? 'Generating...' : 'AI Portrait'}
+              </button>
             </div>
             <p className="text-xs text-text-muted mt-2 text-center">
-              {portraitStyle} style
+              {portraitStyle === 'ai-generated' ? 'AI Generated' : `${portraitStyle} style`}
             </p>
           </div>
 
@@ -359,13 +459,25 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
         <div className="dnd-divider mb-6" />
         <div className="flex items-center justify-between mb-4">
           <h3 className="dnd-heading-section text-xl mb-0 border-none pb-0">Personality (Optional)</h3>
-          <button
-            onClick={handleRandomizeAll}
-            className="btn-magic text-sm px-4 py-2 flex items-center gap-2"
-            type="button"
-          >
-            <span>🎲</span> Randomize All
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleRandomizeAll}
+              className="btn-stone text-sm px-4 py-2 flex items-center gap-2"
+              type="button"
+              title="Quick random generation (offline)"
+            >
+              <span>🎲</span> Quick Random
+            </button>
+            <button
+              onClick={handleGenerateAllFromAPI}
+              disabled={isGenerating}
+              className="btn-magic text-sm px-4 py-2 flex items-center gap-2 disabled:opacity-50"
+              type="button"
+              title="Generate using AI for race/class-specific content"
+            >
+              <span>{isGenerating ? '⏳' : '✨'}</span> {isGenerating ? 'Generating...' : 'AI Generate'}
+            </button>
+          </div>
         </div>
         <p className="text-sm text-text-muted mb-4">
           These details help bring your character to life. Use the generate buttons for random options.

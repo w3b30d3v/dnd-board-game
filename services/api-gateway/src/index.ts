@@ -5,6 +5,7 @@ import { config } from './config.js';
 import { logger } from './lib/logger.js';
 import authRoutes from './routes/auth.js';
 import characterRoutes from './routes/characters.js';
+import mediaRoutes from './routes/media.js';
 
 const app: Express = express();
 
@@ -45,6 +46,7 @@ app.get('/api', (_req, res) => {
 // Routes
 app.use('/auth', authRoutes);
 app.use('/characters', characterRoutes);
+app.use('/media', mediaRoutes);
 
 // Error handling middleware
 app.use(
