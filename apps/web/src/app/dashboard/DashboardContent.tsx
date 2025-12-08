@@ -7,7 +7,6 @@ import { Suspense } from 'react';
 import { useRequireAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
 import { EnchantedCard } from '@/components/dnd/EnchantedCard';
-import { OrnateCorners } from '@/components/dnd/OrnateCorners';
 
 // Dynamic import for particles
 const AmbientParticles = dynamic(
@@ -163,23 +162,22 @@ export default function DashboardContent() {
               Hero&apos;s Chronicle
             </h2>
             <EnchantedCard className="relative">
-              <OrnateCorners variant="gold" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <p className="text-sm text-text-muted mb-1">Email</p>
-                  <p className="text-text-primary font-medium">{user.email}</p>
+                <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-wider text-text-muted">Email</p>
+                  <p className="text-text-primary">{user.email}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-text-muted mb-1">Username</p>
-                  <p className="text-primary font-medium">@{user.username}</p>
+                <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-wider text-text-muted">Username</p>
+                  <p className="text-primary">@{user.username}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-text-muted mb-1">Display Name</p>
-                  <p className="text-text-primary font-medium">{user.displayName}</p>
+                <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-wider text-text-muted">Display Name</p>
+                  <p className="text-text-primary">{user.displayName}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-text-muted mb-1">Adventure Began</p>
-                  <p className="text-text-primary font-medium">
+                <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-wider text-text-muted">Adventure Began</p>
+                  <p className="text-text-primary">
                     {new Date(user.createdAt).toLocaleDateString('en-US', {
                       year: 'numeric',
                       month: 'long',

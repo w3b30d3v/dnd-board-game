@@ -11,7 +11,17 @@ const app: Express = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: config.nodeEnv === 'development' ? ['http://localhost:3000'] : [],
+    origin: config.nodeEnv === 'development'
+      ? (origin, callback) => {
+          // Allow requests with no origin (like mobile apps or curl)
+          if (!origin) return callback(null, true);
+          // Allow any localhost port in development
+          if (origin.match(/^http:\/\/localhost:\d+$/)) {
+            return callback(null, true);
+          }
+          callback(new Error('Not allowed by CORS'));
+        }
+      : [],
     credentials: true,
   })
 );
