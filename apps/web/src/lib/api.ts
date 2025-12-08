@@ -5,9 +5,15 @@ interface ApiError {
   details?: { field: string; message: string }[];
 }
 
+type RefreshCallback = () => Promise<string | null>;
+
 class ApiClient {
   private baseUrl: string;
   private accessToken: string | null = null;
+  private refreshToken: string | null = null;
+  private onRefreshToken: RefreshCallback | null = null;
+  private isRefreshing = false;
+  private refreshPromise: Promise<string | null> | null = null;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -17,9 +23,69 @@ class ApiClient {
     this.accessToken = token;
   }
 
+  setRefreshToken(token: string | null) {
+    this.refreshToken = token;
+  }
+
+  setRefreshCallback(callback: RefreshCallback | null) {
+    this.onRefreshToken = callback;
+  }
+
+  private async refreshAccessToken(): Promise<string | null> {
+    // If already refreshing, wait for that to complete
+    if (this.isRefreshing && this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    if (!this.refreshToken) {
+      return null;
+    }
+
+    this.isRefreshing = true;
+    this.refreshPromise = this.doRefresh();
+
+    try {
+      const token = await this.refreshPromise;
+      return token;
+    } finally {
+      this.isRefreshing = false;
+      this.refreshPromise = null;
+    }
+  }
+
+  private async doRefresh(): Promise<string | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: this.refreshToken }),
+      });
+
+      if (!response.ok) {
+        // Refresh failed, token is invalid
+        return null;
+      }
+
+      const data = await response.json();
+      const newToken = data.token;
+
+      this.accessToken = newToken;
+
+      // Notify the auth store about the new token
+      if (this.onRefreshToken) {
+        await this.onRefreshToken();
+      }
+
+      return newToken;
+    } catch {
+      return null;
+    }
+  }
+
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retry = true
   ): Promise<T> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -39,6 +105,15 @@ class ApiClient {
       ...options,
       headers,
     });
+
+    // If unauthorized and we have a refresh token, try to refresh
+    if (response.status === 401 && retry && this.refreshToken) {
+      const newToken = await this.refreshAccessToken();
+      if (newToken) {
+        // Retry the request with the new token
+        return this.request<T>(endpoint, options, false);
+      }
+    }
 
     const data = await response.json();
 

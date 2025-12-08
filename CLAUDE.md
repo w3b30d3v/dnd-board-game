@@ -76,6 +76,11 @@ All specifications are in the `/docs/` directory. **Read in this order:**
 | `15_Wireframes.md` | Screen layouts (ASCII) |
 | `23_User_Journeys_Onboarding.md` | Player & DM user flows |
 
+### Character Builder (Phase 2 Specific)
+| Document | Purpose |
+|----------|---------|
+| `43_Character_Builder_Personality_Visualization.md` | **Personality auto-generation, progressive visual build-up, content safety** |
+
 ### AI-Powered Graphics & Media (FOR IMPRESSIVE VISUALS)
 | Document | Purpose |
 |----------|---------|

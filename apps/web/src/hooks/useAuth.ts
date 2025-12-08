@@ -33,8 +33,17 @@ export function useAuth() {
  */
 export function useRequireAuth(redirectTo = '/login') {
   const router = useRouter();
-  const { user, isInitialized } = useAuthStore();
+  const store = useAuthStore();
+  const { user, isInitialized, _hasHydrated } = store;
 
+  // Initialize the store after hydration
+  useEffect(() => {
+    if (_hasHydrated && !isInitialized) {
+      store.initialize();
+    }
+  }, [_hasHydrated, isInitialized, store]);
+
+  // Redirect if not authenticated (after initialization)
   useEffect(() => {
     if (isInitialized && !user) {
       router.push(redirectTo);
@@ -49,8 +58,17 @@ export function useRequireAuth(redirectTo = '/login') {
  */
 export function useGuestOnly(redirectTo = '/dashboard') {
   const router = useRouter();
-  const { user, isInitialized } = useAuthStore();
+  const store = useAuthStore();
+  const { user, isInitialized, _hasHydrated } = store;
 
+  // Initialize the store after hydration
+  useEffect(() => {
+    if (_hasHydrated && !isInitialized) {
+      store.initialize();
+    }
+  }, [_hasHydrated, isInitialized, store]);
+
+  // Redirect if authenticated (after initialization)
   useEffect(() => {
     if (isInitialized && user) {
       router.push(redirectTo);

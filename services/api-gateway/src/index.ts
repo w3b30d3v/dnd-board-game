@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import { config } from './config.js';
 import { logger } from './lib/logger.js';
 import authRoutes from './routes/auth.js';
+import characterRoutes from './routes/characters.js';
 
 const app: Express = express();
 
@@ -37,12 +38,13 @@ app.get('/api', (_req, res) => {
   res.json({
     name: 'D&D Platform API',
     version: '0.1.0',
-    status: 'Phase 1 - Authentication',
+    status: 'Phase 2 - Character Builder',
   });
 });
 
 // Routes
 app.use('/auth', authRoutes);
+app.use('/characters', characterRoutes);
 
 // Error handling middleware
 app.use(

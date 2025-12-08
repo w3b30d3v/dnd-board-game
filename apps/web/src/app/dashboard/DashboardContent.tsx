@@ -1,12 +1,23 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRequireAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
 import { EnchantedCard } from '@/components/dnd/EnchantedCard';
+
+interface Character {
+  id: string;
+  name: string;
+  race: string;
+  class: string;
+  level: number;
+  maxHitPoints: number;
+  currentHitPoints: number;
+  createdAt: string;
+}
 
 // Dynamic import for particles
 const AmbientParticles = dynamic(
@@ -16,8 +27,51 @@ const AmbientParticles = dynamic(
 
 export default function DashboardContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isLoading } = useRequireAuth('/login');
-  const logout = useAuthStore(state => state.logout);
+  const { logout, token } = useAuthStore(state => ({ logout: state.logout, token: state.token }));
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [loadingCharacters, setLoadingCharacters] = useState(true);
+  const [showCreatedMessage, setShowCreatedMessage] = useState(false);
+
+  // Check if we just created a character
+  useEffect(() => {
+    if (searchParams?.get('created') === 'true') {
+      setShowCreatedMessage(true);
+      // Clear the URL parameter
+      router.replace('/dashboard', { scroll: false });
+      // Hide message after 5 seconds
+      setTimeout(() => setShowCreatedMessage(false), 5000);
+    }
+  }, [searchParams, router]);
+
+  // Fetch characters
+  useEffect(() => {
+    const fetchCharacters = async () => {
+      if (!token) return;
+
+      try {
+        const response = await fetch('http://localhost:4000/characters', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setCharacters(data.characters || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch characters:', error);
+      } finally {
+        setLoadingCharacters(false);
+      }
+    };
+
+    if (user) {
+      fetchCharacters();
+    }
+  }, [token, user]);
 
   const handleLogout = async () => {
     await logout();
@@ -90,6 +144,13 @@ export default function DashboardContent() {
             </p>
           </div>
 
+          {/* Success Message */}
+          {showCreatedMessage && (
+            <div className="col-span-full mb-4 p-4 rounded-lg bg-success/10 border border-success/30 text-success animate-fade-in-up">
+              Character created successfully! Your hero is ready for adventure.
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
             {/* Characters Card */}
             <EnchantedCard showCorners hover>
@@ -101,15 +162,17 @@ export default function DashboardContent() {
                   <h3 className="dnd-heading-section text-lg mb-0 border-none pb-0">
                     My Heroes
                   </h3>
-                  <p className="text-sm text-text-muted">0 characters</p>
+                  <p className="text-sm text-text-muted">
+                    {loadingCharacters ? 'Loading...' : `${characters.length} character${characters.length !== 1 ? 's' : ''}`}
+                  </p>
                 </div>
               </div>
               <p className="text-text-secondary text-sm mb-4">
                 Create and manage your D&D 5e characters with the full character builder.
               </p>
-              <button className="btn-adventure w-full" disabled>
-                Coming in Phase 2
-              </button>
+              <Link href="/characters/create" className="btn-adventure w-full text-center block">
+                Create Character
+              </Link>
             </EnchantedCard>
 
             {/* Campaigns Card */}
@@ -154,6 +217,48 @@ export default function DashboardContent() {
               </button>
             </EnchantedCard>
           </div>
+
+          {/* Character List Section */}
+          {characters.length > 0 && (
+            <div className="mt-12 animate-fade-in-up">
+              <div className="dnd-divider mb-8" />
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="dnd-heading-section text-xl">
+                  Your Heroes
+                </h2>
+                <Link href="/characters/create" className="btn-stone text-sm px-4 py-2">
+                  + New Character
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {characters.map((char) => (
+                  <EnchantedCard key={char.id} hover className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-display font-semibold text-lg text-text-primary">
+                          {char.name}
+                        </h3>
+                        <p className="text-sm text-text-secondary">
+                          Level {char.level} {char.race} {char.class}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs text-text-muted">HP</div>
+                        <div className="text-lg font-bold text-danger">
+                          {char.currentHitPoints}/{char.maxHitPoints}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <button className="btn-stone text-xs px-3 py-1 flex-1" disabled>
+                        View Sheet
+                      </button>
+                    </div>
+                  </EnchantedCard>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Account Info Section */}
           <div className="mt-12 animate-fade-in-up">

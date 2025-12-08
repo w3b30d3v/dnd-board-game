@@ -77,6 +77,7 @@ export const useAuthStore = create<AuthState>()(
           });
 
           api.setAccessToken(response.token);
+          api.setRefreshToken(response.refreshToken);
 
           set({
             user: response.user,
@@ -102,6 +103,7 @@ export const useAuthStore = create<AuthState>()(
           });
 
           api.setAccessToken(response.token);
+          api.setRefreshToken(response.refreshToken);
 
           set({
             user: response.user,
@@ -129,6 +131,7 @@ export const useAuthStore = create<AuthState>()(
         }
 
         api.setAccessToken(null);
+        api.setRefreshToken(null);
         set({
           user: null,
           token: null,
@@ -160,9 +163,12 @@ export const useAuthStore = create<AuthState>()(
       clearError: () => set({ error: null }),
 
       initialize: () => {
-        const { token } = get();
+        const { token, refreshToken } = get();
         if (token) {
           api.setAccessToken(token);
+        }
+        if (refreshToken) {
+          api.setRefreshToken(refreshToken);
         }
         set({ isInitialized: true });
       },
