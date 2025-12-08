@@ -84,6 +84,7 @@ All specifications are in the `/docs/` directory. **Read in this order:**
 ### AI-Powered Graphics & Media (FOR IMPRESSIVE VISUALS)
 | Document | Purpose |
 |----------|---------|
+| `44_NanoBanana_API_Integration.md` | **NanoBanana API integration for AI image generation (characters, locations, monsters, items)** |
 | `40_DnD_Immersive_Design_System.md` | **CRITICAL: The complete D&D visual language - textures, borders, cards, animations** |
 | `41_Authentic_DnD_Visual_Elements.md` | **CRITICAL: Iconic D&D elements - stat blocks, spell cards, read-aloud boxes, death saves** |
 | `42_DnD_Ceremony_Moments.md` | **CRITICAL: Sacred D&D moments - dice physics, initiative, advantage/disadvantage, concentration** |
