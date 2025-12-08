@@ -1,0 +1,735 @@
+/* ============================================
+   D&D IMMERSIVE DESIGN SYSTEM
+   Document 40-42 Implementation
+   ============================================ */
+
+/* ============================================
+   PART 1: FOUNDATIONAL TEXTURES
+   ============================================ */
+
+/* Noise texture via SVG data URI */
+.noise-texture {
+  position: relative;
+}
+
+.noise-texture::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Parchment texture via gradients */
+.parchment-texture {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(139, 92, 246, 0.01) 2px,
+      rgba(139, 92, 246, 0.01) 4px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(245, 158, 11, 0.01) 2px,
+      rgba(245, 158, 11, 0.01) 4px
+    ),
+    linear-gradient(
+      135deg,
+      rgba(30, 27, 38, 1) 0%,
+      rgba(26, 23, 32, 1) 50%,
+      rgba(30, 27, 38, 1) 100%
+    );
+}
+
+/* Stone texture via gradients */
+.stone-texture {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.02) 0%, transparent 50%),
+    radial-gradient(circle at 70% 70%, rgba(0,0,0,0.1) 0%, transparent 50%),
+    linear-gradient(135deg, #1a1720 0%, #0f0d13 100%);
+}
+
+/* ============================================
+   PART 2: PAGE BACKGROUNDS
+   ============================================ */
+
+/* Main app background with multiple layers */
+.dnd-page-background {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: #0a0810;
+  background-image:
+    /* Layer: Subtle noise texture */
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"),
+    /* Layer: Vignette from edges */
+    radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.4) 100%),
+    /* Layer: Magical color spots */
+    radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(245, 158, 11, 0.05) 0%, transparent 50%);
+  background-blend-mode: overlay, normal, normal, normal;
+  background-size: 200px 200px, cover, cover, cover;
+}
+
+/* Animated magical atmosphere */
+.dnd-page-background::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(245, 158, 11, 0.04) 0%, transparent 50%);
+  animation: atmosphere-shift 20s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes atmosphere-shift {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Page vignette overlay */
+.dnd-vignette {
+  position: fixed;
+  inset: 0;
+  box-shadow: inset 0 0 150px 50px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ============================================
+   PART 3: BORDERS & FRAMES
+   ============================================ */
+
+/* Standard D&D border */
+.dnd-border {
+  position: relative;
+  border: 1px solid rgba(180, 83, 9, 0.3);
+  box-shadow:
+    inset 0 0 20px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.dnd-border::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border: 1px solid rgba(180, 83, 9, 0.1);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* Ornate border with gradient */
+.dnd-border-ornate {
+  position: relative;
+  border: 2px solid transparent;
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  background-image:
+    linear-gradient(135deg, #1E1B26 0%, #252231 100%),
+    linear-gradient(135deg, #78350F 0%, #F59E0B 25%, #FCD34D 50%, #F59E0B 75%, #78350F 100%);
+}
+
+/* Glowing border for magical elements */
+.dnd-border-glow {
+  border: 1px solid rgba(139, 92, 246, 0.5);
+  box-shadow:
+    0 0 10px rgba(139, 92, 246, 0.3),
+    0 0 20px rgba(139, 92, 246, 0.1),
+    inset 0 0 10px rgba(139, 92, 246, 0.1);
+  animation: border-pulse 3s ease-in-out infinite;
+}
+
+@keyframes border-pulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(139, 92, 246, 0.3), 0 0 20px rgba(139, 92, 246, 0.1); }
+  50% { box-shadow: 0 0 15px rgba(139, 92, 246, 0.5), 0 0 30px rgba(139, 92, 246, 0.2); }
+}
+
+/* ============================================
+   PART 4: ENCHANTED CARDS
+   ============================================ */
+
+.enchanted-card {
+  position: relative;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.03) 0%, transparent 50%),
+    linear-gradient(180deg, rgba(30, 27, 38, 0.95) 0%, rgba(26, 23, 32, 0.98) 100%);
+  border: 1px solid rgba(180, 83, 9, 0.2);
+  border-top-color: rgba(180, 83, 9, 0.3);
+  border-bottom-color: rgba(180, 83, 9, 0.1);
+  border-radius: 12px;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.4),
+    0 8px 48px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+/* Top glow line */
+.enchanted-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(245, 158, 11, 0.3) 50%,
+    transparent 100%
+  );
+  z-index: 1;
+}
+
+.enchanted-card:hover {
+  border-color: rgba(180, 83, 9, 0.4);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 12px 64px rgba(0, 0, 0, 0.25),
+    0 0 30px rgba(245, 158, 11, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Card variants */
+.enchanted-card--magical {
+  background:
+    linear-gradient(180deg, rgba(91,33,182,0.1) 0%, rgba(26,23,32,0.98) 100%);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.enchanted-card--magical:hover {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(139, 92, 246, 0.2);
+}
+
+.enchanted-card--legendary {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.1) 0%, transparent 50%),
+    linear-gradient(180deg, rgba(120,53,15,0.2) 0%, rgba(26,23,32,0.98) 100%);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.enchanted-card--legendary:hover {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(245, 158, 11, 0.3);
+}
+
+/* ============================================
+   PART 5: TYPOGRAPHY
+   ============================================ */
+
+/* Epic heading - for main titles */
+.dnd-heading-epic {
+  font-family: 'Cinzel Decorative', 'Cinzel', serif;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F4F4F5 40%, #D4D4D8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  filter: drop-shadow(0 0 30px rgba(245, 158, 11, 0.2));
+  position: relative;
+}
+
+.dnd-heading-epic::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(245, 158, 11, 0.5) 20%,
+    rgba(245, 158, 11, 0.8) 50%,
+    rgba(245, 158, 11, 0.5) 80%,
+    transparent 100%
+  );
+}
+
+/* Section heading */
+.dnd-heading-section {
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  color: #F59E0B;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+  padding-bottom: 0.5rem;
+}
+
+/* Rune-styled numbers */
+.dnd-number {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  color: #FBBF24;
+  text-shadow:
+    0 0 10px rgba(251, 191, 36, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Flavor text */
+.dnd-flavor {
+  font-family: 'Crimson Text', 'Georgia', serif;
+  font-style: italic;
+  color: #A1A1AA;
+  border-left: 2px solid rgba(139, 92, 246, 0.3);
+  padding-left: 1rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Glowing text animation */
+.text-glow {
+  animation: text-glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes text-glow-pulse {
+  0%, 100% { text-shadow: 0 0 10px currentColor, 0 0 20px currentColor; }
+  50% { text-shadow: 0 0 15px currentColor, 0 0 30px currentColor, 0 0 40px currentColor; }
+}
+
+/* Animated reveal text */
+.text-reveal {
+  background: linear-gradient(90deg, #F59E0B 0%, #FBBF24 50%, #F59E0B 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: text-shimmer 3s ease-in-out infinite;
+}
+
+@keyframes text-shimmer {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+/* ============================================
+   PART 6: POWERFUL BUTTONS
+   ============================================ */
+
+/* Primary Adventure Button */
+.btn-adventure {
+  position: relative;
+  padding: 1rem 2.5rem;
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #0F0D13;
+  background: linear-gradient(180deg, #FCD34D 0%, #F59E0B 30%, #D97706 70%, #B45309 100%);
+  border: none;
+  border-radius: 8px;
+  box-shadow:
+    0 0 20px rgba(245, 158, 11, 0.4),
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+/* Shine effect */
+.btn-adventure::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.15) 50%,
+    transparent 70%
+  );
+  transform: rotate(45deg) translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.btn-adventure:hover::before {
+  transform: rotate(45deg) translateX(100%);
+}
+
+.btn-adventure:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 30px rgba(245, 158, 11, 0.6),
+    0 8px 24px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.btn-adventure:active {
+  transform: translateY(1px);
+  box-shadow:
+    0 0 15px rgba(245, 158, 11, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.btn-adventure:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Stone Button */
+.btn-stone {
+  position: relative;
+  padding: 0.875rem 2rem;
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  color: #F4F4F5;
+  background: linear-gradient(180deg, #3F3F46 0%, #27272A 50%, #18181B 100%);
+  border: 1px solid rgba(180, 83, 9, 0.3);
+  border-radius: 6px;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-stone:hover {
+  border-color: rgba(180, 83, 9, 0.5);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(245, 158, 11, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, #52525B 0%, #3F3F46 50%, #27272A 100%);
+}
+
+/* Magic Button */
+.btn-magic {
+  position: relative;
+  padding: 0.875rem 2rem;
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  color: #F4F4F5;
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.3) 0%, rgba(91, 33, 182, 0.4) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-magic::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(139, 92, 246, 0.3) 1px, transparent 1px);
+  background-size: 20px 20px;
+  animation: magic-particles 20s linear infinite;
+  opacity: 0.5;
+}
+
+@keyframes magic-particles {
+  0% { background-position: 0 0; }
+  100% { background-position: 400px 400px; }
+}
+
+.btn-magic:hover {
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  border-color: rgba(139, 92, 246, 0.6);
+}
+
+/* ============================================
+   PART 7: AMBIENT EFFECTS
+   ============================================ */
+
+/* Torch flicker effect */
+.torch-flicker {
+  animation: torch-flicker 0.1s infinite;
+}
+
+@keyframes torch-flicker {
+  0%, 100% { opacity: 1; filter: brightness(1); }
+  25% { opacity: 0.98; filter: brightness(0.98); }
+  50% { opacity: 0.95; filter: brightness(1.02); }
+  75% { opacity: 0.97; filter: brightness(0.99); }
+}
+
+/* Firelight ambient effect */
+.firelight-ambient {
+  animation: firelight 4s ease-in-out infinite;
+}
+
+@keyframes firelight {
+  0%, 100% {
+    filter: hue-rotate(0deg) brightness(1);
+    box-shadow: 0 0 30px rgba(245, 158, 11, 0.1);
+  }
+  33% {
+    filter: hue-rotate(-5deg) brightness(1.02);
+    box-shadow: 0 0 35px rgba(249, 115, 22, 0.15);
+  }
+  66% {
+    filter: hue-rotate(5deg) brightness(0.98);
+    box-shadow: 0 0 25px rgba(234, 88, 12, 0.1);
+  }
+}
+
+/* Logo glow pulse */
+.logo-glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.8)) drop-shadow(0 0 40px rgba(245, 158, 11, 0.4));
+  }
+}
+
+/* ============================================
+   PART 8: INTERACTIVE STATES
+   ============================================ */
+
+/* Magic hover effect */
+.magic-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.magic-hover:hover {
+  transform: translateY(-4px) scale(1.02);
+}
+
+.magic-hover:hover::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(
+    45deg,
+    rgba(245, 158, 11, 0.2) 0%,
+    rgba(139, 92, 246, 0.2) 50%,
+    rgba(245, 158, 11, 0.2) 100%
+  );
+  border-radius: inherit;
+  z-index: -1;
+  filter: blur(8px);
+  animation: magic-border-glow 2s linear infinite;
+}
+
+@keyframes magic-border-glow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Selected state */
+.item-selected {
+  border-color: #F59E0B !important;
+  box-shadow:
+    0 0 0 2px rgba(245, 158, 11, 0.3),
+    0 0 30px rgba(245, 158, 11, 0.2),
+    inset 0 0 20px rgba(245, 158, 11, 0.05);
+}
+
+/* ============================================
+   PART 9: ANIMATIONS
+   ============================================ */
+
+/* Fade in up */
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade in scale */
+.animate-fade-in-scale {
+  animation: fadeInScale 0.5s ease-out;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+/* Shake animation */
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+/* Stagger children animation */
+.stagger-children > * {
+  opacity: 0;
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.3s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.4s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.5s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.6s; }
+
+/* ============================================
+   PART 10: DECORATIVE ELEMENTS
+   ============================================ */
+
+/* Decorative divider */
+.dnd-divider {
+  position: relative;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(180, 83, 9, 0.3) 20%,
+    rgba(245, 158, 11, 0.5) 50%,
+    rgba(180, 83, 9, 0.3) 80%,
+    transparent 100%
+  );
+  margin: 1.5rem 0;
+}
+
+.dnd-divider::before {
+  content: '◆';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #F59E0B;
+  font-size: 0.75rem;
+  background: #0F0D13;
+  padding: 0 0.5rem;
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}
+
+/* Corner flourish */
+.corner-flourish {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  color: #F59E0B;
+  opacity: 0.6;
+}
+
+.corner-flourish--tl { top: 8px; left: 8px; }
+.corner-flourish--tr { top: 8px; right: 8px; transform: scaleX(-1); }
+.corner-flourish--bl { bottom: 8px; left: 8px; transform: scaleY(-1); }
+.corner-flourish--br { bottom: 8px; right: 8px; transform: scale(-1); }
+
+/* ============================================
+   PART 11: INPUT ENHANCEMENTS
+   ============================================ */
+
+.dnd-input {
+  background: rgba(10, 8, 16, 0.8);
+  border: 1px solid rgba(180, 83, 9, 0.2);
+  border-radius: 8px;
+  padding: 0.875rem 1rem;
+  color: #F4F4F5;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.dnd-input::placeholder {
+  color: #71717A;
+}
+
+.dnd-input:focus {
+  outline: none;
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 0 3px rgba(245, 158, 11, 0.1),
+    0 0 20px rgba(245, 158, 11, 0.1);
+}
+
+.dnd-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   PART 12: PARTICLES CONTAINER
+   ============================================ */
+
+.particles-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================
+   PART 13: GRADIENT VIGNETTE
+   ============================================ */
+
+.bg-gradient-vignette {
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    rgba(10, 8, 16, 0.4) 60%,
+    rgba(10, 8, 16, 0.8) 100%
+  );
+}
+
+/* ============================================
+   PART 14: SHADOW GLOW
+   ============================================ */
+
+.shadow-glow {
+  box-shadow:
+    0 0 30px rgba(245, 158, 11, 0.15),
+    0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.shadow-glow-purple {
+  box-shadow:
+    0 0 30px rgba(139, 92, 246, 0.15),
+    0 8px 32px rgba(0, 0, 0, 0.4);
+}

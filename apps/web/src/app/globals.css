@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import D&D Immersive Design System */
+@import '../styles/dnd-immersive.css';
+
 @layer base {
   :root {
     /* Primary - Gold/Amber */
