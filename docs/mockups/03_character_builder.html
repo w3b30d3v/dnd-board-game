@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D Digital - Character Builder Mockup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-400: #FBBF24;
+      --primary-500: #F59E0B;
+      --primary-600: #D97706;
+      --primary-700: #B45309;
+      --secondary-500: #8B5CF6;
+      --secondary-600: #7C3AED;
+      --bg-primary: #0F0D13;
+      --bg-secondary: #1A1720;
+      --bg-tertiary: #252231;
+      --bg-hover: #2D2A3A;
+      --surface-dark: #1E1B26;
+      --surface-medium: #2A2735;
+      --text-primary: #F4F4F5;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+      --border-subtle: #27272A;
+      --border-default: #3F3F46;
+      --health-full: #22C55E;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    .font-display { font-family: 'Cinzel', serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Layout */
+    .builder-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar - Steps */
+    .sidebar {
+      width: 280px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-subtle);
+      padding: 2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-header {
+      margin-bottom: 2rem;
+    }
+
+    .sidebar-header h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .sidebar-header p {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    /* Steps */
+    .steps {
+      flex: 1;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.875rem 1rem;
+      border-radius: 10px;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .step:hover {
+      background: var(--bg-hover);
+    }
+
+    .step.active {
+      background: var(--bg-tertiary);
+    }
+
+    .step.completed {
+      opacity: 0.7;
+    }
+
+    .step-number {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.875rem;
+      background: var(--bg-tertiary);
+      border: 2px solid var(--border-default);
+    }
+
+    .step.active .step-number {
+      background: var(--primary-500);
+      border-color: var(--primary-500);
+      color: var(--bg-primary);
+    }
+
+    .step.completed .step-number {
+      background: var(--health-full);
+      border-color: var(--health-full);
+      color: white;
+    }
+
+    .step-content h3 {
+      font-size: 0.9375rem;
+      margin-bottom: 2px;
+    }
+
+    .step-content p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .step.active .step-content h3 {
+      color: var(--primary-400);
+    }
+
+    /* Character Preview */
+    .preview {
+      background: var(--surface-dark);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-top: auto;
+    }
+
+    .preview-avatar {
+      width: 100%;
+      aspect-ratio: 1;
+      background: var(--surface-medium);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      border: 2px solid var(--primary-700);
+    }
+
+    .preview-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1.125rem;
+      text-align: center;
+      margin-bottom: 0.25rem;
+    }
+
+    .preview-meta {
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      padding: 2rem 3rem;
+      overflow-y: auto;
+    }
+
+    .content-header {
+      margin-bottom: 2rem;
+    }
+
+    .content-header h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .content-header p {
+      color: var(--text-secondary);
+      max-width: 600px;
+    }
+
+    /* Selection Grid */
+    .selection-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .selection-card {
+      background: var(--surface-dark);
+      border: 2px solid var(--border-default);
+      border-radius: 12px;
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .selection-card:hover {
+      border-color: var(--primary-600);
+      transform: translateY(-2px);
+    }
+
+    .selection-card.selected {
+      border-color: var(--primary-500);
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, var(--surface-dark) 100%);
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+    }
+
+    .selection-icon {
+      width: 64px;
+      height: 64px;
+      background: var(--bg-tertiary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      font-size: 1.75rem;
+    }
+
+    .selection-card.selected .selection-icon {
+      background: var(--primary-600);
+    }
+
+    .selection-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1.125rem;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .selection-desc {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .selection-traits {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-top: 1rem;
+    }
+
+    .trait-badge {
+      background: var(--bg-tertiary);
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.6875rem;
+      color: var(--text-secondary);
+    }
+
+    .selection-card.selected .trait-badge {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--primary-400);
+    }
+
+    /* Detail Panel */
+    .detail-panel {
+      background: var(--surface-dark);
+      border: 1px solid var(--border-default);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .detail-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .detail-icon {
+      width: 80px;
+      height: 80px;
+      background: var(--primary-600);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+    }
+
+    .detail-title h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .detail-title p {
+      color: var(--text-secondary);
+    }
+
+    .detail-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .detail-section h4 {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+    }
+
+    .detail-section p {
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .ability-bonuses {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .ability-bonus {
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      text-align: center;
+      min-width: 80px;
+    }
+
+    .ability-bonus .label {
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+
+    .ability-bonus .value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: var(--health-full);
+    }
+
+    .racial-traits {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .racial-trait {
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      padding: 0.875rem 1rem;
+    }
+
+    .racial-trait h5 {
+      font-size: 0.875rem;
+      margin-bottom: 0.25rem;
+      color: var(--primary-400);
+    }
+
+    .racial-trait p {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .btn {
+      padding: 0.875rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border-default);
+      color: var(--text-secondary);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-default);
+    }
+
+    .btn-primary {
+      background: linear-gradient(180deg, var(--primary-500) 0%, var(--primary-600) 100%);
+      border: none;
+      color: var(--bg-primary);
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+    }
+
+    /* Progress Bar */
+    .progress-bar {
+      position: fixed;
+      top: 0;
+      left: 280px;
+      right: 0;
+      height: 4px;
+      background: var(--bg-tertiary);
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary-500), var(--primary-400));
+      transition: width 0.3s ease-out;
+    }
+  </style>
+</head>
+<body>
+  <!-- Progress Bar -->
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 25%"></div>
+  </div>
+
+  <div class="builder-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1 class="font-display">Character Builder</h1>
+        <p>Create your hero step by step</p>
+      </div>
+
+      <div class="steps">
+        <div class="step completed">
+          <div class="step-number">✓</div>
+          <div class="step-content">
+            <h3>Name</h3>
+            <p>Thorin Ironforge</p>
+          </div>
+        </div>
+
+        <div class="step active">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Race</h3>
+            <p>Choose your ancestry</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Class</h3>
+            <p>Select your calling</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <h3>Background</h3>
+            <p>Define your history</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">5</div>
+          <div class="step-content">
+            <h3>Abilities</h3>
+            <p>Assign your scores</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">6</div>
+          <div class="step-content">
+            <h3>Equipment</h3>
+            <p>Gear up for adventure</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">7</div>
+          <div class="step-content">
+            <h3>Appearance</h3>
+            <p>Customize your look</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">8</div>
+          <div class="step-content">
+            <h3>Review</h3>
+            <p>Finalize character</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Character Preview -->
+      <div class="preview">
+        <div class="preview-avatar">🧔</div>
+        <div class="preview-name font-display">Thorin Ironforge</div>
+        <div class="preview-meta">Dwarf • --</div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="content-header">
+        <h2 class="font-display">Choose Your Race</h2>
+        <p>Your race determines your character's ancestry and provides various traits and abilities that define who you are in the world.</p>
+      </div>
+
+      <!-- Race Selection -->
+      <div class="selection-grid">
+        <div class="selection-card selected">
+          <div class="selection-icon">🧔</div>
+          <div class="selection-name font-display">Dwarf</div>
+          <div class="selection-desc">Bold and hardy, dwarves are known as skilled warriors and craftsmen.</div>
+          <div class="selection-traits">
+            <span class="trait-badge">+2 CON</span>
+            <span class="trait-badge">Darkvision</span>
+            <span class="trait-badge">Resilient</span>
+          </div>
+        </div>
+
+        <div class="selection-card">
+          <div class="selection-icon">🧝</div>
+          <div class="selection-name font-display">Elf</div>
+          <div class="selection-desc">Magical people of grace, elves live in places of beauty.</div>
+          <div class="selection-traits">
+            <span class="trait-badge">+2 DEX</span>
+            <span class="trait-badge">Darkvision</span>
+            <span class="trait-badge">Trance</span>
+          </div>
+        </div>
+
+        <div class="selection-card">
+          <div class="selection-icon">👤</div>
+          <div class="selection-name font-display">Human</div>
+          <div class="selection-desc">Versatile and ambitious, humans are the most common folk.</div>
+          <div class="selection-traits">
+            <span class="trait-badge">+1 All</span>
+            <span class="trait-badge">Extra Lang</span>
+            <span class="trait-badge">Versatile</span>
+          </div>
+        </div>
+
+        <div class="selection-card">
+          <div class="selection-icon">🤏</div>
+          <div class="selection-name font-display">Halfling</div>
+          <div class="selection-desc">Small folk known for their resourcefulness and luck.</div>
+          <div class="selection-traits">
+            <span class="trait-badge">+2 DEX</span>
+            <span class="trait-badge">Lucky</span>
+            <span class="trait-badge">Brave</span>
+          </div>
+        </div>
+
+        <div class="selection-card">
+          <div class="selection-icon">🐉</div>
+          <div class="selection-name font-display">Dragonborn</div>
+          <div class="selection-desc">Proud dragon-blooded warriors with elemental breath.</div>
+          <div class="selection-traits">
+            <span class="trait-badge">+2 STR</span>
+            <span class="trait-badge">Breath</span>
+            <span class="trait-badge">Resist</span>
+          </div>
+        </div>
+
+        <div class="selection-card">
+          <div class="selection-icon">😈</div>
+          <div class="selection-name font-display">Tiefling</div>
+          <div class="selection-desc">Fiendish heritage grants dark powers and resilience.</div>
+          <div class="selection-traits">
+            <span class="trait-badge">+2 CHA</span>
+            <span class="trait-badge">Fire Resist</span>
+            <span class="trait-badge">Spells</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail Panel -->
+      <div class="detail-panel">
+        <div class="detail-header">
+          <div class="detail-icon">🧔</div>
+          <div class="detail-title">
+            <h3 class="font-display">Dwarf</h3>
+            <p>Mountain-born craftsmen and warriors</p>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Ability Score Increase</h4>
+          <div class="ability-bonuses">
+            <div class="ability-bonus">
+              <div class="label">CON</div>
+              <div class="value">+2</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Description</h4>
+          <p>Kingdoms rich in ancient grandeur, halls carved into the roots of mountains, the echoing of picks and hammers in deep mines and blazing forges, a commitment to clan and tradition, and a burning hatred of goblins and orcs - these common threads unite all dwarves.</p>
+        </div>
+
+        <div class="detail-section">
+          <h4>Racial Traits</h4>
+          <div class="racial-traits">
+            <div class="racial-trait">
+              <h5>Darkvision</h5>
+              <p>You can see in dim light within 60 feet as if it were bright light, and in darkness as if it were dim light.</p>
+            </div>
+            <div class="racial-trait">
+              <h5>Dwarven Resilience</h5>
+              <p>You have advantage on saving throws against poison, and you have resistance against poison damage.</p>
+            </div>
+            <div class="racial-trait">
+              <h5>Stonecunning</h5>
+              <p>Whenever you make an Intelligence (History) check related to the origin of stonework, you are considered proficient and add double your proficiency bonus.</p>
+            </div>
+            <div class="racial-trait">
+              <h5>Dwarven Combat Training</h5>
+              <p>You have proficiency with the battleaxe, handaxe, light hammer, and warhammer.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Subraces</h4>
+          <div style="display: flex; gap: 1rem;">
+            <div class="selection-card selected" style="flex: 1; margin: 0;">
+              <div class="selection-name font-display" style="font-size: 1rem;">Hill Dwarf</div>
+              <div class="selection-desc">+1 WIS, extra HP per level</div>
+            </div>
+            <div class="selection-card" style="flex: 1; margin: 0;">
+              <div class="selection-name font-display" style="font-size: 1rem;">Mountain Dwarf</div>
+              <div class="selection-desc">+2 STR, armor proficiency</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <div class="nav-buttons">
+        <button class="btn btn-secondary">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          Back
+        </button>
+        <button class="btn btn-primary">
+          Continue to Class
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,229 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// User & Authentication
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  username      String    @unique
+  displayName   String
+  passwordHash  String?
+  avatarUrl     String?
+
+  // OAuth
+  googleId      String?   @unique
+  discordId     String?   @unique
+
+  // Status
+  emailVerified Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+
+  // Preferences
+  preferences   Json      @default("{}")
+
+  // Relations
+  characters    Character[]
+  sessions      Session[]
+  campaigns     Campaign[]  @relation("CampaignOwner")
+  campaignPlayers CampaignPlayer[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// ============================================
+// Character
+// ============================================
+
+model Character {
+  id            String    @id @default(cuid())
+  userId        String
+  name          String
+
+  // Core stats
+  race          String
+  subrace       String?
+  class         String
+  subclass      String?
+  background    String
+  level         Int       @default(1)
+  experiencePoints Int    @default(0)
+
+  // Ability scores
+  strength      Int
+  dexterity     Int
+  constitution  Int
+  intelligence  Int
+  wisdom        Int
+  charisma      Int
+
+  // Derived stats
+  maxHitPoints  Int
+  currentHitPoints Int
+  tempHitPoints Int       @default(0)
+  armorClass    Int
+  initiative    Int
+  speed         Int
+  proficiencyBonus Int
+
+  // Proficiencies (stored as arrays)
+  savingThrows  String[]
+  skills        String[]
+  tools         String[]
+  weapons       String[]
+  armor         String[]
+  languages     String[]
+
+  // Features and traits
+  features      Json      @default("[]")
+  traits        String[]
+
+  // Spellcasting
+  spellcastingAbility String?
+  spellSlots    Json?
+  spellsKnown   String[]
+  spellsPrepared String[]
+
+  // Equipment
+  equipment     Json      @default("[]")
+  currency      Json      @default("{\"cp\":0,\"sp\":0,\"gp\":0,\"pp\":0}")
+
+  // Appearance
+  portraitUrl   String?
+  appearance    Json?
+
+  // Metadata
+  isPublic      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("characters")
+}
+
+// ============================================
+// Campaign
+// ============================================
+
+model Campaign {
+  id            String    @id @default(cuid())
+  ownerId       String
+  name          String
+  description   String?
+  coverImageUrl String?
+
+  // Settings
+  isPublic      Boolean   @default(false)
+  status        String    @default("draft") // draft, active, completed, archived
+
+  // Content
+  settings      Json      @default("{}")
+
+  // Metadata
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  owner         User      @relation("CampaignOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  players       CampaignPlayer[]
+  gameSessions  GameSession[]
+  maps          Map[]
+
+  @@map("campaigns")
+}
+
+model CampaignPlayer {
+  id          String   @id @default(cuid())
+  campaignId  String
+  userId      String
+  role        String   @default("player") // dm, player
+  joinedAt    DateTime @default(now())
+
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, userId])
+  @@map("campaign_players")
+}
+
+// ============================================
+// Game Session
+// ============================================
+
+model GameSession {
+  id            String    @id @default(cuid())
+  campaignId    String
+  name          String
+  status        String    @default("lobby") // lobby, active, paused, completed
+
+  // Combat state
+  currentTurn   Int?
+  round         Int       @default(0)
+  initiativeOrder Json?
+
+  // Metadata
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  endedAt       DateTime?
+
+  // Relations
+  campaign      Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@map("game_sessions")
+}
+
+// ============================================
+// Map
+// ============================================
+
+model Map {
+  id            String    @id @default(cuid())
+  campaignId    String
+  name          String
+  description   String?
+
+  // Grid settings
+  width         Int
+  height        Int
+  gridSize      Int       @default(5) // feet per cell
+
+  // Map data
+  tiles         Json      @default("[]")
+  backgroundUrl String?
+
+  // Metadata
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  campaign      Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@map("maps")
+}

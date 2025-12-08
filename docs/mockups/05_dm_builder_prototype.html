@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D Digital - DM Campaign Builder Prototype</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-400: #FBBF24;
+      --primary-500: #F59E0B;
+      --primary-600: #D97706;
+      --secondary-400: #A78BFA;
+      --secondary-500: #8B5CF6;
+      --bg-primary: #0F0D13;
+      --bg-secondary: #1A1720;
+      --bg-tertiary: #252231;
+      --surface-dark: #1E1B26;
+      --text-primary: #F4F4F5;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+      --border-subtle: #27272A;
+      --success: #22C55E;
+      --warning: #F59E0B;
+      --error: #EF4444;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .font-display { font-family: 'Cinzel', serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Main Layout */
+    .builder-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr 320px;
+      grid-template-rows: 56px 1fr;
+      height: 100vh;
+    }
+
+    /* Top Toolbar */
+    .toolbar {
+      grid-column: 1 / -1;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      padding: 0 1rem;
+      gap: 1rem;
+    }
+
+    .toolbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding-right: 1rem;
+      border-right: 1px solid var(--border-subtle);
+    }
+
+    .toolbar-brand span {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      color: var(--primary-400);
+    }
+
+    .toolbar-tabs {
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    .toolbar-tab {
+      padding: 0.5rem 1rem;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .toolbar-tab:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-primary);
+    }
+
+    .toolbar-tab.active {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--primary-400);
+    }
+
+    .toolbar-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .toolbar-btn {
+      padding: 0.5rem 1rem;
+      background: var(--surface-dark);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 0.875rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .toolbar-btn:hover {
+      border-color: var(--primary-500);
+    }
+
+    .toolbar-btn.primary {
+      background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+      border: none;
+      color: var(--bg-primary);
+    }
+
+    .toolbar-btn.primary:hover {
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+    }
+
+    /* Left Panel - Asset Library */
+    .asset-panel {
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-title {
+      font-family: 'Cinzel', serif;
+      font-size: 0.9375rem;
+    }
+
+    .search-box {
+      padding: 0.5rem 1rem;
+      background: var(--surface-dark);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: var(--text-primary);
+      width: 100%;
+      margin: 0.75rem 1rem;
+      font-size: 0.875rem;
+    }
+
+    .search-box:focus {
+      outline: none;
+      border-color: var(--primary-500);
+    }
+
+    .asset-categories {
+      padding: 0 0.5rem;
+      display: flex;
+      gap: 0.25rem;
+      flex-wrap: wrap;
+    }
+
+    .category-btn {
+      padding: 0.375rem 0.75rem;
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .category-btn:hover {
+      border-color: var(--text-muted);
+    }
+
+    .category-btn.active {
+      background: var(--primary-500);
+      border-color: var(--primary-500);
+      color: var(--bg-primary);
+    }
+
+    .asset-grid {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      align-content: start;
+    }
+
+    .asset-item {
+      aspect-ratio: 1;
+      background: var(--surface-dark);
+      border: 2px solid var(--border-subtle);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      transition: all 0.2s ease;
+      padding: 0.5rem;
+    }
+
+    .asset-item:hover {
+      border-color: var(--primary-500);
+      transform: scale(1.05);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .asset-item.dragging {
+      opacity: 0.5;
+      cursor: grabbing;
+    }
+
+    .asset-icon {
+      font-size: 2rem;
+      margin-bottom: 0.375rem;
+    }
+
+    .asset-name {
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    /* Center - Map Canvas */
+    .map-canvas {
+      position: relative;
+      background: var(--bg-primary);
+      overflow: hidden;
+    }
+
+    .canvas-controls {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      display: flex;
+      gap: 0.5rem;
+      z-index: 10;
+    }
+
+    .canvas-btn {
+      width: 40px;
+      height: 40px;
+      background: var(--surface-dark);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: var(--text-primary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .canvas-btn:hover {
+      background: var(--bg-tertiary);
+      border-color: var(--primary-500);
+    }
+
+    .canvas-btn.active {
+      background: var(--primary-500);
+      border-color: var(--primary-500);
+      color: var(--bg-primary);
+    }
+
+    .zoom-controls {
+      position: absolute;
+      bottom: 1rem;
+      left: 1rem;
+      display: flex;
+      gap: 0.25rem;
+      background: var(--surface-dark);
+      border-radius: 8px;
+      padding: 0.25rem;
+      z-index: 10;
+    }
+
+    .zoom-btn {
+      width: 32px;
+      height: 32px;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .zoom-btn:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .zoom-level {
+      padding: 0 0.75rem;
+      display: flex;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Map Grid */
+    .map-grid {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: grid;
+      grid-template-columns: repeat(20, 40px);
+      grid-template-rows: repeat(14, 40px);
+      gap: 1px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .map-tile {
+      width: 40px;
+      height: 40px;
+      background: rgba(30, 27, 38, 0.8);
+      position: relative;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .map-tile:hover {
+      background: rgba(245, 158, 11, 0.1);
+      box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.3);
+    }
+
+    .map-tile.wall {
+      background: linear-gradient(135deg, #1C1917 0%, #0F0D13 100%);
+    }
+
+    .map-tile.floor {
+      background: linear-gradient(135deg, #2A2735 0%, #1E1B26 100%);
+    }
+
+    .map-tile.door {
+      background: linear-gradient(135deg, #78350F 0%, #422006 100%);
+    }
+
+    .map-tile.water {
+      background: linear-gradient(135deg, #0369A1 0%, #0284C7 100%);
+    }
+
+    .map-tile.selected {
+      box-shadow: inset 0 0 0 2px var(--primary-500);
+    }
+
+    /* Placed Objects */
+    .placed-object {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      cursor: move;
+      transition: transform 0.2s ease;
+      z-index: 5;
+    }
+
+    .placed-object:hover {
+      transform: scale(1.2);
+    }
+
+    .placed-object.selected {
+      filter: drop-shadow(0 0 8px var(--primary-500));
+    }
+
+    .placed-object.monster {
+      filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.5));
+    }
+
+    .placed-object.npc {
+      filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.5));
+    }
+
+    /* Right Panel - Properties */
+    .properties-panel {
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .properties-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .prop-tab {
+      flex: 1;
+      padding: 0.75rem;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 0.8125rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-bottom: 2px solid transparent;
+    }
+
+    .prop-tab:hover {
+      color: var(--text-primary);
+    }
+
+    .prop-tab.active {
+      color: var(--primary-400);
+      border-bottom-color: var(--primary-500);
+    }
+
+    .properties-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+
+    .prop-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .prop-section-title {
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+    }
+
+    .prop-field {
+      margin-bottom: 1rem;
+    }
+
+    .prop-label {
+      display: block;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.375rem;
+    }
+
+    .prop-input {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      background: var(--surface-dark);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 0.875rem;
+    }
+
+    .prop-input:focus {
+      outline: none;
+      border-color: var(--primary-500);
+    }
+
+    .prop-textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .prop-select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23A1A1AA' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      padding-right: 2rem;
+    }
+
+    .prop-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .prop-row .prop-field {
+      flex: 1;
+    }
+
+    /* Encounter List */
+    .encounter-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .encounter-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: var(--surface-dark);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .encounter-item:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .encounter-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+
+    .encounter-icon.monster {
+      background: rgba(239, 68, 68, 0.2);
+    }
+
+    .encounter-icon.npc {
+      background: rgba(34, 197, 94, 0.2);
+    }
+
+    .encounter-icon.trap {
+      background: rgba(245, 158, 11, 0.2);
+    }
+
+    .encounter-info {
+      flex: 1;
+    }
+
+    .encounter-name {
+      font-size: 0.875rem;
+      margin-bottom: 0.125rem;
+    }
+
+    .encounter-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .encounter-remove {
+      width: 24px;
+      height: 24px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      opacity: 0;
+      transition: all 0.2s ease;
+    }
+
+    .encounter-item:hover .encounter-remove {
+      opacity: 1;
+    }
+
+    .encounter-remove:hover {
+      color: var(--error);
+    }
+
+    /* XP Budget */
+    .xp-budget {
+      background: var(--surface-dark);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .xp-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+
+    .xp-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .xp-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: bold;
+    }
+
+    .xp-value.easy { color: var(--success); }
+    .xp-value.medium { color: var(--warning); }
+    .xp-value.hard { color: #F97316; }
+    .xp-value.deadly { color: var(--error); }
+
+    .xp-bar {
+      height: 8px;
+      background: var(--bg-primary);
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+    }
+
+    .xp-segment {
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+
+    .xp-segment.easy { background: var(--success); }
+    .xp-segment.medium { background: var(--warning); }
+    .xp-segment.hard { background: #F97316; }
+    .xp-segment.deadly { background: var(--error); }
+
+    .xp-thresholds {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.5rem;
+      font-size: 0.625rem;
+      color: var(--text-muted);
+    }
+
+    /* Layer Toggle */
+    .layer-toggle {
+      display: flex;
+      gap: 0.25rem;
+      padding: 0.25rem;
+      background: var(--surface-dark);
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+
+    .layer-btn {
+      flex: 1;
+      padding: 0.5rem;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .layer-btn.active {
+      background: var(--primary-500);
+      color: var(--bg-primary);
+    }
+
+    /* Add Button */
+    .add-btn {
+      width: 100%;
+      padding: 0.75rem;
+      background: transparent;
+      border: 2px dashed var(--border-subtle);
+      border-radius: 8px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .add-btn:hover {
+      border-color: var(--primary-500);
+      color: var(--primary-400);
+    }
+
+    /* Mini Map */
+    .mini-map {
+      position: absolute;
+      bottom: 1rem;
+      right: 1rem;
+      width: 160px;
+      height: 112px;
+      background: var(--surface-dark);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      overflow: hidden;
+      z-index: 10;
+    }
+
+    .mini-map-content {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(20, 1fr);
+      grid-template-rows: repeat(14, 1fr);
+    }
+
+    .mini-tile {
+      background: rgba(30, 27, 38, 0.5);
+    }
+
+    .mini-tile.wall { background: #1C1917; }
+    .mini-tile.floor { background: #2A2735; }
+
+    .mini-viewport {
+      position: absolute;
+      border: 2px solid var(--primary-500);
+      background: rgba(245, 158, 11, 0.1);
+      pointer-events: none;
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      bottom: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+    }
+
+    .toast {
+      background: var(--surface-dark);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      animation: toast-in 0.3s ease-out;
+    }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      width: 500px;
+      max-height: 80vh;
+      overflow: hidden;
+      animation: modal-in 0.3s ease-out;
+    }
+
+    @keyframes modal-in {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+    }
+
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.25rem;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+    }
+
+    .modal-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    .monster-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+
+    .monster-option {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: var(--surface-dark);
+      border: 2px solid var(--border-subtle);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .monster-option:hover {
+      border-color: var(--primary-600);
+    }
+
+    .monster-option.selected {
+      border-color: var(--primary-500);
+      background: rgba(245, 158, 11, 0.1);
+    }
+
+    .monster-option-icon {
+      font-size: 2rem;
+    }
+
+    .monster-option-info h4 {
+      font-size: 0.9375rem;
+      margin-bottom: 0.125rem;
+    }
+
+    .monster-option-info p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="builder-layout">
+    <!-- Top Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-brand">
+        <span class="font-display">🗺️ Campaign Builder</span>
+      </div>
+      
+      <div class="toolbar-tabs">
+        <button class="toolbar-tab active">Map Editor</button>
+        <button class="toolbar-tab">Encounters</button>
+        <button class="toolbar-tab">Dialogue</button>
+        <button class="toolbar-tab">Triggers</button>
+        <button class="toolbar-tab">Settings</button>
+      </div>
+
+      <div class="toolbar-actions">
+        <button class="toolbar-btn">
+          <span>💾</span> Save
+        </button>
+        <button class="toolbar-btn">
+          <span>👁️</span> Preview
+        </button>
+        <button class="toolbar-btn primary" onclick="showToast('Campaign published!')">
+          <span>🚀</span> Publish
+        </button>
+      </div>
+    </div>
+
+    <!-- Left Panel - Asset Library -->
+    <div class="asset-panel">
+      <div class="panel-header">
+        <span class="panel-title">Assets</span>
+      </div>
+      
+      <input type="text" class="search-box" placeholder="Search assets...">
+      
+      <div class="asset-categories">
+        <button class="category-btn active">Tiles</button>
+        <button class="category-btn">Props</button>
+        <button class="category-btn">Monsters</button>
+        <button class="category-btn">NPCs</button>
+        <button class="category-btn">Effects</button>
+      </div>
+
+      <div class="asset-grid">
+        <div class="asset-item" draggable="true" data-type="wall">
+          <span class="asset-icon">🧱</span>
+          <span class="asset-name">Stone Wall</span>
+        </div>
+        <div class="asset-item" draggable="true" data-type="floor">
+          <span class="asset-icon">⬜</span>
+          <span class="asset-name">Stone Floor</span>
+        </div>
+        <div class="asset-item" draggable="true" data-type="door">
+          <span class="asset-icon">🚪</span>
+          <span class="asset-name">Door</span>
+        </div>
+        <div class="asset-item" draggable="true" data-type="water">
+          <span class="asset-icon">🌊</span>
+          <span class="asset-name">Water</span>
+        </div>
+        <div class="asset-item" draggable="true" data-type="chest">
+          <span class="asset-icon">📦</span>
+          <span class="asset-name">Chest</span>
+        </div>
+        <div class="asset-item" draggable="true" data-type="torch">
+          <span class="asset-icon">🔥</span>
+          <span class="asset-name">Torch</span>
+        </div>
+        <div class="asset-item" draggable="true" data-type="table">
+          <span class="asset-icon">🪑</span>
+          <span class="asset-name">Table</span>
+        </div>
+        <div class="asset-item" draggable="true" data-type="barrel">
+          <span class="asset-icon">🛢️</span>
+          <span class="asset-name">Barrel</span>
+        </div>
+        <div class="asset-item" draggable="true" data-type="goblin" onclick="openMonsterModal()">
+          <span class="asset-icon">👺</span>
+          <span class="asset-name">Goblin</span>
+        </div>
+        <div class="asset-item" draggable="true" data-type="skeleton">
+          <span class="asset-icon">💀</span>
+          <span class="asset-name">Skeleton</span>
+        </div>
+        <div class="asset-item" draggable="true" data-type="npc">
+          <span class="asset-icon">👤</span>
+          <span class="asset-name">NPC</span>
+        </div>
+        <div class="asset-item" draggable="true" data-type="trap">
+          <span class="asset-icon">⚠️</span>
+          <span class="asset-name">Trap</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center - Map Canvas -->
+    <div class="map-canvas">
+      <div class="canvas-controls">
+        <button class="canvas-btn active" title="Select">
+          <span>👆</span>
+        </button>
+        <button class="canvas-btn" title="Draw">
+          <span>✏️</span>
+        </button>
+        <button class="canvas-btn" title="Erase">
+          <span>🧹</span>
+        </button>
+        <button class="canvas-btn" title="Fill">
+          <span>🪣</span>
+        </button>
+      </div>
+
+      <div class="map-grid" id="mapGrid"></div>
+
+      <!-- Placed objects -->
+      <div id="placedObjects">
+        <div class="placed-object monster" style="left: calc(50% - 300px); top: calc(50% - 100px);">👺</div>
+        <div class="placed-object monster" style="left: calc(50% - 260px); top: calc(50% - 60px);">👺</div>
+        <div class="placed-object npc" style="left: calc(50% + 200px); top: calc(50% + 80px);">👤</div>
+        <div class="placed-object" style="left: calc(50% + 100px); top: calc(50% - 20px);">📦</div>
+        <div class="placed-object" style="left: calc(50% - 100px); top: calc(50% + 100px);">🔥</div>
+      </div>
+
+      <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoom(-1)">−</button>
+        <span class="zoom-level" id="zoomLevel">100%</span>
+        <button class="zoom-btn" onclick="zoom(1)">+</button>
+      </div>
+
+      <div class="mini-map">
+        <div class="mini-map-content" id="miniMap"></div>
+        <div class="mini-viewport" style="left: 40%; top: 30%; width: 30%; height: 40%;"></div>
+      </div>
+    </div>
+
+    <!-- Right Panel - Properties -->
+    <div class="properties-panel">
+      <div class="properties-tabs">
+        <button class="prop-tab active">Properties</button>
+        <button class="prop-tab">Encounters</button>
+        <button class="prop-tab">Layers</button>
+      </div>
+
+      <div class="properties-content">
+        <!-- XP Budget -->
+        <div class="xp-budget">
+          <div class="xp-header">
+            <span class="xp-label">Encounter Difficulty</span>
+            <span class="xp-value medium">Medium (450 XP)</span>
+          </div>
+          <div class="xp-bar">
+            <div class="xp-segment easy" style="width: 25%;"></div>
+            <div class="xp-segment medium" style="width: 25%;"></div>
+            <div class="xp-segment hard" style="width: 20%;"></div>
+          </div>
+          <div class="xp-thresholds">
+            <span>Easy</span>
+            <span>Medium</span>
+            <span>Hard</span>
+            <span>Deadly</span>
+          </div>
+        </div>
+
+        <!-- Layer Toggle -->
+        <div class="layer-toggle">
+          <button class="layer-btn active">Ground</button>
+          <button class="layer-btn">Objects</button>
+          <button class="layer-btn">Creatures</button>
+        </div>
+
+        <!-- Map Properties -->
+        <div class="prop-section">
+          <div class="prop-section-title">Map Properties</div>
+          <div class="prop-field">
+            <label class="prop-label">Map Name</label>
+            <input type="text" class="prop-input" value="Goblin Cave - Entrance">
+          </div>
+          <div class="prop-row">
+            <div class="prop-field">
+              <label class="prop-label">Width</label>
+              <input type="number" class="prop-input" value="20">
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Height</label>
+              <input type="number" class="prop-input" value="14">
+            </div>
+          </div>
+          <div class="prop-field">
+            <label class="prop-label">Lighting</label>
+            <select class="prop-input prop-select">
+              <option>Bright Light</option>
+              <option selected>Dim Light</option>
+              <option>Darkness</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Encounter List -->
+        <div class="prop-section">
+          <div class="prop-section-title">Creatures on Map</div>
+          <div class="encounter-list">
+            <div class="encounter-item">
+              <div class="encounter-icon monster">👺</div>
+              <div class="encounter-info">
+                <div class="encounter-name">Goblin</div>
+                <div class="encounter-meta">CR 1/4 • 50 XP</div>
+              </div>
+              <button class="encounter-remove">×</button>
+            </div>
+            <div class="encounter-item">
+              <div class="encounter-icon monster">👺</div>
+              <div class="encounter-info">
+                <div class="encounter-name">Goblin</div>
+                <div class="encounter-meta">CR 1/4 • 50 XP</div>
+              </div>
+              <button class="encounter-remove">×</button>
+            </div>
+            <div class="encounter-item">
+              <div class="encounter-icon npc">👤</div>
+              <div class="encounter-info">
+                <div class="encounter-name">Merchant NPC</div>
+                <div class="encounter-meta">Friendly • Has Dialogue</div>
+              </div>
+              <button class="encounter-remove">×</button>
+            </div>
+          </div>
+          <button class="add-btn" onclick="openMonsterModal()">
+            <span>+</span> Add Creature
+          </button>
+        </div>
+
+        <!-- Triggers -->
+        <div class="prop-section">
+          <div class="prop-section-title">Triggers</div>
+          <div class="encounter-list">
+            <div class="encounter-item">
+              <div class="encounter-icon trap">🎯</div>
+              <div class="encounter-info">
+                <div class="encounter-name">Combat Start</div>
+                <div class="encounter-meta">On player enter area</div>
+              </div>
+            </div>
+          </div>
+          <button class="add-btn">
+            <span>+</span> Add Trigger
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Monster Selection Modal -->
+  <div class="modal-overlay" id="monsterModal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title font-display">Add Creature</span>
+        <button class="modal-close" onclick="closeMonsterModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="text" class="prop-input" placeholder="Search creatures..." style="margin-bottom: 1rem;">
+        <div class="monster-grid">
+          <div class="monster-option selected" onclick="selectMonster(this)">
+            <span class="monster-option-icon">👺</span>
+            <div class="monster-option-info">
+              <h4>Goblin</h4>
+              <p>CR 1/4 • 50 XP</p>
+            </div>
+          </div>
+          <div class="monster-option" onclick="selectMonster(this)">
+            <span class="monster-option-icon">💀</span>
+            <div class="monster-option-info">
+              <h4>Skeleton</h4>
+              <p>CR 1/4 • 50 XP</p>
+            </div>
+          </div>
+          <div class="monster-option" onclick="selectMonster(this)">
+            <span class="monster-option-icon">🐺</span>
+            <div class="monster-option-info">
+              <h4>Wolf</h4>
+              <p>CR 1/4 • 50 XP</p>
+            </div>
+          </div>
+          <div class="monster-option" onclick="selectMonster(this)">
+            <span class="monster-option-icon">🧟</span>
+            <div class="monster-option-info">
+              <h4>Zombie</h4>
+              <p>CR 1/4 • 50 XP</p>
+            </div>
+          </div>
+          <div class="monster-option" onclick="selectMonster(this)">
+            <span class="monster-option-icon">👹</span>
+            <div class="monster-option-info">
+              <h4>Orc</h4>
+              <p>CR 1/2 • 100 XP</p>
+            </div>
+          </div>
+          <div class="monster-option" onclick="selectMonster(this)">
+            <span class="monster-option-icon">🐉</span>
+            <div class="monster-option-info">
+              <h4>Young Dragon</h4>
+              <p>CR 5 • 1,800 XP</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="toolbar-btn" onclick="closeMonsterModal()">Cancel</button>
+        <button class="toolbar-btn primary" onclick="addMonster()">Add to Map</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    // Generate map grid
+    function generateMapGrid() {
+      const grid = document.getElementById('mapGrid');
+      const miniMap = document.getElementById('miniMap');
+      
+      // Sample layout
+      const layout = [
+        'wwwwwwwwwwwwwwwwwwww',
+        'w..................w',
+        'w..wwww....wwww....w',
+        'w..w..........w....w',
+        'w..w..........w....w',
+        'w..wwww....wwww....w',
+        'w..................w',
+        'w......wwww........w',
+        'w......w..w........w',
+        'w......w..w........w',
+        'w......wddw........w',
+        'w..................w',
+        'w..................w',
+        'wwwwwwwwwwwwwwwwwwww',
+      ];
+
+      layout.forEach((row, y) => {
+        row.split('').forEach((char, x) => {
+          // Main grid tile
+          const tile = document.createElement('div');
+          tile.className = 'map-tile';
+          if (char === 'w') tile.classList.add('wall');
+          else if (char === 'd') tile.classList.add('door');
+          else tile.classList.add('floor');
+          tile.onclick = () => selectTile(tile);
+          grid.appendChild(tile);
+
+          // Mini map tile
+          const miniTile = document.createElement('div');
+          miniTile.className = 'mini-tile';
+          if (char === 'w') miniTile.classList.add('wall');
+          else miniTile.classList.add('floor');
+          miniMap.appendChild(miniTile);
+        });
+      });
+    }
+
+    let selectedTile = null;
+
+    function selectTile(tile) {
+      if (selectedTile) selectedTile.classList.remove('selected');
+      tile.classList.add('selected');
+      selectedTile = tile;
+    }
+
+    let zoomLevel = 100;
+
+    function zoom(delta) {
+      zoomLevel = Math.max(50, Math.min(200, zoomLevel + delta * 25));
+      document.getElementById('zoomLevel').textContent = zoomLevel + '%';
+      document.getElementById('mapGrid').style.transform = `translate(-50%, -50%) scale(${zoomLevel / 100})`;
+    }
+
+    function openMonsterModal() {
+      document.getElementById('monsterModal').classList.add('active');
+    }
+
+    function closeMonsterModal() {
+      document.getElementById('monsterModal').classList.remove('active');
+    }
+
+    function selectMonster(option) {
+      document.querySelectorAll('.monster-option').forEach(o => o.classList.remove('selected'));
+      option.classList.add('selected');
+    }
+
+    function addMonster() {
+      closeMonsterModal();
+      showToast('Creature added to map!');
+    }
+
+    function showToast(message) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `<span>✅</span> ${message}`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Tab functionality
+    document.querySelectorAll('.toolbar-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.toolbar-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      });
+    });
+
+    document.querySelectorAll('.prop-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.prop-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      });
+    });
+
+    document.querySelectorAll('.category-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    document.querySelectorAll('.layer-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    document.querySelectorAll('.canvas-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.canvas-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    // Initialize
+    generateMapGrid();
+  </script>
+</body>
+</html>

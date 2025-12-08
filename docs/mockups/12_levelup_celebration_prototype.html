@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D Level Up Celebration - Interactive Prototype</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0F0D13;
+            --gold: #F59E0B;
+            --gold-light: #FBBF24;
+            --purple: #8B5CF6;
+            --text: #F4F4F5;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Start Button */
+        .start-button {
+            padding: 1.5rem 3rem;
+            font-size: 1.5rem;
+            font-family: 'Cinzel', serif;
+            background: linear-gradient(135deg, var(--gold) 0%, #D97706 100%);
+            border: none;
+            border-radius: 15px;
+            color: var(--bg-dark);
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 40px rgba(245, 158, 11, 0.4);
+        }
+
+        .start-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 50px rgba(245, 158, 11, 0.6);
+        }
+
+        .start-button.hidden {
+            display: none;
+        }
+
+        /* Level Up Container */
+        .levelup-container {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-dark);
+            z-index: 100;
+        }
+
+        .levelup-container.active {
+            display: flex;
+        }
+
+        /* Background Effects */
+        .bg-gradient {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, rgba(245, 158, 11, 0.15) 0%, transparent 70%);
+            opacity: 0;
+            animation: bgPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes bgPulse {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+        }
+
+        /* Particle System */
+        .particles-container {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .particle.gold {
+            background: var(--gold);
+            box-shadow: 0 0 10px var(--gold);
+        }
+
+        .particle.purple {
+            background: var(--purple);
+            box-shadow: 0 0 10px var(--purple);
+        }
+
+        .particle.white {
+            background: white;
+            box-shadow: 0 0 10px white;
+        }
+
+        /* Light Rays */
+        .light-rays {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            opacity: 0;
+        }
+
+        .ray {
+            position: absolute;
+            width: 4px;
+            height: 300px;
+            background: linear-gradient(to top, var(--gold), transparent);
+            left: 50%;
+            bottom: 50%;
+            transform-origin: bottom center;
+            opacity: 0.6;
+        }
+
+        /* Character Display */
+        .character-display {
+            position: relative;
+            text-align: center;
+            z-index: 10;
+            opacity: 0;
+            transform: scale(0.5);
+        }
+
+        .character-display.animate {
+            animation: characterReveal 1.5s cubic-bezier(0.68, -0.6, 0.32, 1.6) forwards;
+        }
+
+        @keyframes characterReveal {
+            0% { opacity: 0; transform: scale(0.5) translateY(50px); }
+            60% { opacity: 1; transform: scale(1.1) translateY(-20px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .character-portrait {
+            width: 200px;
+            height: 250px;
+            margin: 0 auto 2rem;
+            background: linear-gradient(180deg, #3B82F6 0%, #1D4ED8 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            border: 4px solid var(--gold);
+            box-shadow: 
+                0 0 30px rgba(245, 158, 11, 0.5),
+                0 0 60px rgba(245, 158, 11, 0.3),
+                0 0 100px rgba(245, 158, 11, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .character-portrait::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.3) 50%, transparent 60%);
+            animation: shine 2s linear infinite;
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%); }
+            100% { transform: translateX(100%) translateY(100%); }
+        }
+
+        .character-aura {
+            position: absolute;
+            inset: -20px;
+            border-radius: 30px;
+            background: radial-gradient(ellipse at center, rgba(245, 158, 11, 0.4) 0%, transparent 70%);
+            animation: auraPulse 2s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        @keyframes auraPulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+        }
+
+        /* Level Up Text */
+        .levelup-text {
+            font-family: 'Cinzel', serif;
+            opacity: 0;
+        }
+
+        .levelup-text.animate {
+            animation: textReveal 0.8s ease-out forwards;
+        }
+
+        @keyframes textReveal {
+            0% { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .levelup-main {
+            font-size: 4rem;
+            color: var(--gold);
+            text-shadow: 
+                0 0 20px rgba(245, 158, 11, 0.8),
+                0 0 40px rgba(245, 158, 11, 0.5),
+                0 0 60px rgba(245, 158, 11, 0.3);
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.2em;
+        }
+
+        .levelup-number {
+            font-size: 8rem;
+            font-weight: bold;
+            background: linear-gradient(180deg, #FEF3C7 0%, var(--gold) 50%, #D97706 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            margin-bottom: 1rem;
+            animation: numberPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes numberPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .character-name {
+            font-size: 2rem;
+            color: var(--text);
+            margin-bottom: 2rem;
+        }
+
+        /* Stats Panel */
+        .stats-panel {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+            opacity: 0;
+        }
+
+        .stats-panel.animate {
+            animation: panelReveal 0.6s ease-out forwards;
+        }
+
+        @keyframes panelReveal {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .stat-increase {
+            background: rgba(30, 27, 38, 0.9);
+            border: 2px solid var(--gold);
+            border-radius: 15px;
+            padding: 1rem 1.5rem;
+            min-width: 120px;
+            transform: scale(0);
+        }
+
+        .stat-increase.pop {
+            animation: statPop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+        }
+
+        @keyframes statPop {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .stat-arrow {
+            color: #22C55E;
+            font-size: 1.2rem;
+        }
+
+        /* New Feature Badge */
+        .new-features {
+            margin-top: 2rem;
+            opacity: 0;
+        }
+
+        .new-features.animate {
+            animation: fadeSlideUp 0.6s ease-out forwards;
+        }
+
+        @keyframes fadeSlideUp {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .feature-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.2rem;
+            color: var(--gold);
+            margin-bottom: 1rem;
+        }
+
+        .feature-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .feature-badge {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(139, 92, 246, 0.1) 100%);
+            border: 1px solid var(--purple);
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            transform: scale(0);
+        }
+
+        .feature-badge.pop {
+            animation: featurePop 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+        }
+
+        @keyframes featurePop {
+            0% { transform: scale(0) rotate(-10deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        /* Continue Button */
+        .continue-btn {
+            margin-top: 3rem;
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            font-family: 'Cinzel', serif;
+            background: linear-gradient(135deg, var(--gold) 0%, #D97706 100%);
+            border: none;
+            border-radius: 10px;
+            color: var(--bg-dark);
+            cursor: pointer;
+            font-weight: bold;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+
+        .continue-btn.animate {
+            animation: buttonReveal 0.6s ease-out forwards;
+        }
+
+        @keyframes buttonReveal {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .continue-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.4);
+        }
+
+        /* Screen Flash */
+        .screen-flash {
+            position: fixed;
+            inset: 0;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .screen-flash.flash {
+            animation: flash 0.5s ease-out;
+        }
+
+        @keyframes flash {
+            0% { opacity: 0.8; }
+            100% { opacity: 0; }
+        }
+
+        /* Sound Wave Ring */
+        .sound-ring {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border: 3px solid var(--gold);
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .sound-ring.expand {
+            animation: ringExpand 1.5s ease-out forwards;
+        }
+
+        @keyframes ringExpand {
+            0% { transform: scale(0); opacity: 0.8; }
+            100% { transform: scale(10); opacity: 0; }
+        }
+
+        /* Confetti */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .levelup-main {
+                font-size: 2.5rem;
+            }
+            .levelup-number {
+                font-size: 5rem;
+            }
+            .character-name {
+                font-size: 1.5rem;
+            }
+            .character-portrait {
+                width: 150px;
+                height: 190px;
+                font-size: 4rem;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <button class="start-button" id="startBtn" onclick="startLevelUp()">
+        ⬆️ Trigger Level Up
+    </button>
+
+    <div class="levelup-container" id="levelupContainer">
+        <div class="bg-gradient"></div>
+        <div class="particles-container" id="particles"></div>
+        <div class="light-rays" id="lightRays"></div>
+        
+        <div class="character-display" id="characterDisplay">
+            <div class="character-portrait">
+                <div class="character-aura"></div>
+                🧙
+            </div>
+            
+            <div class="levelup-text" id="levelupText">
+                <div class="levelup-main">LEVEL UP</div>
+                <div class="levelup-number" id="levelNumber">6</div>
+                <div class="character-name">Lyra Nightwhisper</div>
+            </div>
+
+            <div class="stats-panel" id="statsPanel">
+                <div class="stat-increase" data-delay="0">
+                    <div class="stat-label">Max HP</div>
+                    <div class="stat-value">
+                        32 <span class="stat-arrow">→</span> 38
+                    </div>
+                </div>
+                <div class="stat-increase" data-delay="100">
+                    <div class="stat-label">Spell Slots</div>
+                    <div class="stat-value">
+                        <span class="stat-arrow">+1</span> 3rd
+                    </div>
+                </div>
+                <div class="stat-increase" data-delay="200">
+                    <div class="stat-label">Proficiency</div>
+                    <div class="stat-value">
+                        +2 <span class="stat-arrow">→</span> +3
+                    </div>
+                </div>
+            </div>
+
+            <div class="new-features" id="newFeatures">
+                <div class="feature-title">✨ New Features Unlocked</div>
+                <div class="feature-list">
+                    <div class="feature-badge" data-delay="0">🔥 Fireball</div>
+                    <div class="feature-badge" data-delay="100">✋ Counterspell</div>
+                    <div class="feature-badge" data-delay="200">⚡ Lightning Bolt</div>
+                    <div class="feature-badge" data-delay="300">🛡️ Dispel Magic</div>
+                </div>
+            </div>
+
+            <button class="continue-btn" id="continueBtn" onclick="resetDemo()">
+                Continue Adventure →
+            </button>
+        </div>
+        
+        <div class="sound-ring" id="soundRing"></div>
+    </div>
+
+    <div class="screen-flash" id="screenFlash"></div>
+
+    <script>
+        let isPlaying = false;
+
+        function startLevelUp() {
+            if (isPlaying) return;
+            isPlaying = true;
+
+            document.getElementById('startBtn').classList.add('hidden');
+            const container = document.getElementById('levelupContainer');
+            container.classList.add('active');
+
+            // Create light rays
+            createLightRays();
+
+            // Timeline
+            setTimeout(() => {
+                // Screen flash
+                document.getElementById('screenFlash').classList.add('flash');
+                
+                // Sound ring
+                const ring = document.getElementById('soundRing');
+                ring.style.left = '50%';
+                ring.style.top = '50%';
+                ring.style.transform = 'translate(-50%, -50%)';
+                ring.classList.add('expand');
+                
+                // Explosion particles
+                createExplosionParticles();
+            }, 200);
+
+            setTimeout(() => {
+                // Character reveal
+                document.getElementById('characterDisplay').classList.add('animate');
+            }, 500);
+
+            setTimeout(() => {
+                // Level up text
+                document.getElementById('levelupText').classList.add('animate');
+            }, 800);
+
+            setTimeout(() => {
+                // Stats panel
+                const panel = document.getElementById('statsPanel');
+                panel.classList.add('animate');
+                
+                // Staggered stat pops
+                panel.querySelectorAll('.stat-increase').forEach((stat, i) => {
+                    setTimeout(() => stat.classList.add('pop'), i * 150);
+                });
+            }, 1500);
+
+            setTimeout(() => {
+                // New features
+                const features = document.getElementById('newFeatures');
+                features.classList.add('animate');
+                
+                // Staggered feature pops
+                features.querySelectorAll('.feature-badge').forEach((badge, i) => {
+                    setTimeout(() => badge.classList.add('pop'), i * 100);
+                });
+            }, 2200);
+
+            setTimeout(() => {
+                // Continue button
+                document.getElementById('continueBtn').classList.add('animate');
+            }, 3000);
+
+            // Continuous ambient particles
+            startAmbientParticles();
+            
+            // Confetti burst
+            setTimeout(() => createConfetti(), 800);
+        }
+
+        function createLightRays() {
+            const container = document.getElementById('lightRays');
+            container.innerHTML = '';
+            container.style.opacity = '1';
+            
+            for (let i = 0; i < 12; i++) {
+                const ray = document.createElement('div');
+                ray.className = 'ray';
+                ray.style.transform = `rotate(${i * 30}deg)`;
+                ray.style.animation = `rayPulse 2s ease-in-out infinite`;
+                ray.style.animationDelay = `${i * 0.1}s`;
+                container.appendChild(ray);
+            }
+
+            // Add keyframe for rays
+            if (!document.getElementById('rayStyle')) {
+                const style = document.createElement('style');
+                style.id = 'rayStyle';
+                style.textContent = `
+                    @keyframes rayPulse {
+                        0%, 100% { opacity: 0.3; height: 200px; }
+                        50% { opacity: 0.7; height: 350px; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+
+        function createExplosionParticles() {
+            const container = document.getElementById('particles');
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+
+            for (let i = 0; i < 60; i++) {
+                const particle = document.createElement('div');
+                const colors = ['gold', 'purple', 'white'];
+                particle.className = `particle ${colors[Math.floor(Math.random() * colors.length)]}`;
+                
+                const size = 4 + Math.random() * 8;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${centerX}px`;
+                particle.style.top = `${centerY}px`;
+                
+                container.appendChild(particle);
+
+                const angle = (Math.PI * 2 * i) / 60 + Math.random() * 0.5;
+                const distance = 150 + Math.random() * 300;
+                const duration = 1000 + Math.random() * 500;
+
+                particle.animate([
+                    { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+                    { 
+                        transform: `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px) scale(0)`,
+                        opacity: 0 
+                    }
+                ], {
+                    duration: duration,
+                    easing: 'cubic-bezier(0.16, 1, 0.3, 1)'
+                }).onfinish = () => particle.remove();
+            }
+        }
+
+        let ambientInterval;
+        function startAmbientParticles() {
+            const container = document.getElementById('particles');
+            
+            ambientInterval = setInterval(() => {
+                const particle = document.createElement('div');
+                const colors = ['gold', 'purple'];
+                particle.className = `particle ${colors[Math.floor(Math.random() * colors.length)]}`;
+                
+                const size = 3 + Math.random() * 5;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${Math.random() * window.innerWidth}px`;
+                particle.style.top = `${window.innerHeight + 20}px`;
+                
+                container.appendChild(particle);
+
+                const duration = 3000 + Math.random() * 2000;
+                const drift = (Math.random() - 0.5) * 200;
+
+                particle.animate([
+                    { transform: 'translateY(0) translateX(0)', opacity: 0.8 },
+                    { transform: `translateY(-${window.innerHeight + 100}px) translateX(${drift}px)`, opacity: 0 }
+                ], {
+                    duration: duration,
+                    easing: 'linear'
+                }).onfinish = () => particle.remove();
+            }, 100);
+        }
+
+        function createConfetti() {
+            const colors = ['#F59E0B', '#FBBF24', '#8B5CF6', '#A78BFA', '#EF4444', '#22C55E'];
+            
+            for (let i = 0; i < 100; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.left = `${Math.random() * window.innerWidth}px`;
+                    confetti.style.top = '-20px';
+                    confetti.style.width = `${5 + Math.random() * 10}px`;
+                    confetti.style.height = `${5 + Math.random() * 10}px`;
+                    confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                    
+                    document.body.appendChild(confetti);
+
+                    const duration = 3000 + Math.random() * 2000;
+                    const drift = (Math.random() - 0.5) * 400;
+                    const rotation = Math.random() * 720 - 360;
+
+                    confetti.animate([
+                        { 
+                            transform: 'translateY(0) translateX(0) rotate(0deg)',
+                            opacity: 1 
+                        },
+                        { 
+                            transform: `translateY(${window.innerHeight + 100}px) translateX(${drift}px) rotate(${rotation}deg)`,
+                            opacity: 0.5 
+                        }
+                    ], {
+                        duration: duration,
+                        easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                    }).onfinish = () => confetti.remove();
+                }, i * 20);
+            }
+        }
+
+        function resetDemo() {
+            isPlaying = false;
+            
+            // Clear interval
+            if (ambientInterval) clearInterval(ambientInterval);
+            
+            // Reset all elements
+            document.getElementById('levelupContainer').classList.remove('active');
+            document.getElementById('startBtn').classList.remove('hidden');
+            document.getElementById('characterDisplay').classList.remove('animate');
+            document.getElementById('levelupText').classList.remove('animate');
+            document.getElementById('statsPanel').classList.remove('animate');
+            document.getElementById('newFeatures').classList.remove('animate');
+            document.getElementById('continueBtn').classList.remove('animate');
+            document.getElementById('screenFlash').classList.remove('flash');
+            document.getElementById('soundRing').classList.remove('expand');
+            document.getElementById('lightRays').style.opacity = '0';
+            
+            document.querySelectorAll('.stat-increase').forEach(el => el.classList.remove('pop'));
+            document.querySelectorAll('.feature-badge').forEach(el => el.classList.remove('pop'));
+            
+            // Clear particles
+            document.getElementById('particles').innerHTML = '';
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+                if (!isPlaying) {
+                    startLevelUp();
+                } else {
+                    resetDemo();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D Victory/Defeat Sequences - Interactive Prototype</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0F0D13;
+            --bg-surface: #1E1B26;
+            --gold: #F59E0B;
+            --gold-light: #FBBF24;
+            --purple: #8B5CF6;
+            --red: #DC2626;
+            --green: #22C55E;
+            --text: #F4F4F5;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Controls */
+        .controls {
+            position: fixed;
+            top: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+            z-index: 1000;
+        }
+
+        .control-btn {
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-family: 'Cinzel', serif;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn.victory {
+            background: linear-gradient(135deg, var(--gold) 0%, #D97706 100%);
+            color: var(--bg-dark);
+        }
+
+        .control-btn.defeat {
+            background: linear-gradient(135deg, var(--red) 0%, #991B1B 100%);
+            color: white;
+        }
+
+        .control-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Sequence Container */
+        .sequence-container {
+            position: fixed;
+            inset: 0;
+            display: none;
+            z-index: 100;
+        }
+
+        .sequence-container.active {
+            display: block;
+        }
+
+        /* ==================== VICTORY SEQUENCE ==================== */
+        .victory-sequence {
+            background: radial-gradient(ellipse at center, #1a1608 0%, var(--bg-dark) 100%);
+        }
+
+        .victory-bg {
+            position: absolute;
+            inset: 0;
+        }
+
+        /* Light Beams */
+        .light-beams {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+        }
+
+        .light-beam {
+            position: absolute;
+            width: 100px;
+            height: 200%;
+            background: linear-gradient(180deg, 
+                rgba(245, 158, 11, 0.4) 0%, 
+                rgba(245, 158, 11, 0.1) 50%, 
+                transparent 100%);
+            top: -50%;
+            transform-origin: top center;
+            animation: beamRotate 20s linear infinite;
+        }
+
+        @keyframes beamRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Victory Particles */
+        .victory-particles {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+        }
+
+        .victory-particle {
+            position: absolute;
+            border-radius: 50%;
+        }
+
+        /* Victory Content */
+        .victory-content {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .victory-banner {
+            font-family: 'Cinzel', serif;
+            font-size: 5rem;
+            font-weight: bold;
+            color: var(--gold);
+            text-shadow: 
+                0 0 30px rgba(245, 158, 11, 0.8),
+                0 0 60px rgba(245, 158, 11, 0.5),
+                0 4px 0 #D97706;
+            letter-spacing: 0.15em;
+            opacity: 0;
+            transform: scale(0.5) translateY(50px);
+        }
+
+        .victory-banner.animate {
+            animation: victoryBannerIn 1s cubic-bezier(0.68, -0.6, 0.32, 1.6) forwards;
+        }
+
+        @keyframes victoryBannerIn {
+            0% { opacity: 0; transform: scale(0.5) translateY(50px); }
+            70% { opacity: 1; transform: scale(1.1) translateY(-10px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .victory-subtitle {
+            font-size: 1.5rem;
+            color: var(--gold-light);
+            margin-top: 1rem;
+            opacity: 0;
+        }
+
+        .victory-subtitle.animate {
+            animation: fadeSlideUp 0.6s ease forwards;
+        }
+
+        /* Rewards Panel */
+        .rewards-panel {
+            margin-top: 3rem;
+            display: flex;
+            gap: 2rem;
+            opacity: 0;
+        }
+
+        .rewards-panel.animate {
+            animation: fadeSlideUp 0.6s ease forwards;
+        }
+
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .reward-card {
+            background: rgba(30, 27, 38, 0.9);
+            border: 2px solid var(--gold);
+            border-radius: 15px;
+            padding: 1.5rem 2rem;
+            min-width: 150px;
+            transform: scale(0);
+        }
+
+        .reward-card.pop {
+            animation: rewardPop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+        }
+
+        @keyframes rewardPop {
+            0% { transform: scale(0) rotate(-10deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        .reward-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .reward-label {
+            font-size: 0.8rem;
+            color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .reward-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-top: 0.25rem;
+        }
+
+        .reward-value.xp {
+            color: var(--purple);
+        }
+
+        .reward-value.gold {
+            color: var(--gold);
+        }
+
+        .reward-value.items {
+            color: var(--green);
+        }
+
+        /* Continue Button */
+        .continue-btn {
+            margin-top: 3rem;
+            padding: 1rem 3rem;
+            font-size: 1.2rem;
+            font-family: 'Cinzel', serif;
+            background: linear-gradient(135deg, var(--gold) 0%, #D97706 100%);
+            border: none;
+            border-radius: 10px;
+            color: var(--bg-dark);
+            cursor: pointer;
+            font-weight: bold;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .continue-btn.animate {
+            animation: fadeSlideUp 0.6s ease forwards;
+        }
+
+        .continue-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.4);
+        }
+
+        /* ==================== DEFEAT SEQUENCE ==================== */
+        .defeat-sequence {
+            background: radial-gradient(ellipse at center, #1a0808 0%, var(--bg-dark) 100%);
+        }
+
+        /* Blood Drip */
+        .blood-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, 
+                rgba(220, 38, 38, 0.3) 0%, 
+                transparent 30%);
+            pointer-events: none;
+        }
+
+        /* Defeat Vignette */
+        .defeat-vignette {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, 
+                transparent 30%, 
+                rgba(0, 0, 0, 0.8) 100%);
+            animation: vignettePulse 3s ease-in-out infinite;
+        }
+
+        @keyframes vignettePulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        /* Floating Embers */
+        .defeat-embers {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+        }
+
+        .ember {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--red);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--red);
+        }
+
+        /* Defeat Content */
+        .defeat-content {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .defeat-icon {
+            font-size: 8rem;
+            margin-bottom: 1rem;
+            opacity: 0;
+            filter: grayscale(50%);
+        }
+
+        .defeat-icon.animate {
+            animation: defeatIconIn 1s ease forwards;
+        }
+
+        @keyframes defeatIconIn {
+            0% { opacity: 0; transform: scale(1.5) translateY(-50px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .defeat-banner {
+            font-family: 'Cinzel', serif;
+            font-size: 4rem;
+            font-weight: bold;
+            color: var(--red);
+            text-shadow: 
+                0 0 30px rgba(220, 38, 38, 0.8),
+                0 0 60px rgba(220, 38, 38, 0.5);
+            letter-spacing: 0.1em;
+            opacity: 0;
+        }
+
+        .defeat-banner.animate {
+            animation: defeatTextIn 0.8s ease forwards;
+        }
+
+        @keyframes defeatTextIn {
+            0% { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .defeat-subtitle {
+            font-size: 1.3rem;
+            color: #9CA3AF;
+            margin-top: 1rem;
+            opacity: 0;
+        }
+
+        .defeat-subtitle.animate {
+            animation: fadeSlideUp 0.6s ease forwards;
+        }
+
+        /* Fallen Heroes */
+        .fallen-heroes {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 2rem;
+            opacity: 0;
+        }
+
+        .fallen-heroes.animate {
+            animation: fadeSlideUp 0.6s ease forwards;
+        }
+
+        .fallen-hero {
+            text-align: center;
+            opacity: 0.6;
+        }
+
+        .fallen-portrait {
+            width: 80px;
+            height: 100px;
+            background: linear-gradient(180deg, #374151 0%, #1F2937 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            filter: grayscale(80%);
+            border: 2px solid #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        .fallen-name {
+            font-size: 0.8rem;
+            color: #9CA3AF;
+        }
+
+        /* Defeat Options */
+        .defeat-options {
+            display: flex;
+            gap: 1rem;
+            margin-top: 3rem;
+            opacity: 0;
+        }
+
+        .defeat-options.animate {
+            animation: fadeSlideUp 0.6s ease forwards;
+        }
+
+        .defeat-btn {
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-family: 'Cinzel', serif;
+            border: 2px solid;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .defeat-btn.retry {
+            background: var(--bg-surface);
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        .defeat-btn.retry:hover {
+            background: var(--gold);
+            color: var(--bg-dark);
+        }
+
+        .defeat-btn.quit {
+            background: transparent;
+            border-color: #6B7280;
+            color: #9CA3AF;
+        }
+
+        .defeat-btn.quit:hover {
+            background: #374151;
+            color: var(--text);
+        }
+
+        /* Screen Shake */
+        .shake {
+            animation: screenShake 0.5s ease;
+        }
+
+        @keyframes screenShake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+            20%, 40%, 60%, 80% { transform: translateX(8px); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .victory-banner, .defeat-banner {
+                font-size: 3rem;
+            }
+            .rewards-panel {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .reward-card {
+                min-width: 120px;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="controls">
+        <button class="control-btn victory" onclick="playVictory()">🏆 Victory</button>
+        <button class="control-btn defeat" onclick="playDefeat()">💀 Defeat</button>
+    </div>
+
+    <!-- Victory Sequence -->
+    <div class="sequence-container victory-sequence" id="victorySeq">
+        <div class="victory-bg">
+            <div class="light-beams" id="lightBeams"></div>
+        </div>
+        <div class="victory-particles" id="victoryParticles"></div>
+        
+        <div class="victory-content">
+            <h1 class="victory-banner" id="victoryBanner">VICTORY</h1>
+            <p class="victory-subtitle" id="victorySubtitle">The enemy has been vanquished!</p>
+            
+            <div class="rewards-panel" id="rewardsPanel">
+                <div class="reward-card" data-delay="0">
+                    <div class="reward-icon">⚔️</div>
+                    <div class="reward-label">Experience</div>
+                    <div class="reward-value xp">+450 XP</div>
+                </div>
+                <div class="reward-card" data-delay="150">
+                    <div class="reward-icon">💰</div>
+                    <div class="reward-label">Gold</div>
+                    <div class="reward-value gold">+125 GP</div>
+                </div>
+                <div class="reward-card" data-delay="300">
+                    <div class="reward-icon">🎁</div>
+                    <div class="reward-label">Items</div>
+                    <div class="reward-value items">3 Found</div>
+                </div>
+            </div>
+            
+            <button class="continue-btn" id="victoryContinue" onclick="closeSequence('victory')">
+                Continue →
+            </button>
+        </div>
+    </div>
+
+    <!-- Defeat Sequence -->
+    <div class="sequence-container defeat-sequence" id="defeatSeq">
+        <div class="blood-overlay"></div>
+        <div class="defeat-vignette"></div>
+        <div class="defeat-embers" id="defeatEmbers"></div>
+        
+        <div class="defeat-content" id="defeatContent">
+            <div class="defeat-icon" id="defeatIcon">💀</div>
+            <h1 class="defeat-banner" id="defeatBanner">DEFEAT</h1>
+            <p class="defeat-subtitle" id="defeatSubtitle">Your party has fallen...</p>
+            
+            <div class="fallen-heroes" id="fallenHeroes">
+                <div class="fallen-hero">
+                    <div class="fallen-portrait">🧙</div>
+                    <div class="fallen-name">Lyra</div>
+                </div>
+                <div class="fallen-hero">
+                    <div class="fallen-portrait">⚔️</div>
+                    <div class="fallen-name">Thorin</div>
+                </div>
+                <div class="fallen-hero">
+                    <div class="fallen-portrait">🏹</div>
+                    <div class="fallen-name">Aria</div>
+                </div>
+                <div class="fallen-hero">
+                    <div class="fallen-portrait">✝️</div>
+                    <div class="fallen-name">Brother Aldric</div>
+                </div>
+            </div>
+            
+            <div class="defeat-options" id="defeatOptions">
+                <button class="defeat-btn retry" onclick="closeSequence('defeat')">
+                    🔄 Load Checkpoint
+                </button>
+                <button class="defeat-btn quit" onclick="closeSequence('defeat')">
+                    Return to Menu
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Victory Sequence
+        function playVictory() {
+            const seq = document.getElementById('victorySeq');
+            seq.classList.add('active');
+            
+            // Create light beams
+            createLightBeams();
+            
+            // Create particles
+            startVictoryParticles();
+            
+            // Animate banner
+            setTimeout(() => {
+                document.getElementById('victoryBanner').classList.add('animate');
+            }, 300);
+            
+            // Subtitle
+            setTimeout(() => {
+                document.getElementById('victorySubtitle').classList.add('animate');
+            }, 800);
+            
+            // Rewards panel
+            setTimeout(() => {
+                document.getElementById('rewardsPanel').classList.add('animate');
+                
+                // Pop reward cards
+                document.querySelectorAll('.reward-card').forEach((card, i) => {
+                    setTimeout(() => card.classList.add('pop'), i * 150);
+                });
+            }, 1200);
+            
+            // Continue button
+            setTimeout(() => {
+                document.getElementById('victoryContinue').classList.add('animate');
+            }, 2000);
+            
+            // Confetti
+            setTimeout(() => createConfetti(), 500);
+        }
+
+        function createLightBeams() {
+            const container = document.getElementById('lightBeams');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < 6; i++) {
+                const beam = document.createElement('div');
+                beam.className = 'light-beam';
+                beam.style.left = `${50}%`;
+                beam.style.top = `${50}%`;
+                beam.style.transformOrigin = '0 0';
+                beam.style.transform = `rotate(${i * 60}deg)`;
+                beam.style.animationDelay = `${i * -3}s`;
+                container.appendChild(beam);
+            }
+        }
+
+        function startVictoryParticles() {
+            const container = document.getElementById('victoryParticles');
+            container.innerHTML = '';
+            
+            setInterval(() => {
+                if (!document.getElementById('victorySeq').classList.contains('active')) return;
+                
+                const particle = document.createElement('div');
+                particle.className = 'victory-particle';
+                
+                const size = 4 + Math.random() * 8;
+                const colors = ['#F59E0B', '#FBBF24', '#FDE68A', '#8B5CF6'];
+                
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.boxShadow = `0 0 ${size * 2}px ${particle.style.background}`;
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.bottom = '-20px';
+                
+                container.appendChild(particle);
+                
+                const duration = 3000 + Math.random() * 2000;
+                const drift = (Math.random() - 0.5) * 200;
+                
+                particle.animate([
+                    { transform: 'translateY(0) translateX(0)', opacity: 1 },
+                    { transform: `translateY(-${window.innerHeight + 100}px) translateX(${drift}px)`, opacity: 0 }
+                ], {
+                    duration: duration,
+                    easing: 'ease-out'
+                }).onfinish = () => particle.remove();
+            }, 100);
+        }
+
+        function createConfetti() {
+            const colors = ['#F59E0B', '#FBBF24', '#8B5CF6', '#A78BFA', '#22C55E', '#3B82F6'];
+            
+            for (let i = 0; i < 150; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.style.cssText = `
+                        position: fixed;
+                        left: ${Math.random() * window.innerWidth}px;
+                        top: -20px;
+                        width: ${5 + Math.random() * 10}px;
+                        height: ${5 + Math.random() * 10}px;
+                        background: ${colors[Math.floor(Math.random() * colors.length)]};
+                        border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+                        pointer-events: none;
+                        z-index: 1000;
+                    `;
+                    document.body.appendChild(confetti);
+                    
+                    const drift = (Math.random() - 0.5) * 400;
+                    const rotation = Math.random() * 720 - 360;
+                    
+                    confetti.animate([
+                        { transform: 'translateY(0) translateX(0) rotate(0deg)', opacity: 1 },
+                        { transform: `translateY(${window.innerHeight + 100}px) translateX(${drift}px) rotate(${rotation}deg)`, opacity: 0.5 }
+                    ], {
+                        duration: 3000 + Math.random() * 2000,
+                        easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                    }).onfinish = () => confetti.remove();
+                }, i * 20);
+            }
+        }
+
+        // Defeat Sequence
+        function playDefeat() {
+            const seq = document.getElementById('defeatSeq');
+            seq.classList.add('active');
+            
+            // Create embers
+            startDefeatEmbers();
+            
+            // Screen shake
+            document.getElementById('defeatContent').classList.add('shake');
+            setTimeout(() => {
+                document.getElementById('defeatContent').classList.remove('shake');
+            }, 500);
+            
+            // Icon
+            setTimeout(() => {
+                document.getElementById('defeatIcon').classList.add('animate');
+            }, 300);
+            
+            // Banner
+            setTimeout(() => {
+                document.getElementById('defeatBanner').classList.add('animate');
+            }, 800);
+            
+            // Subtitle
+            setTimeout(() => {
+                document.getElementById('defeatSubtitle').classList.add('animate');
+            }, 1200);
+            
+            // Fallen heroes
+            setTimeout(() => {
+                document.getElementById('fallenHeroes').classList.add('animate');
+            }, 1600);
+            
+            // Options
+            setTimeout(() => {
+                document.getElementById('defeatOptions').classList.add('animate');
+            }, 2200);
+        }
+
+        function startDefeatEmbers() {
+            const container = document.getElementById('defeatEmbers');
+            container.innerHTML = '';
+            
+            setInterval(() => {
+                if (!document.getElementById('defeatSeq').classList.contains('active')) return;
+                
+                const ember = document.createElement('div');
+                ember.className = 'ember';
+                ember.style.left = `${Math.random() * 100}%`;
+                ember.style.bottom = '0';
+                
+                container.appendChild(ember);
+                
+                const duration = 4000 + Math.random() * 3000;
+                const drift = (Math.random() - 0.5) * 150;
+                
+                ember.animate([
+                    { transform: 'translateY(0) translateX(0)', opacity: 0.8 },
+                    { transform: `translateY(-${window.innerHeight * 0.7}px) translateX(${drift}px)`, opacity: 0 }
+                ], {
+                    duration: duration,
+                    easing: 'ease-out'
+                }).onfinish = () => ember.remove();
+            }, 200);
+        }
+
+        function closeSequence(type) {
+            const seq = document.getElementById(type === 'victory' ? 'victorySeq' : 'defeatSeq');
+            seq.style.opacity = '0';
+            seq.style.transition = 'opacity 0.5s ease';
+            
+            setTimeout(() => {
+                seq.classList.remove('active');
+                seq.style.opacity = '';
+                seq.style.transition = '';
+                
+                // Reset animations
+                if (type === 'victory') {
+                    document.getElementById('victoryBanner').classList.remove('animate');
+                    document.getElementById('victorySubtitle').classList.remove('animate');
+                    document.getElementById('rewardsPanel').classList.remove('animate');
+                    document.getElementById('victoryContinue').classList.remove('animate');
+                    document.querySelectorAll('.reward-card').forEach(c => c.classList.remove('pop'));
+                } else {
+                    document.getElementById('defeatIcon').classList.remove('animate');
+                    document.getElementById('defeatBanner').classList.remove('animate');
+                    document.getElementById('defeatSubtitle').classList.remove('animate');
+                    document.getElementById('fallenHeroes').classList.remove('animate');
+                    document.getElementById('defeatOptions').classList.remove('animate');
+                }
+            }, 500);
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '1') playVictory();
+            if (e.key === '2') playDefeat();
+            if (e.key === 'Escape') {
+                closeSequence('victory');
+                closeSequence('defeat');
+            }
+        });
+    </script>
+</body>
+</html>

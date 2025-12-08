@@ -1,0 +1,27 @@
+[package]
+name = "rules-engine"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "RAW 5e Rules Engine - gRPC service for D&D mechanics"
+
+[dependencies]
+tokio.workspace = true
+tonic.workspace = true
+prost.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+rand.workspace = true
+
+[build-dependencies]
+tonic-build.workspace = true
+
+[[bin]]
+name = "rules-engine"
+path = "src/main.rs"

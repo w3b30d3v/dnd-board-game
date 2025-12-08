@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# Rust
+target/
+Cargo.lock
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+*.swp
+*.swo
+*~
+
+# Testing
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated
+*.generated.ts
+*.generated.js
+src/generated/
+
+# Prisma
+prisma/migrations/*.sql.bak
+
+# Turbo
+.turbo/
+
+# Docker
+docker-compose.override.yml
+
+# Misc
+*.pem
+*.key
+*.crt

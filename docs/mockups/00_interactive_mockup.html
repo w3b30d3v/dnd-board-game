@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D Digital - Interactive Mockup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-400: #FBBF24;
+      --primary-500: #F59E0B;
+      --primary-600: #D97706;
+      --primary-700: #B45309;
+      --secondary-400: #A78BFA;
+      --secondary-500: #8B5CF6;
+      --secondary-600: #7C3AED;
+      --bg-primary: #0F0D13;
+      --bg-secondary: #1A1720;
+      --bg-tertiary: #252231;
+      --bg-hover: #2D2A3A;
+      --surface-dark: #1E1B26;
+      --surface-medium: #2A2735;
+      --text-primary: #F4F4F5;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+      --border-subtle: #27272A;
+      --border-default: #3F3F46;
+      --health-full: #22C55E;
+      --health-medium: #EAB308;
+      --health-low: #EF4444;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    .font-display { font-family: 'Cinzel', serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Hide all pages by default */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* Navigation */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(26, 23, 32, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 1rem 1.5rem;
+    }
+
+    .nav-content {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      cursor: pointer;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary-700) 0%, var(--primary-500) 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cinzel', serif;
+      font-weight: bold;
+      font-size: 1.25rem;
+      color: var(--bg-primary);
+    }
+
+    .logo-text {
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    .nav-link {
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: all 0.15s;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-size: 1rem;
+      font-family: inherit;
+    }
+
+    .nav-link:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .nav-link.active {
+      background: var(--bg-hover);
+      color: var(--primary-500);
+    }
+
+    .user-menu {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      background: var(--bg-tertiary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    /* Main Content */
+    .main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* Header */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+
+    .page-header h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 2.25rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .page-header p {
+      color: var(--text-secondary);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: none;
+      font-size: 0.9375rem;
+    }
+
+    .btn-primary {
+      background: linear-gradient(180deg, var(--primary-500) 0%, var(--primary-600) 100%);
+      color: var(--bg-primary);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 10px -1px rgba(0, 0, 0, 0.5);
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-default);
+      color: var(--text-secondary);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .btn-success {
+      background: linear-gradient(180deg, #22C55E 0%, #16A34A 100%);
+      color: white;
+    }
+
+    /* Card Grid */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+
+    /* Character Card */
+    .char-card {
+      background: linear-gradient(135deg, var(--surface-dark) 0%, var(--bg-tertiary) 100%);
+      border: 2px solid var(--primary-700);
+      border-radius: 16px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .char-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 0 30px rgba(245, 158, 11, 0.2);
+      border-color: var(--primary-500);
+    }
+
+    .char-portrait {
+      aspect-ratio: 4/3;
+      background: var(--surface-medium);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .char-avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: var(--text-primary);
+    }
+
+    .char-avatar.fighter { background: #92400E; }
+    .char-avatar.wizard { background: #2563EB; }
+    .char-avatar.rogue { background: #3F3F46; }
+    .char-avatar.cleric { background: #6B7280; }
+
+    .level-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: var(--primary-500);
+      color: var(--bg-primary);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: bold;
+    }
+
+    .char-gradient {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 80px;
+      background: linear-gradient(0deg, var(--surface-dark) 0%, transparent 100%);
+    }
+
+    .char-info {
+      padding: 1rem 1.25rem 1.25rem;
+    }
+
+    .char-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .char-meta {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+
+    .health-bar {
+      margin-top: 1rem;
+    }
+
+    .health-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.875rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .health-label span:first-child { color: var(--text-muted); }
+
+    .health-track {
+      height: 8px;
+      background: #1C1917;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .health-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s ease-out;
+    }
+
+    .health-fill.high { background: var(--health-full); }
+    .health-fill.medium { background: var(--health-medium); }
+    .health-fill.low { background: var(--health-low); }
+
+    /* Add Card */
+    .add-card {
+      border: 2px dashed var(--border-default);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 320px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .add-card:hover {
+      border-color: var(--primary-500);
+      border-style: solid;
+      background: rgba(245, 158, 11, 0.05);
+    }
+
+    .add-icon {
+      width: 64px;
+      height: 64px;
+      background: var(--bg-tertiary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+      font-size: 2rem;
+      color: var(--text-secondary);
+    }
+
+    .add-text { color: var(--text-secondary); }
+
+    /* Section Title */
+    .section-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Campaign Card */
+    .campaign-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .campaign-card {
+      background: var(--surface-dark);
+      border: 1px solid var(--border-default);
+      border-radius: 12px;
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .campaign-card:hover {
+      border-color: var(--secondary-500);
+      transform: translateY(-2px);
+    }
+
+    .campaign-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+
+    .campaign-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1.125rem;
+    }
+
+    .campaign-players {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .campaign-icon {
+      font-size: 1.5rem;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 0.5rem;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--secondary-500);
+      border-radius: 4px;
+    }
+
+    .progress-text {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+
+    .quick-action {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-default);
+      border-radius: 12px;
+      padding: 1.5rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: var(--text-primary);
+    }
+
+    .quick-action:hover {
+      background: var(--bg-hover);
+      border-color: var(--primary-600);
+    }
+
+    .quick-action-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Campaigns Page */
+    .campaign-filters {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .filter-btn {
+      padding: 0.5rem 1rem;
+      background: transparent;
+      border: 1px solid var(--border-default);
+      border-radius: 20px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover {
+      border-color: var(--primary-600);
+      color: var(--text-primary);
+    }
+
+    .filter-btn.active {
+      background: var(--primary-600);
+      border-color: var(--primary-600);
+      color: white;
+    }
+
+    .campaign-list-item {
+      display: flex;
+      gap: 1.5rem;
+      background: var(--surface-dark);
+      border: 1px solid var(--border-default);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .campaign-list-item:hover {
+      border-color: var(--secondary-500);
+    }
+
+    .campaign-thumbnail {
+      width: 160px;
+      height: 100px;
+      background: var(--surface-medium);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      flex-shrink: 0;
+    }
+
+    .campaign-details {
+      flex: 1;
+    }
+
+    .campaign-details h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .campaign-details p {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+      line-height: 1.5;
+    }
+
+    .campaign-meta {
+      display: flex;
+      gap: 1.5rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    .campaign-meta span {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .campaign-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    /* Play Page */
+    .lobby-section {
+      margin-bottom: 3rem;
+    }
+
+    .lobby-card {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, var(--surface-dark) 100%);
+      border: 2px solid var(--secondary-500);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .lobby-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .lobby-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.5rem;
+    }
+
+    .lobby-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg-tertiary);
+      border-radius: 20px;
+      font-size: 0.875rem;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--health-full);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .lobby-players {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .player-slot {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--bg-tertiary);
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      min-width: 200px;
+    }
+
+    .player-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 1.25rem;
+    }
+
+    .player-info h4 {
+      font-size: 0.9375rem;
+      margin-bottom: 2px;
+    }
+
+    .player-info p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .player-slot.empty {
+      border: 2px dashed var(--border-default);
+      background: transparent;
+      justify-content: center;
+      color: var(--text-muted);
+    }
+
+    .player-slot.ready .player-avatar {
+      box-shadow: 0 0 0 3px var(--health-full);
+    }
+
+    .lobby-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+    }
+
+    /* Available Games */
+    .games-list {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .game-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--surface-dark);
+      border: 1px solid var(--border-default);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .game-item:hover {
+      border-color: var(--primary-600);
+    }
+
+    .game-icon {
+      width: 56px;
+      height: 56px;
+      background: var(--bg-tertiary);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .game-info {
+      flex: 1;
+    }
+
+    .game-info h4 {
+      font-size: 1rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .game-info p {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    .game-players-count {
+      text-align: right;
+    }
+
+    .game-players-count .count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.25rem;
+      font-weight: bold;
+    }
+
+    .game-players-count .label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-default);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .modal-header h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+    }
+
+    .modal-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--bg-tertiary);
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 1.25rem;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+    }
+
+    .modal-footer {
+      padding: 1.5rem;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 1rem;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--primary-500);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--health-full);
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      display: none;
+      align-items: center;
+      gap: 0.75rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      z-index: 300;
+    }
+
+    .toast.active {
+      display: flex;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .card-grid { grid-template-columns: 1fr; }
+      .campaign-grid { grid-template-columns: 1fr; }
+      .quick-actions { grid-template-columns: repeat(2, 1fr); }
+      .page-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+      .lobby-players { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-content">
+      <div class="logo" onclick="showPage('dashboard')">
+        <div class="logo-icon">D</div>
+        <span class="logo-text">D&D Digital</span>
+      </div>
+      <div class="nav-links">
+        <button class="nav-link active" data-page="dashboard" onclick="showPage('dashboard')">Dashboard</button>
+        <button class="nav-link" data-page="characters" onclick="showPage('characters')">Characters</button>
+        <button class="nav-link" data-page="campaigns" onclick="showPage('campaigns')">Campaigns</button>
+        <button class="nav-link" data-page="play" onclick="showPage('play')">Play</button>
+      </div>
+      <div class="user-menu">
+        <div class="user-avatar">👤</div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Dashboard Page -->
+  <div id="dashboard-page" class="page active">
+    <main class="main">
+      <div class="page-header">
+        <div>
+          <h1 class="font-display">Welcome Back, Adventurer!</h1>
+          <p>Ready for your next quest?</p>
+        </div>
+      </div>
+
+      <h2 class="section-title font-display">Recent Characters</h2>
+      <div class="card-grid">
+        <div class="char-card" onclick="showPage('characters')">
+          <div class="char-portrait">
+            <div class="char-avatar fighter">T</div>
+            <div class="level-badge">Lvl 5</div>
+            <div class="char-gradient"></div>
+          </div>
+          <div class="char-info">
+            <div class="char-name font-display">Thorin Ironforge</div>
+            <div class="char-meta">Dwarf Fighter</div>
+            <div class="health-bar">
+              <div class="health-label">
+                <span>HP</span>
+                <span class="font-mono">45/52</span>
+              </div>
+              <div class="health-track">
+                <div class="health-fill high" style="width: 86%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="char-card" onclick="showPage('characters')">
+          <div class="char-portrait">
+            <div class="char-avatar wizard">L</div>
+            <div class="level-badge">Lvl 4</div>
+            <div class="char-gradient"></div>
+          </div>
+          <div class="char-info">
+            <div class="char-name font-display">Lyra Moonwhisper</div>
+            <div class="char-meta">High Elf Wizard</div>
+            <div class="health-bar">
+              <div class="health-label">
+                <span>HP</span>
+                <span class="font-mono">22/22</span>
+              </div>
+              <div class="health-track">
+                <div class="health-fill high" style="width: 100%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="add-card" onclick="openModal('create-character')">
+          <div class="add-icon">+</div>
+          <span class="add-text">Create New Character</span>
+        </div>
+      </div>
+
+      <h2 class="section-title font-display">Quick Actions</h2>
+      <div class="quick-actions">
+        <div class="quick-action" onclick="showPage('play')">
+          <div class="quick-action-icon">⚔️</div>
+          <div>Join Game</div>
+        </div>
+        <div class="quick-action" onclick="showPage('campaigns')">
+          <div class="quick-action-icon">🗺️</div>
+          <div>Browse Campaigns</div>
+        </div>
+        <div class="quick-action" onclick="openModal('create-campaign')">
+          <div class="quick-action-icon">📜</div>
+          <div>Create Campaign</div>
+        </div>
+        <div class="quick-action" onclick="showToast('DM Tools coming soon!')">
+          <div class="quick-action-icon">🛠️</div>
+          <div>DM Tools</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Characters Page -->
+  <div id="characters-page" class="page">
+    <main class="main">
+      <div class="page-header">
+        <div>
+          <h1 class="font-display">My Characters</h1>
+          <p>Manage your adventurers and create new heroes</p>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('create-character')">
+          + New Character
+        </button>
+      </div>
+
+      <div class="card-grid">
+        <div class="char-card">
+          <div class="char-portrait">
+            <div class="char-avatar fighter">T</div>
+            <div class="level-badge">Lvl 5</div>
+            <div class="char-gradient"></div>
+          </div>
+          <div class="char-info">
+            <div class="char-name font-display">Thorin Ironforge</div>
+            <div class="char-meta">Dwarf Fighter</div>
+            <div class="health-bar">
+              <div class="health-label">
+                <span>HP</span>
+                <span class="font-mono">45/52</span>
+              </div>
+              <div class="health-track">
+                <div class="health-fill high" style="width: 86%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="char-card">
+          <div class="char-portrait">
+            <div class="char-avatar wizard">L</div>
+            <div class="level-badge">Lvl 4</div>
+            <div class="char-gradient"></div>
+          </div>
+          <div class="char-info">
+            <div class="char-name font-display">Lyra Moonwhisper</div>
+            <div class="char-meta">High Elf Wizard</div>
+            <div class="health-bar">
+              <div class="health-label">
+                <span>HP</span>
+                <span class="font-mono">22/22</span>
+              </div>
+              <div class="health-track">
+                <div class="health-fill high" style="width: 100%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="char-card">
+          <div class="char-portrait">
+            <div class="char-avatar rogue">S</div>
+            <div class="level-badge">Lvl 5</div>
+            <div class="char-gradient"></div>
+          </div>
+          <div class="char-info">
+            <div class="char-name font-display">Shadowmere</div>
+            <div class="char-meta">Tiefling Rogue</div>
+            <div class="health-bar">
+              <div class="health-label">
+                <span>HP</span>
+                <span class="font-mono">18/38</span>
+              </div>
+              <div class="health-track">
+                <div class="health-fill medium" style="width: 47%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="char-card">
+          <div class="char-portrait">
+            <div class="char-avatar cleric">A</div>
+            <div class="level-badge">Lvl 3</div>
+            <div class="char-gradient"></div>
+          </div>
+          <div class="char-info">
+            <div class="char-name font-display">Aria Dawnbringer</div>
+            <div class="char-meta">Human Cleric</div>
+            <div class="health-bar">
+              <div class="health-label">
+                <span>HP</span>
+                <span class="font-mono">24/24</span>
+              </div>
+              <div class="health-track">
+                <div class="health-fill high" style="width: 100%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="add-card" onclick="openModal('create-character')">
+          <div class="add-icon">+</div>
+          <span class="add-text">Create New Character</span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Campaigns Page -->
+  <div id="campaigns-page" class="page">
+    <main class="main">
+      <div class="page-header">
+        <div>
+          <h1 class="font-display">Campaigns</h1>
+          <p>Discover new adventures or continue your journey</p>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('create-campaign')">
+          + Create Campaign
+        </button>
+      </div>
+
+      <div class="campaign-filters">
+        <button class="filter-btn active">All</button>
+        <button class="filter-btn">My Campaigns</button>
+        <button class="filter-btn">Official</button>
+        <button class="filter-btn">Community</button>
+        <button class="filter-btn">Bookmarked</button>
+      </div>
+
+      <h2 class="section-title font-display">Continue Playing</h2>
+      <div class="campaign-grid" style="margin-bottom: 3rem;">
+        <div class="campaign-card" onclick="showPage('play')">
+          <div class="campaign-header">
+            <div>
+              <div class="campaign-name font-display">The Goblin Cave</div>
+              <div class="campaign-players">4 players • Last played 2 hours ago</div>
+            </div>
+            <span class="campaign-icon">🗡️</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 65%"></div>
+          </div>
+          <div class="progress-text">Chapter 2 of 3 • 65% complete</div>
+        </div>
+
+        <div class="campaign-card" onclick="showPage('play')">
+          <div class="campaign-header">
+            <div>
+              <div class="campaign-name font-display">Dragon of Icespire Peak</div>
+              <div class="campaign-players">3 players • Last played yesterday</div>
+            </div>
+            <span class="campaign-icon">🐉</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 20%"></div>
+          </div>
+          <div class="progress-text">Chapter 1 of 5 • 20% complete</div>
+        </div>
+      </div>
+
+      <h2 class="section-title font-display">Discover Campaigns</h2>
+      <div class="games-list">
+        <div class="campaign-list-item" onclick="showToast('Campaign details opening...')">
+          <div class="campaign-thumbnail">🏰</div>
+          <div class="campaign-details">
+            <h3 class="font-display">Lost Mine of Phandelver</h3>
+            <p>More than five hundred years ago, clans of dwarves and gnomes made an agreement known as the Phandelver's Pact...</p>
+            <div class="campaign-meta">
+              <span>📊 Levels 1-5</span>
+              <span>⏱️ 20-30 hours</span>
+              <span>⭐ 4.8 (2.4k reviews)</span>
+            </div>
+          </div>
+          <div class="campaign-actions">
+            <button class="btn btn-primary">Start</button>
+            <button class="btn btn-secondary">Preview</button>
+          </div>
+        </div>
+
+        <div class="campaign-list-item" onclick="showToast('Campaign details opening...')">
+          <div class="campaign-thumbnail">🧙</div>
+          <div class="campaign-details">
+            <h3 class="font-display">Curse of Strahd</h3>
+            <p>Under raging storm clouds, a lone figure stands silhouetted against the ancient walls of Castle Ravenloft...</p>
+            <div class="campaign-meta">
+              <span>📊 Levels 1-10</span>
+              <span>⏱️ 40-60 hours</span>
+              <span>⭐ 4.9 (5.1k reviews)</span>
+            </div>
+          </div>
+          <div class="campaign-actions">
+            <button class="btn btn-primary">Start</button>
+            <button class="btn btn-secondary">Preview</button>
+          </div>
+        </div>
+
+        <div class="campaign-list-item" onclick="showToast('Campaign details opening...')">
+          <div class="campaign-thumbnail">🌋</div>
+          <div class="campaign-details">
+            <h3 class="font-display">Tomb of Annihilation</h3>
+            <p>The talk of the streets and taverns has all been about the so-called death curse: a wasting disease...</p>
+            <div class="campaign-meta">
+              <span>📊 Levels 1-11</span>
+              <span>⏱️ 50-70 hours</span>
+              <span>⭐ 4.7 (1.8k reviews)</span>
+            </div>
+          </div>
+          <div class="campaign-actions">
+            <button class="btn btn-primary">Start</button>
+            <button class="btn btn-secondary">Preview</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Play Page -->
+  <div id="play-page" class="page">
+    <main class="main">
+      <div class="page-header">
+        <div>
+          <h1 class="font-display">Play</h1>
+          <p>Join a game or host your own adventure</p>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('create-lobby')">
+          + Create Lobby
+        </button>
+      </div>
+
+      <div class="lobby-section">
+        <h2 class="section-title font-display">Your Active Lobby</h2>
+        <div class="lobby-card">
+          <div class="lobby-header">
+            <div class="lobby-title font-display">The Goblin Cave - Session 4</div>
+            <div class="lobby-status">
+              <div class="status-dot"></div>
+              Waiting for players
+            </div>
+          </div>
+
+          <div class="lobby-players">
+            <div class="player-slot ready">
+              <div class="player-avatar" style="background: #92400E;">T</div>
+              <div class="player-info">
+                <h4>Thorin Ironforge</h4>
+                <p>Level 5 Fighter • Ready</p>
+              </div>
+            </div>
+            <div class="player-slot ready">
+              <div class="player-avatar" style="background: #2563EB;">L</div>
+              <div class="player-info">
+                <h4>Lyra Moonwhisper</h4>
+                <p>Level 4 Wizard • Ready</p>
+              </div>
+            </div>
+            <div class="player-slot">
+              <div class="player-avatar" style="background: #3F3F46;">S</div>
+              <div class="player-info">
+                <h4>Shadowmere</h4>
+                <p>Level 5 Rogue • Selecting...</p>
+              </div>
+            </div>
+            <div class="player-slot empty">
+              <span>+ Invite Player</span>
+            </div>
+          </div>
+
+          <div class="lobby-actions">
+            <button class="btn btn-secondary">Leave Lobby</button>
+            <button class="btn btn-secondary">Invite Friends</button>
+            <button class="btn btn-success" onclick="showToast('Starting game...')">Start Game</button>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="section-title font-display">Join a Game</h2>
+      <div class="games-list">
+        <div class="game-item" onclick="showToast('Joining lobby...')">
+          <div class="game-icon">⚔️</div>
+          <div class="game-info">
+            <h4>Lost Mine of Phandelver - Chapter 1</h4>
+            <p>Hosted by DM_Mike • Starting in 5 minutes</p>
+          </div>
+          <div class="game-players-count">
+            <div class="count">3/4</div>
+            <div class="label">players</div>
+          </div>
+        </div>
+
+        <div class="game-item" onclick="showToast('Joining lobby...')">
+          <div class="game-icon">🐉</div>
+          <div class="game-info">
+            <h4>Dragon Heist - Session 12</h4>
+            <p>Hosted by StorytellerSam • In progress (spectate)</p>
+          </div>
+          <div class="game-players-count">
+            <div class="count">5/5</div>
+            <div class="label">players</div>
+          </div>
+        </div>
+
+        <div class="game-item" onclick="showToast('Joining lobby...')">
+          <div class="game-icon">💀</div>
+          <div class="game-info">
+            <h4>Curse of Strahd - New Campaign</h4>
+            <p>Hosted by GothicDM • Looking for players</p>
+          </div>
+          <div class="game-players-count">
+            <div class="count">2/6</div>
+            <div class="label">players</div>
+          </div>
+        </div>
+
+        <div class="game-item" onclick="showToast('Joining lobby...')">
+          <div class="game-icon">🏰</div>
+          <div class="game-info">
+            <h4>Homebrew: The Crystal Caverns</h4>
+            <p>Hosted by CreativeCarl • Levels 3-5 welcome</p>
+          </div>
+          <div class="game-players-count">
+            <div class="count">1/4</div>
+            <div class="label">players</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Create Character Modal -->
+  <div id="create-character-modal" class="modal-overlay" onclick="closeModal(event, 'create-character')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="font-display">Create New Character</h2>
+        <button class="modal-close" onclick="closeModal(event, 'create-character')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Character Name</label>
+          <input type="text" placeholder="Enter character name...">
+        </div>
+        <div class="form-group">
+          <label>Race</label>
+          <select>
+            <option>Select a race...</option>
+            <option>Dwarf</option>
+            <option>Elf</option>
+            <option>Halfling</option>
+            <option>Human</option>
+            <option>Dragonborn</option>
+            <option>Gnome</option>
+            <option>Half-Elf</option>
+            <option>Half-Orc</option>
+            <option>Tiefling</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Class</label>
+          <select>
+            <option>Select a class...</option>
+            <option>Barbarian</option>
+            <option>Bard</option>
+            <option>Cleric</option>
+            <option>Druid</option>
+            <option>Fighter</option>
+            <option>Monk</option>
+            <option>Paladin</option>
+            <option>Ranger</option>
+            <option>Rogue</option>
+            <option>Sorcerer</option>
+            <option>Warlock</option>
+            <option>Wizard</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Background</label>
+          <select>
+            <option>Select a background...</option>
+            <option>Acolyte</option>
+            <option>Criminal</option>
+            <option>Folk Hero</option>
+            <option>Noble</option>
+            <option>Sage</option>
+            <option>Soldier</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal(event, 'create-character')">Cancel</button>
+        <button class="btn btn-primary" onclick="createCharacter()">Create Character</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Campaign Modal -->
+  <div id="create-campaign-modal" class="modal-overlay" onclick="closeModal(event, 'create-campaign')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="font-display">Create Campaign</h2>
+        <button class="modal-close" onclick="closeModal(event, 'create-campaign')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Campaign Name</label>
+          <input type="text" placeholder="Enter campaign name...">
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" placeholder="A brief description...">
+        </div>
+        <div class="form-group">
+          <label>Starting Level</label>
+          <select>
+            <option>Level 1</option>
+            <option>Level 3</option>
+            <option>Level 5</option>
+            <option>Level 10</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Max Players</label>
+          <select>
+            <option>4 players</option>
+            <option>5 players</option>
+            <option>6 players</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal(event, 'create-campaign')">Cancel</button>
+        <button class="btn btn-primary" onclick="createCampaign()">Create Campaign</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Lobby Modal -->
+  <div id="create-lobby-modal" class="modal-overlay" onclick="closeModal(event, 'create-lobby')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="font-display">Create Lobby</h2>
+        <button class="modal-close" onclick="closeModal(event, 'create-lobby')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Session Name</label>
+          <input type="text" placeholder="e.g., The Goblin Cave - Session 5">
+        </div>
+        <div class="form-group">
+          <label>Campaign</label>
+          <select>
+            <option>Select a campaign...</option>
+            <option>The Goblin Cave</option>
+            <option>Dragon of Icespire Peak</option>
+            <option>Create New Campaign</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Visibility</label>
+          <select>
+            <option>Private (Invite Only)</option>
+            <option>Friends Only</option>
+            <option>Public</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal(event, 'create-lobby')">Cancel</button>
+        <button class="btn btn-primary" onclick="createLobby()">Create Lobby</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span>✓</span>
+    <span id="toast-message">Action completed!</span>
+  </div>
+
+  <script>
+    // Page Navigation
+    function showPage(pageName) {
+      // Hide all pages
+      document.querySelectorAll('.page').forEach(page => {
+        page.classList.remove('active');
+      });
+      
+      // Show selected page
+      document.getElementById(pageName + '-page').classList.add('active');
+      
+      // Update nav links
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+        if (link.dataset.page === pageName) {
+          link.classList.add('active');
+        }
+      });
+      
+      // Scroll to top
+      window.scrollTo(0, 0);
+    }
+
+    // Modal Functions
+    function openModal(modalName) {
+      document.getElementById(modalName + '-modal').classList.add('active');
+    }
+
+    function closeModal(event, modalName) {
+      document.getElementById(modalName + '-modal').classList.remove('active');
+    }
+
+    // Toast Function
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toast-message');
+      toastMessage.textContent = message;
+      toast.classList.add('active');
+      
+      setTimeout(() => {
+        toast.classList.remove('active');
+      }, 3000);
+    }
+
+    // Action Functions
+    function createCharacter() {
+      closeModal(event, 'create-character');
+      showToast('Character created successfully!');
+      showPage('characters');
+    }
+
+    function createCampaign() {
+      closeModal(event, 'create-campaign');
+      showToast('Campaign created successfully!');
+      showPage('campaigns');
+    }
+
+    function createLobby() {
+      closeModal(event, 'create-lobby');
+      showToast('Lobby created! Waiting for players...');
+      showPage('play');
+    }
+
+    // Filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+          modal.classList.remove('active');
+        });
+      }
+    });
+  </script>
+</body>
+</html>

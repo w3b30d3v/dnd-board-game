@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D Digital - Inventory System Prototype</title>
+  <style>
+    :root {
+      --bg-dark: #0F0D13;
+      --bg-surface: #1E1B26;
+      --bg-elevated: #2A2735;
+      --gold-primary: #F59E0B;
+      --gold-light: #FCD34D;
+      --purple-primary: #8B5CF6;
+      --green-success: #22C55E;
+      --red-danger: #EF4444;
+      --blue-info: #3B82F6;
+      --text-primary: #F4F4F5;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+      
+      --rarity-common: #9CA3AF;
+      --rarity-uncommon: #22C55E;
+      --rarity-rare: #3B82F6;
+      --rarity-very-rare: #8B5CF6;
+      --rarity-legendary: #F59E0B;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .demo-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.5rem;
+      color: var(--gold-primary);
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .inventory-container {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 900px) {
+      .inventory-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Equipment Panel */
+    .equipment-panel {
+      background: linear-gradient(135deg, rgba(30, 27, 38, 0.95), rgba(42, 39, 53, 0.9));
+      border-radius: 20px;
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      padding: 24px;
+      animation: fadeSlideLeft 0.6s ease-out;
+    }
+
+    @keyframes fadeSlideLeft {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .panel-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+      color: var(--gold-primary);
+    }
+
+    .character-silhouette {
+      position: relative;
+      width: 200px;
+      height: 300px;
+      margin: 0 auto 24px;
+      background: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.1), transparent);
+    }
+
+    .silhouette-body {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 8rem;
+      opacity: 0.3;
+      animation: silhouettePulse 3s ease-in-out infinite;
+    }
+
+    @keyframes silhouettePulse {
+      0%, 100% { opacity: 0.2; transform: translate(-50%, -50%) scale(1); }
+      50% { opacity: 0.35; transform: translate(-50%, -50%) scale(1.02); }
+    }
+
+    /* Equipment Slots */
+    .equipment-slot {
+      position: absolute;
+      width: 56px;
+      height: 56px;
+      background: var(--bg-surface);
+      border: 2px dashed rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .equipment-slot:hover {
+      border-color: var(--gold-primary);
+      background: rgba(245, 158, 11, 0.1);
+      transform: scale(1.05);
+    }
+
+    .equipment-slot.filled {
+      border-style: solid;
+      border-color: var(--rarity-uncommon);
+      background: linear-gradient(135deg, var(--bg-surface), rgba(34, 197, 94, 0.1));
+    }
+
+    .equipment-slot.filled.rare {
+      border-color: var(--rarity-rare);
+      background: linear-gradient(135deg, var(--bg-surface), rgba(59, 130, 246, 0.1));
+    }
+
+    .equipment-slot.filled.legendary {
+      border-color: var(--rarity-legendary);
+      background: linear-gradient(135deg, var(--bg-surface), rgba(245, 158, 11, 0.15));
+      animation: legendaryGlow 2s ease-in-out infinite;
+    }
+
+    @keyframes legendaryGlow {
+      0%, 100% { box-shadow: 0 0 10px rgba(245, 158, 11, 0.3); }
+      50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.5); }
+    }
+
+    .equipment-slot .slot-icon {
+      font-size: 1.5rem;
+      opacity: 0.3;
+    }
+
+    .equipment-slot.filled .slot-icon {
+      opacity: 1;
+    }
+
+    .slot-label {
+      position: absolute;
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    /* Slot positions */
+    .slot-head { top: 0; left: 50%; transform: translateX(-50%); }
+    .slot-head .slot-label { bottom: -18px; left: 50%; transform: translateX(-50%); }
+    
+    .slot-neck { top: 60px; left: 50%; transform: translateX(-50%); }
+    .slot-neck .slot-label { bottom: -18px; left: 50%; transform: translateX(-50%); }
+    
+    .slot-shoulders { top: 80px; left: 0; }
+    .slot-shoulders .slot-label { top: 50%; right: -60px; transform: translateY(-50%); }
+    
+    .slot-chest { top: 120px; left: 50%; transform: translateX(-50%); }
+    .slot-chest .slot-label { bottom: -18px; left: 50%; transform: translateX(-50%); }
+    
+    .slot-hands { top: 180px; left: 0; }
+    .slot-hands .slot-label { top: 50%; right: -50px; transform: translateY(-50%); }
+    
+    .slot-mainhand { top: 180px; right: 0; }
+    .slot-mainhand .slot-label { top: 50%; left: -70px; transform: translateY(-50%); }
+    
+    .slot-offhand { top: 240px; right: 0; }
+    .slot-offhand .slot-label { top: 50%; left: -65px; transform: translateY(-50%); }
+    
+    .slot-waist { top: 180px; left: 50%; transform: translateX(-50%); }
+    .slot-waist .slot-label { bottom: -18px; left: 50%; transform: translateX(-50%); }
+    
+    .slot-legs { top: 220px; left: 50%; transform: translateX(-50%); }
+    .slot-legs .slot-label { bottom: -18px; left: 50%; transform: translateX(-50%); }
+    
+    .slot-feet { top: 280px; left: 50%; transform: translateX(-50%); }
+    .slot-feet .slot-label { bottom: -18px; left: 50%; transform: translateX(-50%); }
+    
+    .slot-ring1 { top: 240px; left: 0; }
+    .slot-ring1 .slot-label { top: 50%; right: -48px; transform: translateY(-50%); }
+    
+    .slot-ring2 { top: 280px; left: 0; }
+    .slot-ring2 .slot-label { top: 50%; right: -48px; transform: translateY(-50%); }
+
+    /* Stats Summary */
+    .stats-summary {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: var(--bg-surface);
+      border-radius: 10px;
+    }
+
+    .stat-icon {
+      font-size: 1.25rem;
+    }
+
+    .stat-info {
+      flex: 1;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .stat-value {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--text-primary);
+    }
+
+    .stat-bonus {
+      font-size: 0.75rem;
+      color: var(--green-success);
+    }
+
+    /* Inventory Panel */
+    .inventory-panel {
+      background: linear-gradient(135deg, rgba(30, 27, 38, 0.95), rgba(42, 39, 53, 0.9));
+      border-radius: 20px;
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      padding: 24px;
+      animation: fadeSlideRight 0.6s ease-out;
+    }
+
+    @keyframes fadeSlideRight {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .inventory-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .inventory-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+      color: var(--purple-primary);
+    }
+
+    .inventory-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .capacity-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .capacity-track {
+      width: 100px;
+      height: 8px;
+      background: var(--bg-dark);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .capacity-fill {
+      height: 100%;
+      background: var(--purple-primary);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .capacity-text {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .gold-display {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: rgba(245, 158, 11, 0.1);
+      border-radius: 8px;
+      font-weight: 600;
+      color: var(--gold-primary);
+    }
+
+    /* Tabs */
+    .inventory-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 16px;
+      background: var(--bg-surface);
+      padding: 4px;
+      border-radius: 12px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px 16px;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tab-btn.active {
+      background: var(--purple-primary);
+      color: white;
+    }
+
+    /* Inventory Grid */
+    .inventory-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+      gap: 8px;
+      max-height: 400px;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+
+    .inventory-slot {
+      aspect-ratio: 1;
+      background: var(--bg-surface);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .inventory-slot:hover {
+      transform: translateY(-4px) scale(1.05);
+      border-color: var(--purple-primary);
+      box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+      z-index: 10;
+    }
+
+    .inventory-slot.empty {
+      opacity: 0.5;
+      border-style: dashed;
+    }
+
+    .inventory-slot.empty:hover {
+      opacity: 0.7;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .inventory-slot.dragging {
+      opacity: 0.5;
+      transform: scale(0.95);
+    }
+
+    .inventory-slot.drop-target {
+      border-color: var(--gold-primary);
+      background: rgba(245, 158, 11, 0.1);
+    }
+
+    /* Item styling by rarity */
+    .inventory-slot.common { border-color: var(--rarity-common); }
+    .inventory-slot.uncommon { 
+      border-color: var(--rarity-uncommon);
+      background: linear-gradient(135deg, var(--bg-surface), rgba(34, 197, 94, 0.1));
+    }
+    .inventory-slot.rare { 
+      border-color: var(--rarity-rare);
+      background: linear-gradient(135deg, var(--bg-surface), rgba(59, 130, 246, 0.1));
+    }
+    .inventory-slot.very-rare { 
+      border-color: var(--rarity-very-rare);
+      background: linear-gradient(135deg, var(--bg-surface), rgba(139, 92, 246, 0.15));
+    }
+    .inventory-slot.legendary { 
+      border-color: var(--rarity-legendary);
+      background: linear-gradient(135deg, var(--bg-surface), rgba(245, 158, 11, 0.15));
+      animation: legendaryItemGlow 2s ease-in-out infinite;
+    }
+
+    @keyframes legendaryItemGlow {
+      0%, 100% { box-shadow: inset 0 0 10px rgba(245, 158, 11, 0.2); }
+      50% { box-shadow: inset 0 0 20px rgba(245, 158, 11, 0.4); }
+    }
+
+    .item-icon {
+      font-size: 1.75rem;
+      margin-bottom: 2px;
+    }
+
+    .item-count {
+      position: absolute;
+      bottom: 4px;
+      right: 6px;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
+    .item-equipped {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      font-size: 0.6rem;
+      background: var(--green-success);
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+
+    /* Tooltip */
+    .tooltip {
+      position: fixed;
+      background: linear-gradient(135deg, #1a1820, #252230);
+      border-radius: 12px;
+      padding: 16px;
+      width: 280px;
+      z-index: 1000;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.2s ease;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    .tooltip.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .tooltip.common { border: 2px solid var(--rarity-common); }
+    .tooltip.uncommon { border: 2px solid var(--rarity-uncommon); }
+    .tooltip.rare { border: 2px solid var(--rarity-rare); }
+    .tooltip.very-rare { border: 2px solid var(--rarity-very-rare); }
+    .tooltip.legendary { border: 2px solid var(--rarity-legendary); }
+
+    .tooltip-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .tooltip-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .tooltip.uncommon .tooltip-name { color: var(--rarity-uncommon); }
+    .tooltip.rare .tooltip-name { color: var(--rarity-rare); }
+    .tooltip.very-rare .tooltip-name { color: var(--rarity-very-rare); }
+    .tooltip.legendary .tooltip-name { color: var(--rarity-legendary); }
+
+    .tooltip-icon {
+      font-size: 2rem;
+    }
+
+    .tooltip-type {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .tooltip-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .tooltip-stat {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.875rem;
+    }
+
+    .tooltip-stat-label {
+      color: var(--text-secondary);
+    }
+
+    .tooltip-stat-value {
+      font-weight: 600;
+      color: var(--green-success);
+    }
+
+    .tooltip-desc {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      font-style: italic;
+      line-height: 1.4;
+      margin-bottom: 12px;
+    }
+
+    .tooltip-actions {
+      display: flex;
+      gap: 8px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .tooltip-action {
+      padding: 4px 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+
+    /* Selection animation */
+    .inventory-slot.selected {
+      animation: selectPulse 0.3s ease-out;
+    }
+
+    @keyframes selectPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1.05); }
+    }
+
+    /* Context Menu */
+    .context-menu {
+      position: fixed;
+      background: var(--bg-elevated);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 8px 0;
+      min-width: 160px;
+      z-index: 1000;
+      opacity: 0;
+      transform: scale(0.95);
+      transform-origin: top left;
+      transition: all 0.2s ease;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      display: none;
+    }
+
+    .context-menu.visible {
+      opacity: 1;
+      transform: scale(1);
+      display: block;
+    }
+
+    .context-item {
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.875rem;
+    }
+
+    .context-item:hover {
+      background: rgba(139, 92, 246, 0.2);
+      color: var(--purple-primary);
+    }
+
+    .context-item.danger:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--red-danger);
+    }
+
+    .context-separator {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.1);
+      margin: 4px 0;
+    }
+
+    /* Drag preview */
+    .drag-preview {
+      position: fixed;
+      pointer-events: none;
+      z-index: 2000;
+      font-size: 2rem;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+      opacity: 0;
+      transition: opacity 0.1s ease;
+    }
+
+    .drag-preview.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <h1 class="demo-title">🎒 Inventory & Equipment System</h1>
+
+  <div class="inventory-container">
+    <!-- Equipment Panel -->
+    <div class="equipment-panel">
+      <div class="panel-header">
+        <h2 class="panel-title">⚔️ Equipment</h2>
+      </div>
+
+      <div class="character-silhouette">
+        <div class="silhouette-body">🧍</div>
+        
+        <!-- Equipment Slots -->
+        <div class="equipment-slot slot-head filled rare" data-slot="head" data-item="helm">
+          <span class="slot-icon">🪖</span>
+          <span class="slot-label">Head</span>
+        </div>
+        
+        <div class="equipment-slot slot-neck" data-slot="neck">
+          <span class="slot-icon">📿</span>
+          <span class="slot-label">Neck</span>
+        </div>
+        
+        <div class="equipment-slot slot-shoulders filled" data-slot="shoulders" data-item="pauldrons">
+          <span class="slot-icon">🦺</span>
+          <span class="slot-label">Shoulders</span>
+        </div>
+        
+        <div class="equipment-slot slot-chest filled legendary" data-slot="chest" data-item="armor">
+          <span class="slot-icon">🛡️</span>
+          <span class="slot-label">Chest</span>
+        </div>
+        
+        <div class="equipment-slot slot-hands filled" data-slot="hands" data-item="gauntlets">
+          <span class="slot-icon">🧤</span>
+          <span class="slot-label">Hands</span>
+        </div>
+        
+        <div class="equipment-slot slot-mainhand filled rare" data-slot="mainhand" data-item="sword">
+          <span class="slot-icon">⚔️</span>
+          <span class="slot-label">Main Hand</span>
+        </div>
+        
+        <div class="equipment-slot slot-offhand filled" data-slot="offhand" data-item="shield">
+          <span class="slot-icon">🛡️</span>
+          <span class="slot-label">Off Hand</span>
+        </div>
+        
+        <div class="equipment-slot slot-waist" data-slot="waist">
+          <span class="slot-icon">🎗️</span>
+          <span class="slot-label">Waist</span>
+        </div>
+        
+        <div class="equipment-slot slot-ring1 filled very-rare" data-slot="ring1" data-item="ring">
+          <span class="slot-icon">💍</span>
+          <span class="slot-label">Ring</span>
+        </div>
+        
+        <div class="equipment-slot slot-ring2" data-slot="ring2">
+          <span class="slot-icon">💍</span>
+          <span class="slot-label">Ring</span>
+        </div>
+        
+        <div class="equipment-slot slot-feet filled" data-slot="feet" data-item="boots">
+          <span class="slot-icon">👢</span>
+          <span class="slot-label">Feet</span>
+        </div>
+      </div>
+
+      <div class="stats-summary">
+        <div class="stat-item">
+          <span class="stat-icon">🛡️</span>
+          <div class="stat-info">
+            <div class="stat-label">Armor Class</div>
+            <div class="stat-value">18 <span class="stat-bonus">+4</span></div>
+          </div>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">⚔️</span>
+          <div class="stat-info">
+            <div class="stat-label">Attack</div>
+            <div class="stat-value">+7 <span class="stat-bonus">+2</span></div>
+          </div>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">💨</span>
+          <div class="stat-info">
+            <div class="stat-label">Speed</div>
+            <div class="stat-value">30 ft</div>
+          </div>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">✨</span>
+          <div class="stat-info">
+            <div class="stat-label">Spell Save DC</div>
+            <div class="stat-value">15</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inventory Panel -->
+    <div class="inventory-panel">
+      <div class="inventory-header">
+        <h2 class="inventory-title">🎒 Inventory</h2>
+        <div class="inventory-info">
+          <div class="capacity-bar">
+            <span>📦</span>
+            <div class="capacity-track">
+              <div class="capacity-fill" style="width: 65%;"></div>
+            </div>
+            <span class="capacity-text">78/120 lbs</span>
+          </div>
+          <div class="gold-display">
+            <span>💰</span>
+            <span>2,450 gp</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="inventory-tabs">
+        <button class="tab-btn active" data-tab="all">
+          <span>📦</span> All
+        </button>
+        <button class="tab-btn" data-tab="weapons">
+          <span>⚔️</span> Weapons
+        </button>
+        <button class="tab-btn" data-tab="armor">
+          <span>🛡️</span> Armor
+        </button>
+        <button class="tab-btn" data-tab="consumables">
+          <span>🧪</span> Items
+        </button>
+      </div>
+
+      <div class="inventory-grid" id="inventoryGrid">
+        <!-- Row 1 -->
+        <div class="inventory-slot rare" data-item="longbow" data-rarity="rare">
+          <span class="item-icon">🏹</span>
+        </div>
+        <div class="inventory-slot uncommon" data-item="dagger" data-rarity="uncommon">
+          <span class="item-icon">🗡️</span>
+          <span class="item-count">x3</span>
+        </div>
+        <div class="inventory-slot common" data-item="torch" data-rarity="common">
+          <span class="item-icon">🔦</span>
+          <span class="item-count">x5</span>
+        </div>
+        <div class="inventory-slot uncommon" data-item="potion-health" data-rarity="uncommon">
+          <span class="item-icon">🧪</span>
+          <span class="item-count">x2</span>
+        </div>
+        <div class="inventory-slot rare" data-item="potion-mana" data-rarity="rare">
+          <span class="item-icon">💧</span>
+        </div>
+        <div class="inventory-slot very-rare" data-item="scroll" data-rarity="very-rare">
+          <span class="item-icon">📜</span>
+        </div>
+        
+        <!-- Row 2 -->
+        <div class="inventory-slot legendary" data-item="amulet" data-rarity="legendary">
+          <span class="item-icon">🔮</span>
+        </div>
+        <div class="inventory-slot common" data-item="rope" data-rarity="common">
+          <span class="item-icon">🪢</span>
+        </div>
+        <div class="inventory-slot common" data-item="rations" data-rarity="common">
+          <span class="item-icon">🍖</span>
+          <span class="item-count">x10</span>
+        </div>
+        <div class="inventory-slot uncommon" data-item="lockpick" data-rarity="uncommon">
+          <span class="item-icon">🔧</span>
+          <span class="item-count">x5</span>
+        </div>
+        <div class="inventory-slot common" data-item="gold-coins" data-rarity="common">
+          <span class="item-icon">💰</span>
+        </div>
+        <div class="inventory-slot rare" data-item="gem" data-rarity="rare">
+          <span class="item-icon">💎</span>
+          <span class="item-count">x3</span>
+        </div>
+        
+        <!-- Row 3 -->
+        <div class="inventory-slot uncommon" data-item="cloak" data-rarity="uncommon">
+          <span class="item-icon">🧥</span>
+        </div>
+        <div class="inventory-slot common" data-item="bedroll" data-rarity="common">
+          <span class="item-icon">🛏️</span>
+        </div>
+        <div class="inventory-slot very-rare" data-item="wand" data-rarity="very-rare">
+          <span class="item-icon">🪄</span>
+        </div>
+        <div class="inventory-slot common" data-item="book" data-rarity="common">
+          <span class="item-icon">📕</span>
+        </div>
+        <div class="inventory-slot uncommon" data-item="antidote" data-rarity="uncommon">
+          <span class="item-icon">💊</span>
+          <span class="item-count">x2</span>
+        </div>
+        <div class="inventory-slot empty"></div>
+        
+        <!-- Empty slots -->
+        <div class="inventory-slot empty"></div>
+        <div class="inventory-slot empty"></div>
+        <div class="inventory-slot empty"></div>
+        <div class="inventory-slot empty"></div>
+        <div class="inventory-slot empty"></div>
+        <div class="inventory-slot empty"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tooltip -->
+  <div class="tooltip" id="tooltip"></div>
+
+  <!-- Context Menu -->
+  <div class="context-menu" id="contextMenu">
+    <div class="context-item" data-action="use">
+      <span>✨</span> Use
+    </div>
+    <div class="context-item" data-action="equip">
+      <span>⚔️</span> Equip
+    </div>
+    <div class="context-separator"></div>
+    <div class="context-item" data-action="split">
+      <span>➗</span> Split Stack
+    </div>
+    <div class="context-item" data-action="compare">
+      <span>🔍</span> Compare
+    </div>
+    <div class="context-separator"></div>
+    <div class="context-item danger" data-action="drop">
+      <span>🗑️</span> Drop
+    </div>
+  </div>
+
+  <!-- Drag Preview -->
+  <div class="drag-preview" id="dragPreview"></div>
+
+  <script>
+    const tooltip = document.getElementById('tooltip');
+    const contextMenu = document.getElementById('contextMenu');
+    const dragPreview = document.getElementById('dragPreview');
+    
+    const items = {
+      'longbow': {
+        name: 'Longbow of Precision',
+        type: 'Weapon (Martial, Ranged)',
+        rarity: 'rare',
+        icon: '🏹',
+        stats: [
+          { label: 'Damage', value: '1d8+3 Piercing' },
+          { label: 'Range', value: '150/600 ft' },
+          { label: 'Bonus', value: '+2 to Attack Rolls' }
+        ],
+        desc: 'This finely crafted bow was blessed by an elven archmage. Arrows fired from it fly true.'
+      },
+      'dagger': {
+        name: 'Throwing Dagger',
+        type: 'Weapon (Simple, Melee)',
+        rarity: 'uncommon',
+        icon: '🗡️',
+        stats: [
+          { label: 'Damage', value: '1d4+2 Piercing' },
+          { label: 'Range', value: '20/60 ft' },
+          { label: 'Properties', value: 'Finesse, Light, Thrown' }
+        ],
+        desc: 'A well-balanced throwing knife, perfect for quick attacks.'
+      },
+      'potion-health': {
+        name: 'Potion of Healing',
+        type: 'Consumable (Potion)',
+        rarity: 'uncommon',
+        icon: '🧪',
+        stats: [
+          { label: 'Effect', value: 'Restore 2d4+2 HP' },
+          { label: 'Action', value: 'Bonus Action' }
+        ],
+        desc: 'A red liquid that shimmers when agitated. Instantly restores health when consumed.'
+      },
+      'amulet': {
+        name: 'Amulet of the Dragon',
+        type: 'Wondrous Item (Requires Attunement)',
+        rarity: 'legendary',
+        icon: '🔮',
+        stats: [
+          { label: 'Effect', value: '+2 to all Saving Throws' },
+          { label: 'Special', value: 'Resistance to Fire Damage' },
+          { label: 'Charges', value: '3/3' }
+        ],
+        desc: 'An ancient amulet containing the essence of a red dragon. It grants its wearer a portion of draconic power.'
+      },
+      'scroll': {
+        name: 'Scroll of Fireball',
+        type: 'Consumable (Scroll)',
+        rarity: 'very-rare',
+        icon: '📜',
+        stats: [
+          { label: 'Spell Level', value: '3rd' },
+          { label: 'Damage', value: '8d6 Fire' },
+          { label: 'DC', value: '15 DEX Save' }
+        ],
+        desc: 'A spell scroll containing a single casting of Fireball. Burns away after use.'
+      },
+      'wand': {
+        name: 'Wand of Lightning Bolt',
+        type: 'Wand (Requires Attunement by Spellcaster)',
+        rarity: 'very-rare',
+        icon: '🪄',
+        stats: [
+          { label: 'Charges', value: '7/7' },
+          { label: 'Damage', value: '8d6 Lightning' },
+          { label: 'Recharge', value: '1d6+1 at Dawn' }
+        ],
+        desc: 'A wand crackling with electrical energy. Expend charges to cast Lightning Bolt.'
+      }
+    };
+
+    // Show tooltip
+    function showTooltip(slot, e) {
+      const itemId = slot.dataset.item;
+      if (!itemId || !items[itemId]) return;
+      
+      const item = items[itemId];
+      const rarity = slot.dataset.rarity || 'common';
+      
+      tooltip.className = `tooltip ${rarity}`;
+      tooltip.innerHTML = `
+        <div class="tooltip-header">
+          <div>
+            <div class="tooltip-name">${item.name}</div>
+            <div class="tooltip-type">${item.type}</div>
+          </div>
+          <span class="tooltip-icon">${item.icon}</span>
+        </div>
+        <div class="tooltip-stats">
+          ${item.stats.map(s => `
+            <div class="tooltip-stat">
+              <span class="tooltip-stat-label">${s.label}</span>
+              <span class="tooltip-stat-value">${s.value}</span>
+            </div>
+          `).join('')}
+        </div>
+        <div class="tooltip-desc">${item.desc}</div>
+        <div class="tooltip-actions">
+          <span class="tooltip-action">Right-click for options</span>
+          <span class="tooltip-action">Drag to equip</span>
+        </div>
+      `;
+      
+      positionTooltip(e);
+      tooltip.classList.add('visible');
+    }
+
+    function positionTooltip(e) {
+      const padding = 16;
+      let x = e.clientX + padding;
+      let y = e.clientY + padding;
+      
+      if (x + 280 > window.innerWidth) {
+        x = e.clientX - 280 - padding;
+      }
+      if (y + 300 > window.innerHeight) {
+        y = window.innerHeight - 300 - padding;
+      }
+      
+      tooltip.style.left = x + 'px';
+      tooltip.style.top = y + 'px';
+    }
+
+    function hideTooltip() {
+      tooltip.classList.remove('visible');
+    }
+
+    // Context menu
+    function showContextMenu(slot, e) {
+      e.preventDefault();
+      
+      const x = Math.min(e.clientX, window.innerWidth - 180);
+      const y = Math.min(e.clientY, window.innerHeight - 200);
+      
+      contextMenu.style.left = x + 'px';
+      contextMenu.style.top = y + 'px';
+      contextMenu.classList.add('visible');
+    }
+
+    function hideContextMenu() {
+      contextMenu.classList.remove('visible');
+    }
+
+    // Event listeners
+    document.querySelectorAll('.inventory-slot:not(.empty)').forEach(slot => {
+      slot.addEventListener('mouseenter', (e) => showTooltip(slot, e));
+      slot.addEventListener('mousemove', positionTooltip);
+      slot.addEventListener('mouseleave', hideTooltip);
+      slot.addEventListener('contextmenu', (e) => showContextMenu(slot, e));
+      
+      // Drag support
+      slot.draggable = true;
+      slot.addEventListener('dragstart', (e) => {
+        slot.classList.add('dragging');
+        dragPreview.textContent = slot.querySelector('.item-icon').textContent;
+        dragPreview.classList.add('visible');
+      });
+      slot.addEventListener('dragend', () => {
+        slot.classList.remove('dragging');
+        dragPreview.classList.remove('visible');
+        document.querySelectorAll('.drop-target').forEach(s => s.classList.remove('drop-target'));
+      });
+    });
+
+    // Equipment slots as drop targets
+    document.querySelectorAll('.equipment-slot').forEach(slot => {
+      slot.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        slot.classList.add('drop-target');
+      });
+      slot.addEventListener('dragleave', () => {
+        slot.classList.remove('drop-target');
+      });
+      slot.addEventListener('drop', (e) => {
+        e.preventDefault();
+        slot.classList.remove('drop-target');
+        // Visual feedback
+        slot.style.animation = 'selectPulse 0.3s ease-out';
+        setTimeout(() => slot.style.animation = '', 300);
+      });
+    });
+
+    // Close context menu on click outside
+    document.addEventListener('click', hideContextMenu);
+
+    // Context menu actions
+    contextMenu.querySelectorAll('.context-item').forEach(item => {
+      item.addEventListener('click', () => {
+        console.log('Action:', item.dataset.action);
+        hideContextMenu();
+      });
+    });
+
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    // Drag preview follows cursor
+    document.addEventListener('drag', (e) => {
+      if (e.clientX === 0 && e.clientY === 0) return;
+      dragPreview.style.left = e.clientX + 'px';
+      dragPreview.style.top = e.clientY + 'px';
+    });
+  </script>
+</body>
+</html>

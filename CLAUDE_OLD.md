@@ -1,0 +1,316 @@
+# D&D Digital Board Game Platform
+
+## Project Overview
+
+A cinematic, multiplayer, AI-powered D&D 5e digital board game platform for web and mobile. This project implements RAW (Rules As Written) D&D 5th Edition mechanics with animated combat, AI-generated art, and full campaign creation tools.
+
+---
+
+## Quick Start
+
+```bash
+# 1. Read the implementation guide first
+cat docs/CLAUDE_CODE_INSTRUCTIONS.md
+
+# 2. Follow Phase 0 setup
+cat docs/24_Phased_Implementation_Guide.md
+
+# 3. After setup, these commands work:
+pnpm install          # Install all dependencies
+pnpm dev              # Start dev server (localhost:3000)
+pnpm build            # Build all packages
+pnpm test             # Run all tests
+pnpm test:golden      # Run RAW 5e validation tests
+docker-compose up -d  # Start PostgreSQL + Redis
+```
+
+---
+
+## Documentation Index
+
+All specifications are in the `/docs/` directory. **Read in this order:**
+
+### Essential (Read First)
+| Document | Purpose |
+|----------|---------|
+| `CLAUDE_CODE_INSTRUCTIONS.md` | Master instructions for implementation |
+| `24_Phased_Implementation_Guide.md` | **START HERE** - Phase-by-phase build order |
+| `16_Root_Configuration_Files.md` | All config files to create (package.json, etc) |
+| `10_Project_Structure.md` | Complete folder structure |
+
+### Architecture & APIs
+| Document | Purpose |
+|----------|---------|
+| `01_API_Specifications.md` | Auth, Game State, Combat APIs |
+| `02_API_Specifications_Part2.md` | Content, Campaign, Media APIs |
+| `03_Component_Integration.md` | Service interactions & data flows |
+| `17_Proto_Files.md` | gRPC protocol buffer definitions |
+
+### Implementation Code
+| Document | Purpose |
+|----------|---------|
+| `20_Rust_Rules_Engine.md` | Complete Rust implementation (~800 lines) |
+| `21_PixiJS_Game_Core.md` | Game renderer implementation (~700 lines) |
+| `22_Media_Animation_System.md` | Video, cutscenes, VFX, audio |
+| `26_Campaign_Builder_Implementation.md` | Map editor, encounter editor, dialogue system |
+
+### Data & Content
+| Document | Purpose |
+|----------|---------|
+| `08_Database_Schema.md` | PostgreSQL schemas |
+| `25_Prisma_Schema.md` | Prisma ORM models |
+| `11_Content_Schemas.md` | JSON schemas for 5e content |
+| `18_Content_Seed_Data.md` | Spells, monsters, items, conditions |
+| `27_Starter_Tutorial_Campaign.md` | Complete tutorial campaign content |
+
+### UI & UX (READ THESE FIRST FOR ALL FRONTEND WORK)
+| Document | Purpose |
+|----------|---------|
+| `30_UI_Component_Specification.md` | **CRITICAL: Framer Motion animations, exact React implementations** |
+| `31_Asset_Requirements.md` | **All images, sounds, videos needed + placeholder strategies** |
+| `29_Design_System.md` | Colors, typography, Tailwind config |
+| `09_UI_Specifications.md` | Component behavior specs |
+| `15_Wireframes.md` | Screen layouts (ASCII) |
+| `23_User_Journeys_Onboarding.md` | Player & DM user flows |
+| `mockups/00_immersive_prototype.html` | Interactive prototype - **OPEN THIS TO SEE THE FEEL** |
+
+### Testing & DevOps
+| Document | Purpose |
+|----------|---------|
+| `12_Test_Specifications.md` | Testing strategy |
+| `28_E2E_Test_Scenarios.md` | Playwright E2E tests |
+| `19_GitHub_Actions_Workflows.md` | CI/CD pipelines |
+
+---
+
+## Implementation Phases
+
+**CRITICAL: Complete each phase fully before moving to the next.**
+
+| Phase | Name | Duration | Key Output |
+|-------|------|----------|------------|
+| 0 | Project Setup | 1-2 days | Working dev environment |
+| 1 | Authentication | 3-4 days | Login, register, JWT |
+| 2 | Character Builder | 5-7 days | Full RAW 5e character creation |
+| 3 | Game Board Core | 7-10 days | PixiJS canvas with tokens |
+| 4 | Rules Engine | 7-10 days | Rust 5e combat mechanics |
+| 5 | Multiplayer | 5-7 days | WebSocket real-time sync |
+| 6 | Campaign Builder | 7-10 days | DM tools suite |
+| 7 | Media Pipeline | 5-7 days | AI image generation |
+| 8 | Polish & Launch | 5-7 days | Production deployment |
+
+### Phase Verification
+
+After each phase, run verification:
+```bash
+./scripts/verify-phase-0.sh  # Phase 0
+./scripts/verify-phase-1.sh  # Phase 1
+# ... etc
+```
+
+Report completion in this format:
+```
+## Phase X Complete
+- Files created: [list]
+- Tests: X/Y passed
+- Verification: ✅ Passed
+- Ready for Phase X+1: Yes
+```
+
+---
+
+## Tech Stack
+
+### Frontend
+- **Framework:** Next.js 14 (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **Animation:** Framer Motion 10+ (REQUIRED for all UI)
+- **Particles:** tsparticles (magic effects)
+- **Audio:** Howler.js
+- **Game Engine:** PixiJS 7
+- **State:** Zustand
+- **Forms:** React Hook Form + Zod
+
+### Backend
+- **API Gateway:** Node.js + Express
+- **Rules Engine:** Rust + Tonic (gRPC)
+- **Grid Solver:** Rust + Tonic (gRPC)
+- **WebSocket:** ws library
+
+### Database
+- **Primary:** PostgreSQL 16
+- **ORM:** Prisma
+- **Cache:** Redis 7
+
+### Infrastructure
+- **Containers:** Docker
+- **CI/CD:** GitHub Actions
+
+---
+
+## Project Structure
+
+```
+dnd-board-game/
+├── apps/
+│   ├── web/                 # Next.js frontend
+│   └── mobile/              # React Native (future)
+├── services/
+│   ├── api-gateway/         # REST API (Node.js)
+│   ├── game-state/          # Session management
+│   ├── ws-gateway/          # WebSocket server
+│   ├── rules-engine/        # RAW 5e (Rust)
+│   ├── grid-solver/         # LoS/AoE (Rust)
+│   └── media-service/       # AI generation
+├── packages/
+│   ├── shared/              # Shared types & utils
+│   ├── ui/                  # Component library
+│   └── proto/               # gRPC definitions
+├── prisma/
+│   └── schema.prisma        # Database schema
+├── content/
+│   ├── spells/              # 5e spell data
+│   ├── monsters/            # Monster data
+│   └── items/               # Equipment data
+├── infra/
+│   ├── docker/              # Dockerfiles
+│   └── k8s/                 # Kubernetes manifests
+├── scripts/
+│   └── verify-phase-*.sh    # Verification scripts
+└── docs/                    # All documentation
+```
+
+---
+
+## Critical Requirements
+
+### RAW 5e Compliance
+- All mechanics must match official D&D 5e rules exactly
+- Reference `docs/04_Rules_Engine_Patterns.md` for specifics
+- Run `pnpm test:golden` to verify correctness
+
+### Performance Targets
+- **Client:** 60 FPS on mid-tier mobile
+- **Server:** P50 latency < 150ms
+- **WebSocket:** P95 message delivery < 100ms
+
+### Mobile First
+- All UI must be responsive
+- Touch gestures required (pinch zoom, swipe)
+- Minimum touch target: 48x48px
+
+### Accessibility
+- WCAG 2.1 AA compliance
+- Keyboard navigation
+- Screen reader support
+
+---
+
+## Common Commands
+
+```bash
+# Development
+pnpm dev                    # Start all services
+pnpm dev:web               # Start web app only
+pnpm dev:api               # Start API only
+
+# Building
+pnpm build                 # Build all
+pnpm build:web            # Build web app
+pnpm build:services       # Build backend services
+
+# Testing
+pnpm test                  # All tests
+pnpm test:unit            # Unit tests only
+pnpm test:integration     # Integration tests
+pnpm test:e2e             # E2E tests (Playwright)
+pnpm test:golden          # RAW 5e validation
+
+# Database
+pnpm db:generate          # Generate Prisma client
+pnpm db:migrate           # Run migrations
+pnpm db:seed              # Seed content data
+pnpm db:studio            # Open Prisma Studio
+
+# Code Quality
+pnpm lint                 # ESLint
+pnpm format               # Prettier
+pnpm typecheck            # TypeScript check
+
+# Deployment
+pnpm deploy:staging       # Deploy to staging
+pnpm deploy:prod          # Deploy to production
+```
+
+---
+
+## Environment Variables
+
+Create `.env` file from `.env.example`:
+
+```env
+# Database
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/dnd
+REDIS_URL=redis://localhost:6379
+
+# Auth
+JWT_SECRET=your-secret-key-min-32-chars
+JWT_EXPIRY=7d
+
+# Services
+API_PORT=4000
+WS_PORT=4001
+RULES_ENGINE_URL=http://localhost:50051
+
+# AI (for media generation)
+REPLICATE_API_TOKEN=your-token
+OPENAI_API_KEY=your-key
+
+# Storage
+AWS_REGION=us-east-1
+MEDIA_BUCKET=dnd-media
+CDN_URL=https://cdn.yourdomain.com
+```
+
+---
+
+## Getting Help
+
+If stuck on implementation:
+
+1. **Re-read the relevant document** - Most answers are in the 31 documents
+2. **For UI/Animation work** - Read `30_UI_Component_Specification.md` FIRST
+3. **Check Document 24** - Phase-specific troubleshooting
+4. **Search order:**
+   - `24_Phased_Implementation_Guide.md` (implementation steps)
+   - `30_UI_Component_Specification.md` (how to build components)
+   - `31_Asset_Requirements.md` (what assets to use/create)
+   - API docs (`01`, `02`) for endpoint details
+
+### Common Issues
+
+| Issue | Solution |
+|-------|----------|
+| DB connection fails | Run `docker-compose up -d` |
+| Build fails | Check Node v20, Rust 1.75 versions |
+| Tests fail | Run `pnpm db:migrate` first |
+| Type errors | Run `pnpm db:generate` for Prisma |
+
+---
+
+## Success Criteria
+
+Before declaring a phase complete:
+
+1. ✅ All files from task list created
+2. ✅ All acceptance criteria met
+3. ✅ Verification script passes
+4. ✅ Manual testing complete (if specified)
+5. ✅ Code committed with phase tag
+
+---
+
+**BEGIN WITH PHASE 0 IN `docs/24_Phased_Implementation_Guide.md`**
+
+Good luck building the future of digital D&D! 🎲

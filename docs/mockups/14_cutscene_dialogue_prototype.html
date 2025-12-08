@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D Cutscene Dialogue - Interactive Prototype</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0F0D13;
+            --bg-surface: #1E1B26;
+            --gold: #F59E0B;
+            --purple: #8B5CF6;
+            --red: #EF4444;
+            --text: #F4F4F5;
+            --text-muted: #A1A1AA;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Cutscene Container */
+        .cutscene-container {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Parallax Background */
+        .parallax-bg {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+        }
+
+        .bg-layer {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            transition: transform 0.5s ease-out;
+        }
+
+        .bg-layer-far {
+            background: linear-gradient(180deg, #1a1033 0%, #0d0d1a 100%);
+        }
+
+        .bg-layer-mid {
+            background: 
+                radial-gradient(ellipse at 20% 80%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(245, 158, 11, 0.2) 0%, transparent 40%);
+        }
+
+        .bg-layer-near {
+            background: linear-gradient(0deg, rgba(15, 13, 19, 0.9) 0%, transparent 30%);
+        }
+
+        /* Floating Particles */
+        .scene-particles {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .scene-particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: var(--purple);
+            border-radius: 50%;
+            opacity: 0.5;
+            animation: floatParticle 8s infinite ease-in-out;
+        }
+
+        @keyframes floatParticle {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+            50% { transform: translateY(-50px) translateX(20px); opacity: 0.7; }
+        }
+
+        /* Character Portraits */
+        .characters-layer {
+            position: absolute;
+            bottom: 200px;
+            left: 0;
+            right: 0;
+            height: 400px;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 5%;
+            pointer-events: none;
+        }
+
+        .character-portrait {
+            width: 300px;
+            height: 400px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            transition: all 0.5s ease;
+            opacity: 0;
+            transform: translateY(50px);
+        }
+
+        .character-portrait.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .character-portrait.speaking {
+            transform: translateY(-20px) scale(1.05);
+            filter: brightness(1.2);
+        }
+
+        .character-portrait.inactive {
+            opacity: 0.5;
+            filter: brightness(0.6) grayscale(30%);
+        }
+
+        .portrait-image {
+            width: 250px;
+            height: 350px;
+            background: linear-gradient(180deg, #3B82F6 0%, #1D4ED8 100%);
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 6rem;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .portrait-image.villain {
+            background: linear-gradient(180deg, #7F1D1D 0%, #450A0A 100%);
+        }
+
+        .portrait-glow {
+            position: absolute;
+            inset: -10px;
+            border-radius: 30px 30px 10px 10px;
+            background: radial-gradient(ellipse at center, rgba(245, 158, 11, 0.3) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .character-portrait.speaking .portrait-glow {
+            opacity: 1;
+            animation: glowPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes glowPulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* Dialogue Box */
+        .dialogue-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 2rem;
+        }
+
+        .dialogue-box {
+            max-width: 900px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, rgba(30, 27, 38, 0.95) 0%, rgba(42, 39, 53, 0.95) 100%);
+            border-radius: 20px;
+            border: 2px solid rgba(245, 158, 11, 0.3);
+            padding: 1.5rem 2rem;
+            backdrop-filter: blur(10px);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+
+        .dialogue-box.active {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .speaker-name {
+            font-family: 'Cinzel', serif;
+            font-size: 1.2rem;
+            color: var(--gold);
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .speaker-name.villain {
+            color: var(--red);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .dialogue-text {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: var(--text);
+            min-height: 60px;
+        }
+
+        .dialogue-text .char {
+            opacity: 0;
+            display: inline;
+        }
+
+        .dialogue-text .char.visible {
+            opacity: 1;
+        }
+
+        /* Continue Indicator */
+        .continue-indicator {
+            position: absolute;
+            bottom: 1rem;
+            right: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--gold);
+            font-size: 0.9rem;
+            opacity: 0;
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        .continue-arrow {
+            animation: bounce 1s ease infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(5px); }
+        }
+
+        /* Choices */
+        .choices-container {
+            display: none;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        .choices-container.active {
+            display: flex;
+            animation: fadeSlideUp 0.4s ease;
+        }
+
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .choice-btn {
+            padding: 1rem 1.5rem;
+            background: rgba(30, 27, 38, 0.8);
+            border: 2px solid rgba(139, 92, 246, 0.3);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 1rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .choice-btn::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--purple);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .choice-btn:hover {
+            border-color: var(--purple);
+            background: rgba(139, 92, 246, 0.1);
+            padding-left: 2rem;
+        }
+
+        .choice-btn:hover::before {
+            transform: scaleY(1);
+        }
+
+        .choice-number {
+            color: var(--purple);
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+
+        /* Scene Transition */
+        .scene-transition {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-dark);
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .scene-transition.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* Cinematic Bars */
+        .cinematic-bars {
+            position: fixed;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: var(--bg-dark);
+            z-index: 50;
+        }
+
+        .cinematic-bars.top { top: 0; }
+        .cinematic-bars.bottom { bottom: 0; }
+
+        /* Skip Button */
+        .skip-btn {
+            position: fixed;
+            top: 100px;
+            right: 2rem;
+            padding: 0.5rem 1rem;
+            background: rgba(30, 27, 38, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            cursor: pointer;
+            z-index: 60;
+            transition: all 0.3s ease;
+        }
+
+        .skip-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+        }
+
+        /* Emotion Indicators */
+        .emotion-particles {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        /* Scene Title */
+        .scene-title {
+            position: fixed;
+            top: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            opacity: 0;
+            z-index: 60;
+        }
+
+        .scene-title.active {
+            animation: titleFade 3s ease forwards;
+        }
+
+        @keyframes titleFade {
+            0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            20% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+        }
+
+        .scene-title h2 {
+            font-family: 'Cinzel', serif;
+            font-size: 2rem;
+            color: var(--gold);
+            text-shadow: 0 0 30px rgba(245, 158, 11, 0.5);
+            letter-spacing: 0.2em;
+        }
+
+        .scene-title p {
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .characters-layer {
+                padding: 0 2%;
+            }
+            .character-portrait {
+                width: 200px;
+            }
+            .portrait-image {
+                width: 180px;
+                height: 250px;
+                font-size: 4rem;
+            }
+            .dialogue-box {
+                margin: 0 1rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .characters-layer {
+                bottom: 220px;
+                height: 250px;
+            }
+            .character-portrait {
+                width: 120px;
+            }
+            .portrait-image {
+                width: 110px;
+                height: 160px;
+                font-size: 3rem;
+            }
+            .dialogue-text {
+                font-size: 1rem;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="cutscene-container" id="cutscene">
+        <!-- Parallax Background -->
+        <div class="parallax-bg">
+            <div class="bg-layer bg-layer-far"></div>
+            <div class="bg-layer bg-layer-mid"></div>
+            <div class="bg-layer bg-layer-near"></div>
+        </div>
+
+        <!-- Particles -->
+        <div class="scene-particles" id="sceneParticles"></div>
+
+        <!-- Characters -->
+        <div class="characters-layer">
+            <div class="character-portrait" id="leftChar">
+                <div class="portrait-image">
+                    <div class="portrait-glow"></div>
+                    🧙
+                </div>
+            </div>
+            <div class="character-portrait" id="rightChar">
+                <div class="portrait-image villain">
+                    <div class="portrait-glow"></div>
+                    🧛
+                </div>
+            </div>
+        </div>
+
+        <!-- Cinematic Bars -->
+        <div class="cinematic-bars top"></div>
+        <div class="cinematic-bars bottom"></div>
+
+        <!-- Dialogue -->
+        <div class="dialogue-container">
+            <div class="dialogue-box" id="dialogueBox">
+                <div class="speaker-name" id="speakerName">???</div>
+                <div class="dialogue-text" id="dialogueText"></div>
+                <div class="continue-indicator" id="continueIndicator">
+                    Click to continue <span class="continue-arrow">→</span>
+                </div>
+                <div class="choices-container" id="choicesContainer"></div>
+            </div>
+        </div>
+
+        <!-- Scene Title -->
+        <div class="scene-title" id="sceneTitle">
+            <h2>THE CONFRONTATION</h2>
+            <p>Chapter 3 - The Shadow Keep</p>
+        </div>
+    </div>
+
+    <!-- Scene Transition -->
+    <div class="scene-transition" id="transition"></div>
+
+    <!-- Skip Button -->
+    <button class="skip-btn" onclick="skipToEnd()">Skip ▶▶</button>
+
+    <script>
+        // Dialogue script
+        const dialogueScript = [
+            {
+                type: 'title',
+                duration: 3000
+            },
+            {
+                speaker: 'Lyra Nightwhisper',
+                text: 'So... we finally meet, Lord Malachar. Your reign of terror ends tonight.',
+                character: 'left',
+                villain: false
+            },
+            {
+                speaker: 'Lord Malachar',
+                text: 'Ah, the famed Archmage of the Silver Tower. How delightful that you\'ve come to me willingly.',
+                character: 'right',
+                villain: true
+            },
+            {
+                speaker: 'Lord Malachar',
+                text: 'Do you truly believe your pitiful magic can stand against centuries of dark power?',
+                character: 'right',
+                villain: true
+            },
+            {
+                speaker: 'Lyra Nightwhisper',
+                text: 'I\'ve studied your weaknesses, vampire. The Sunblade will pierce your heart before dawn breaks.',
+                character: 'left',
+                villain: false
+            },
+            {
+                speaker: 'Lord Malachar',
+                text: '*laughs darkly* Such confidence... such delicious arrogance. Perhaps I\'ll keep you as a thrall instead of killing you outright.',
+                character: 'right',
+                villain: true
+            },
+            {
+                type: 'choice',
+                speaker: 'Lyra Nightwhisper',
+                prompt: 'How do you respond?',
+                character: 'left',
+                choices: [
+                    { text: '"I\'d rather die than serve you, monster!"', result: 'defiant' },
+                    { text: '"Perhaps we can negotiate..."', result: 'diplomatic' },
+                    { text: '*Attack immediately with Fireball*', result: 'aggressive' }
+                ]
+            },
+            {
+                speaker: 'Lord Malachar',
+                text: 'Your choice matters not. This ends the same way — with your blood on my lips.',
+                character: 'right',
+                villain: true
+            },
+            {
+                type: 'end',
+                text: 'To be continued...'
+            }
+        ];
+
+        let currentIndex = 0;
+        let isTyping = false;
+        let typeInterval;
+
+        // Initialize
+        function init() {
+            createSceneParticles();
+            document.addEventListener('click', handleClick);
+            document.addEventListener('keydown', handleKeydown);
+            startScene();
+        }
+
+        function createSceneParticles() {
+            const container = document.getElementById('sceneParticles');
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'scene-particle';
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                particle.style.animationDelay = `${Math.random() * 8}s`;
+                particle.style.animationDuration = `${6 + Math.random() * 4}s`;
+                container.appendChild(particle);
+            }
+        }
+
+        function startScene() {
+            const box = document.getElementById('dialogueBox');
+            setTimeout(() => box.classList.add('active'), 500);
+            playLine(0);
+        }
+
+        function playLine(index) {
+            if (index >= dialogueScript.length) return;
+            
+            currentIndex = index;
+            const line = dialogueScript[index];
+
+            if (line.type === 'title') {
+                document.getElementById('sceneTitle').classList.add('active');
+                setTimeout(() => {
+                    document.getElementById('sceneTitle').classList.remove('active');
+                    playLine(index + 1);
+                }, line.duration);
+                return;
+            }
+
+            if (line.type === 'end') {
+                showEnd(line.text);
+                return;
+            }
+
+            // Update speaker
+            const speakerEl = document.getElementById('speakerName');
+            speakerEl.textContent = line.speaker;
+            speakerEl.classList.toggle('villain', line.villain);
+
+            // Update characters
+            updateCharacters(line.character);
+
+            // Hide choices
+            document.getElementById('choicesContainer').classList.remove('active');
+            document.getElementById('continueIndicator').style.display = 'none';
+
+            // Type text
+            if (line.type === 'choice') {
+                typeText(line.prompt, () => showChoices(line.choices));
+            } else {
+                typeText(line.text, () => {
+                    document.getElementById('continueIndicator').style.display = 'flex';
+                });
+            }
+        }
+
+        function updateCharacters(speaking) {
+            const left = document.getElementById('leftChar');
+            const right = document.getElementById('rightChar');
+
+            left.classList.add('active');
+            right.classList.add('active');
+
+            if (speaking === 'left') {
+                left.classList.add('speaking');
+                left.classList.remove('inactive');
+                right.classList.remove('speaking');
+                right.classList.add('inactive');
+            } else if (speaking === 'right') {
+                right.classList.add('speaking');
+                right.classList.remove('inactive');
+                left.classList.remove('speaking');
+                left.classList.add('inactive');
+            }
+        }
+
+        function typeText(text, callback) {
+            isTyping = true;
+            const container = document.getElementById('dialogueText');
+            container.innerHTML = '';
+
+            // Create character spans
+            const chars = text.split('').map((char, i) => {
+                const span = document.createElement('span');
+                span.className = 'char';
+                span.textContent = char;
+                return span;
+            });
+
+            chars.forEach(span => container.appendChild(span));
+
+            // Animate typing
+            let i = 0;
+            typeInterval = setInterval(() => {
+                if (i < chars.length) {
+                    chars[i].classList.add('visible');
+                    i++;
+                } else {
+                    clearInterval(typeInterval);
+                    isTyping = false;
+                    if (callback) callback();
+                }
+            }, 30);
+        }
+
+        function completeTyping() {
+            clearInterval(typeInterval);
+            isTyping = false;
+            
+            document.querySelectorAll('#dialogueText .char').forEach(char => {
+                char.classList.add('visible');
+            });
+
+            const line = dialogueScript[currentIndex];
+            if (line.type === 'choice') {
+                showChoices(line.choices);
+            } else {
+                document.getElementById('continueIndicator').style.display = 'flex';
+            }
+        }
+
+        function showChoices(choices) {
+            const container = document.getElementById('choicesContainer');
+            container.innerHTML = '';
+
+            choices.forEach((choice, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.innerHTML = `<span class="choice-number">${i + 1}.</span> ${choice.text}`;
+                btn.onclick = () => selectChoice(choice);
+                btn.style.animationDelay = `${i * 0.1}s`;
+                container.appendChild(btn);
+            });
+
+            container.classList.add('active');
+        }
+
+        function selectChoice(choice) {
+            // Flash effect
+            const transition = document.getElementById('transition');
+            transition.style.opacity = '0.3';
+            setTimeout(() => transition.style.opacity = '0', 200);
+
+            // Continue to next line
+            playLine(currentIndex + 1);
+        }
+
+        function handleClick(e) {
+            // Don't progress if clicking on choices
+            if (e.target.closest('.choice-btn')) return;
+            if (e.target.closest('.skip-btn')) return;
+
+            if (isTyping) {
+                completeTyping();
+            } else if (!document.getElementById('choicesContainer').classList.contains('active')) {
+                playLine(currentIndex + 1);
+            }
+        }
+
+        function handleKeydown(e) {
+            if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                if (isTyping) {
+                    completeTyping();
+                } else if (!document.getElementById('choicesContainer').classList.contains('active')) {
+                    playLine(currentIndex + 1);
+                }
+            }
+
+            // Number keys for choices
+            if (['1', '2', '3'].includes(e.key)) {
+                const choices = document.querySelectorAll('.choice-btn');
+                const index = parseInt(e.key) - 1;
+                if (choices[index]) {
+                    choices[index].click();
+                }
+            }
+        }
+
+        function showEnd(text) {
+            const transition = document.getElementById('transition');
+            transition.classList.add('active');
+
+            setTimeout(() => {
+                document.getElementById('dialogueBox').innerHTML = `
+                    <div style="text-align: center; padding: 2rem;">
+                        <h2 style="font-family: 'Cinzel', serif; font-size: 2rem; color: var(--gold); margin-bottom: 1rem;">${text}</h2>
+                        <button onclick="restartScene()" style="
+                            padding: 0.75rem 1.5rem;
+                            background: var(--gold);
+                            border: none;
+                            border-radius: 10px;
+                            color: var(--bg-dark);
+                            font-size: 1rem;
+                            cursor: pointer;
+                            font-weight: bold;
+                        ">Play Again</button>
+                    </div>
+                `;
+                transition.classList.remove('active');
+            }, 1000);
+        }
+
+        function skipToEnd() {
+            playLine(dialogueScript.length - 1);
+        }
+
+        function restartScene() {
+            currentIndex = 0;
+            const left = document.getElementById('leftChar');
+            const right = document.getElementById('rightChar');
+            left.classList.remove('active', 'speaking', 'inactive');
+            right.classList.remove('active', 'speaking', 'inactive');
+            
+            document.getElementById('dialogueBox').innerHTML = `
+                <div class="speaker-name" id="speakerName">???</div>
+                <div class="dialogue-text" id="dialogueText"></div>
+                <div class="continue-indicator" id="continueIndicator" style="display: none;">
+                    Click to continue <span class="continue-arrow">→</span>
+                </div>
+                <div class="choices-container" id="choicesContainer"></div>
+            `;
+            
+            playLine(0);
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>

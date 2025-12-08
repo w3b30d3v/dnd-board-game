@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D Digital - Game Board Mockup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-400: #FBBF24;
+      --primary-500: #F59E0B;
+      --primary-600: #D97706;
+      --primary-700: #B45309;
+      --secondary-500: #8B5CF6;
+      --secondary-600: #7C3AED;
+      --bg-primary: #0F0D13;
+      --bg-secondary: #1A1720;
+      --bg-tertiary: #252231;
+      --bg-hover: #2D2A3A;
+      --surface-dark: #1E1B26;
+      --surface-medium: #2A2735;
+      --text-primary: #F4F4F5;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+      --border-subtle: #27272A;
+      --border-default: #3F3F46;
+      --health-full: #22C55E;
+      --health-medium: #EAB308;
+      --health-low: #EF4444;
+      --damage-fire: #F97316;
+      --damage-cold: #06B6D4;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .font-display { font-family: 'Cinzel', serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Layout */
+    .game-layout {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      flex-shrink: 0;
+      background: rgba(26, 23, 32, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Initiative Tracker */
+    .initiative-tracker {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 50px;
+      padding: 0.5rem 1rem;
+    }
+
+    .init-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-right: 0.5rem;
+    }
+
+    .init-token {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2px solid var(--border-default);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 1rem;
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .init-token.active {
+      border-color: var(--primary-500);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3);
+      transform: scale(1.1);
+    }
+
+    .init-token.player { background: #2563EB; }
+    .init-token.ally { background: #22C55E; }
+    .init-token.enemy { background: #DC2626; }
+
+    .init-number {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      background: var(--bg-primary);
+      color: var(--text-secondary);
+      font-size: 0.625rem;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+
+    .round-counter {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-left: 1rem;
+    }
+
+    .round-counter span {
+      color: var(--primary-500);
+      font-weight: bold;
+    }
+
+    /* Turn Info */
+    .turn-info {
+      text-align: center;
+    }
+
+    .turn-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .turn-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1.125rem;
+      color: var(--primary-400);
+    }
+
+    /* Main Area */
+    .main-area {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Left Panel - Character */
+    .left-panel {
+      width: 300px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-subtle);
+      overflow-y: auto;
+      padding: 1rem;
+    }
+
+    .char-portrait-large {
+      width: 100%;
+      aspect-ratio: 1;
+      background: var(--surface-medium);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      font-weight: bold;
+      margin-bottom: 1rem;
+      border: 2px solid var(--primary-700);
+    }
+
+    .char-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .char-header h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .char-header p {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-box {
+      background: var(--surface-dark);
+      border: 2px solid var(--primary-700);
+      border-radius: 8px;
+      padding: 0.5rem;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 0.625rem;
+      color: var(--primary-400);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.25rem;
+      font-weight: bold;
+    }
+
+    .stat-mod {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      color: var(--primary-400);
+      background: var(--bg-primary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-top: 2px;
+      display: inline-block;
+    }
+
+    /* Health Section */
+    .health-section {
+      background: var(--surface-dark);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .health-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .health-header h3 {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .health-numbers {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.25rem;
+    }
+
+    .health-numbers .current { color: var(--health-full); }
+    .health-numbers .max { color: var(--text-muted); }
+
+    .health-bar-large {
+      height: 24px;
+      background: #1C1917;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .health-fill-large {
+      height: 100%;
+      background: linear-gradient(90deg, var(--health-full), #4ADE80);
+      border-radius: 12px;
+      transition: width 0.5s ease-out;
+    }
+
+    .health-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: bold;
+      font-size: 0.875rem;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+
+    /* AC & Speed */
+    .combat-stats {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .combat-stat {
+      flex: 1;
+      background: var(--surface-dark);
+      border-radius: 8px;
+      padding: 0.75rem;
+      text-align: center;
+    }
+
+    .combat-stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .combat-stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    /* Conditions */
+    .conditions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .condition-badge {
+      background: var(--secondary-600);
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .condition-badge.negative {
+      background: var(--health-low);
+    }
+
+    /* Game Board Area */
+    .board-area {
+      flex: 1;
+      position: relative;
+      background: #1a1a2e;
+      overflow: hidden;
+    }
+
+    /* Grid */
+    .game-grid {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: repeat(12, 64px);
+      grid-template-rows: repeat(8, 64px);
+      gap: 1px;
+      padding: 2rem;
+    }
+
+    .grid-tile {
+      background: rgba(30, 27, 38, 0.8);
+      border: 1px solid rgba(63, 63, 70, 0.3);
+      position: relative;
+      transition: all 0.15s;
+    }
+
+    .grid-tile:hover {
+      background: rgba(45, 42, 58, 0.8);
+    }
+
+    .grid-tile.walkable-highlight {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: rgba(34, 197, 94, 0.5);
+    }
+
+    .grid-tile.attack-highlight {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.5);
+    }
+
+    .grid-tile.wall {
+      background: #2A2735;
+      border-color: #3F3F46;
+    }
+
+    /* Tokens on Board */
+    .board-token {
+      position: absolute;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 1.25rem;
+      border: 3px solid;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      cursor: pointer;
+      transition: all 0.2s;
+      z-index: 10;
+    }
+
+    .board-token:hover {
+      transform: scale(1.1);
+    }
+
+    .board-token.player {
+      background: #2563EB;
+      border-color: #3B82F6;
+    }
+
+    .board-token.ally {
+      background: #16A34A;
+      border-color: #22C55E;
+    }
+
+    .board-token.enemy {
+      background: #DC2626;
+      border-color: #EF4444;
+    }
+
+    .board-token.selected {
+      box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.5), 0 4px 12px rgba(0,0,0,0.5);
+      border-color: var(--primary-500);
+      animation: pulse-glow 2s infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.3), 0 4px 12px rgba(0,0,0,0.5); }
+      50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0.5), 0 4px 12px rgba(0,0,0,0.5); }
+    }
+
+    .token-health-ring {
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      border-top-color: var(--health-full);
+      border-right-color: var(--health-full);
+    }
+
+    /* Right Panel - Combat Log */
+    .right-panel {
+      width: 320px;
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .panel-header h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      color: var(--text-secondary);
+    }
+
+    .combat-log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+
+    .log-entry {
+      padding: 0.75rem;
+      background: var(--surface-dark);
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    .log-entry .actor {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .log-entry .action {
+      color: var(--text-muted);
+    }
+
+    .log-entry .target {
+      color: var(--health-low);
+      font-weight: 500;
+    }
+
+    .log-entry .damage {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: bold;
+    }
+
+    .log-entry .damage.dealt { color: var(--health-low); }
+    .log-entry .damage.healed { color: var(--health-full); }
+
+    .log-entry .roll {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      background: var(--bg-primary);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-left: 0.5rem;
+    }
+
+    .log-entry .miss {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .log-entry .crit {
+      color: var(--primary-400);
+      font-weight: bold;
+    }
+
+    /* Dice Roll Display */
+    .dice-display {
+      background: var(--surface-dark);
+      border: 2px solid var(--primary-700);
+      border-radius: 12px;
+      padding: 1rem;
+      margin: 1rem;
+      text-align: center;
+    }
+
+    .dice-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .dice-result {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 3rem;
+      font-weight: bold;
+      color: var(--primary-400);
+      line-height: 1;
+    }
+
+    .dice-breakdown {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-top: 0.5rem;
+    }
+
+    .dice-breakdown .mod {
+      color: var(--text-primary);
+    }
+
+    /* Action Bar */
+    .action-bar {
+      position: absolute;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(30, 27, 38, 0.95);
+      backdrop-filter: blur(12px);
+      border: 2px solid var(--primary-700);
+      border-radius: 20px;
+      padding: 0.75rem 1rem;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+
+    .action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background: transparent;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: var(--text-secondary);
+      min-width: 72px;
+    }
+
+    .action-btn:hover {
+      background: var(--bg-hover);
+      color: var(--primary-400);
+    }
+
+    .action-btn.active {
+      background: var(--bg-hover);
+      color: var(--primary-400);
+    }
+
+    .action-btn svg {
+      width: 24px;
+      height: 24px;
+      margin-bottom: 4px;
+    }
+
+    .action-btn .label {
+      font-size: 0.75rem;
+    }
+
+    .action-btn .shortcut {
+      font-size: 0.625rem;
+      background: var(--bg-tertiary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-top: 4px;
+      color: var(--text-muted);
+    }
+
+    .action-divider {
+      width: 1px;
+      height: 48px;
+      background: var(--border-default);
+      margin: 0 0.5rem;
+    }
+
+    .action-btn.end-turn {
+      background: linear-gradient(180deg, var(--primary-500) 0%, var(--primary-600) 100%);
+      color: var(--bg-primary);
+    }
+
+    .action-btn.end-turn:hover {
+      background: linear-gradient(180deg, var(--primary-400) 0%, var(--primary-500) 100%);
+    }
+
+    /* AoE Indicator */
+    .aoe-indicator {
+      position: absolute;
+      width: 192px;
+      height: 192px;
+      border: 3px dashed var(--damage-fire);
+      border-radius: 50%;
+      background: rgba(249, 115, 22, 0.15);
+      pointer-events: none;
+      animation: pulse-aoe 1.5s infinite;
+    }
+
+    @keyframes pulse-aoe {
+      0%, 100% { opacity: 0.8; }
+      50% { opacity: 0.4; }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-layout">
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <div class="initiative-tracker">
+        <span class="init-label">Initiative</span>
+        <div class="init-token player active">T</div>
+        <div class="init-token ally">L</div>
+        <div class="init-token enemy">G<span class="init-number">1</span></div>
+        <div class="init-token enemy">G<span class="init-number">2</span></div>
+        <div class="init-token ally">S</div>
+        <div class="init-token enemy">G<span class="init-number">3</span></div>
+        <span class="round-counter">Round <span>3</span></span>
+      </div>
+
+      <div class="turn-info">
+        <div class="turn-label">Current Turn</div>
+        <div class="turn-name font-display">Thorin Ironforge</div>
+      </div>
+
+      <div style="display: flex; gap: 1rem; align-items: center;">
+        <button style="background: var(--bg-tertiary); border: 1px solid var(--border-default); color: var(--text-secondary); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;">
+          ⚙️ Settings
+        </button>
+        <button style="background: var(--health-low); border: none; color: white; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;">
+          Leave Game
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Area -->
+    <div class="main-area">
+      <!-- Left Panel - Character Info -->
+      <div class="left-panel">
+        <div class="char-portrait-large" style="background: #2563EB;">T</div>
+        
+        <div class="char-header">
+          <h2 class="font-display">Thorin Ironforge</h2>
+          <p>Level 5 Dwarf Fighter</p>
+        </div>
+
+        <!-- Health -->
+        <div class="health-section">
+          <div class="health-header">
+            <h3>Hit Points</h3>
+            <div class="health-numbers font-mono">
+              <span class="current">38</span>/<span class="max">52</span>
+            </div>
+          </div>
+          <div class="health-bar-large">
+            <div class="health-fill-large" style="width: 73%"></div>
+            <div class="health-text">38 / 52</div>
+          </div>
+        </div>
+
+        <!-- Combat Stats -->
+        <div class="combat-stats">
+          <div class="combat-stat">
+            <div class="combat-stat-label">Armor Class</div>
+            <div class="combat-stat-value">18</div>
+          </div>
+          <div class="combat-stat">
+            <div class="combat-stat-label">Speed</div>
+            <div class="combat-stat-value">25</div>
+          </div>
+          <div class="combat-stat">
+            <div class="combat-stat-label">Initiative</div>
+            <div class="combat-stat-value">+1</div>
+          </div>
+        </div>
+
+        <!-- Ability Scores -->
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">STR</div>
+            <div class="stat-value">18</div>
+            <div class="stat-mod">+4</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">DEX</div>
+            <div class="stat-value">12</div>
+            <div class="stat-mod">+1</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">CON</div>
+            <div class="stat-value">16</div>
+            <div class="stat-mod">+3</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">INT</div>
+            <div class="stat-value">10</div>
+            <div class="stat-mod">+0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">WIS</div>
+            <div class="stat-value">14</div>
+            <div class="stat-mod">+2</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">CHA</div>
+            <div class="stat-value">8</div>
+            <div class="stat-mod">-1</div>
+          </div>
+        </div>
+
+        <!-- Conditions -->
+        <div style="margin-bottom: 1rem;">
+          <h4 style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">Active Effects</h4>
+          <div class="conditions">
+            <span class="condition-badge">Blessed (+1d4)</span>
+            <span class="condition-badge">Shield of Faith</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Game Board -->
+      <div class="board-area">
+        <!-- Grid (simplified representation) -->
+        <div class="game-grid">
+          <!-- Row 1 -->
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          
+          <!-- Rows 2-7 with walkable tiles -->
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile walkable-highlight"></div>
+          <div class="grid-tile walkable-highlight"></div>
+          <div class="grid-tile walkable-highlight"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile wall"></div>
+
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile walkable-highlight"></div>
+          <div class="grid-tile walkable-highlight"></div>
+          <div class="grid-tile walkable-highlight"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile attack-highlight"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile wall"></div>
+
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile walkable-highlight"></div>
+          <div class="grid-tile walkable-highlight"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile attack-highlight"></div>
+          <div class="grid-tile attack-highlight"></div>
+          <div class="grid-tile attack-highlight"></div>
+          <div class="grid-tile wall"></div>
+
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile attack-highlight"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile wall"></div>
+
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile"></div>
+          <div class="grid-tile wall"></div>
+
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+          <div class="grid-tile wall"></div>
+        </div>
+
+        <!-- Tokens -->
+        <div class="board-token player selected" style="top: 180px; left: 164px;">T</div>
+        <div class="board-token ally" style="top: 180px; left: 230px;">L</div>
+        <div class="board-token ally" style="top: 310px; left: 100px;">S</div>
+        <div class="board-token enemy" style="top: 180px; left: 620px;">G</div>
+        <div class="board-token enemy" style="top: 245px; left: 556px;">G</div>
+        <div class="board-token enemy" style="top: 310px; left: 620px;">G</div>
+
+        <!-- Action Bar -->
+        <div class="action-bar">
+          <button class="action-btn active">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span class="label">Attack</span>
+            <span class="shortcut">A</span>
+          </button>
+          <button class="action-btn">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+            </svg>
+            <span class="label">Spell</span>
+            <span class="shortcut">S</span>
+          </button>
+          <button class="action-btn">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            <span class="label">Move</span>
+            <span class="shortcut">M</span>
+          </button>
+          <button class="action-btn">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+            <span class="label">Dodge</span>
+            <span class="shortcut">D</span>
+          </button>
+          <button class="action-btn">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+            <span class="label">More</span>
+            <span class="shortcut">.</span>
+          </button>
+          
+          <div class="action-divider"></div>
+          
+          <button class="action-btn end-turn">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <span class="label">End Turn</span>
+            <span class="shortcut" style="background: rgba(0,0,0,0.2);">E</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Panel - Combat Log -->
+      <div class="right-panel">
+        <div class="panel-header">
+          <h3 class="font-display">Combat Log</h3>
+        </div>
+
+        <!-- Dice Display -->
+        <div class="dice-display">
+          <div class="dice-label">Attack Roll</div>
+          <div class="dice-result">18</div>
+          <div class="dice-breakdown">
+            1d20 (<span class="mod">14</span>) + 7 = <span style="color: var(--health-full);">21 vs AC 15</span>
+          </div>
+        </div>
+
+        <div class="combat-log">
+          <div class="log-entry">
+            <span class="actor">Thorin</span>
+            <span class="action"> attacks </span>
+            <span class="target">Goblin</span>
+            <span class="roll">18 + 7 = 25</span>
+            <div style="margin-top: 4px;">
+              <span class="action">Deals </span>
+              <span class="damage dealt">12</span>
+              <span class="action"> slashing damage</span>
+            </div>
+          </div>
+
+          <div class="log-entry">
+            <span class="target">Goblin</span>
+            <span class="action"> attacks </span>
+            <span class="actor">Thorin</span>
+            <span class="roll">8 + 4 = 12</span>
+            <div style="margin-top: 4px;">
+              <span class="miss">Miss! (AC 18)</span>
+            </div>
+          </div>
+
+          <div class="log-entry">
+            <span class="actor">Lyra</span>
+            <span class="action"> casts </span>
+            <span style="color: var(--secondary-500);">Magic Missile</span>
+            <div style="margin-top: 4px;">
+              <span class="action">Deals </span>
+              <span class="damage dealt">14</span>
+              <span class="action"> force damage to </span>
+              <span class="target">Goblin</span>
+            </div>
+          </div>
+
+          <div class="log-entry">
+            <span class="target">Goblin</span>
+            <span class="action"> is </span>
+            <span class="damage dealt">defeated!</span>
+          </div>
+
+          <div class="log-entry">
+            <span class="actor">Shadowmere</span>
+            <span class="action"> attacks </span>
+            <span class="target">Goblin</span>
+            <span class="roll">nat 20!</span>
+            <div style="margin-top: 4px;">
+              <span class="crit">CRITICAL HIT!</span>
+              <span class="action"> Deals </span>
+              <span class="damage dealt">24</span>
+              <span class="action"> piercing damage</span>
+            </div>
+          </div>
+
+          <div class="log-entry">
+            <span class="actor">Lyra</span>
+            <span class="action"> heals </span>
+            <span class="actor">Thorin</span>
+            <span class="action"> with Cure Wounds</span>
+            <div style="margin-top: 4px;">
+              <span class="action">Restores </span>
+              <span class="damage healed">8</span>
+              <span class="action"> HP</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

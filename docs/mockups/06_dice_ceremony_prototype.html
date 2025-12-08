@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D Digital - Dice Rolling Ceremony Prototype</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-400: #FBBF24;
+      --primary-500: #F59E0B;
+      --secondary-500: #8B5CF6;
+      --bg-primary: #0F0D13;
+      --bg-secondary: #1A1720;
+      --surface-dark: #1E1B26;
+      --text-primary: #F4F4F5;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+      --border-subtle: #27272A;
+      --success: #22C55E;
+      --error: #EF4444;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .font-display { font-family: 'Cinzel', serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Animated background */
+    .bg-animated {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: radial-gradient(ellipse at 50% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 50%), var(--bg-primary);
+    }
+
+    .particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* Main Container */
+    .dice-container {
+      text-align: center;
+      padding: 2rem;
+      max-width: 800px;
+    }
+
+    .roll-context {
+      margin-bottom: 2rem;
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .roll-type {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+    }
+
+    .roll-title {
+      font-family: 'Cinzel', serif;
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .roll-subtitle {
+      color: var(--text-secondary);
+    }
+
+    /* Dice Display Area */
+    .dice-area {
+      position: relative;
+      width: 300px;
+      height: 300px;
+      margin: 0 auto 2rem;
+      perspective: 1000px;
+    }
+
+    .dice-3d {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 120px;
+      height: 120px;
+      transform: translate(-50%, -50%);
+      transform-style: preserve-3d;
+      transition: transform 0.1s ease;
+    }
+
+    .dice-face {
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      background: linear-gradient(145deg, #2A2735, #1E1B26);
+      border: 3px solid var(--primary-500);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 3rem;
+      font-weight: bold;
+      color: var(--primary-400);
+      box-shadow: inset 0 0 30px rgba(245, 158, 11, 0.1);
+    }
+
+    /* Idle floating animation */
+    .dice-3d.idle {
+      animation: diceFloat 3s ease-in-out infinite;
+    }
+
+    @keyframes diceFloat {
+      0%, 100% { transform: translate(-50%, -50%) rotateX(10deg) rotateY(10deg); }
+      50% { transform: translate(-50%, -55%) rotateX(15deg) rotateY(-10deg); }
+    }
+
+    /* Anticipation shake */
+    .dice-3d.anticipation {
+      animation: anticipation 0.5s ease-in-out;
+    }
+
+    @keyframes anticipation {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      25% { transform: translate(-52%, -48%) scale(1.05) rotate(-5deg); }
+      50% { transform: translate(-48%, -52%) scale(1.1) rotate(5deg); }
+      75% { transform: translate(-51%, -49%) scale(1.05) rotate(-3deg); }
+    }
+
+    /* Rolling animation */
+    .dice-3d.rolling {
+      animation: diceRoll 1.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+    }
+
+    @keyframes diceRoll {
+      0% { transform: translate(-50%, -50%) rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+      25% { transform: translate(-50%, -80%) rotateX(540deg) rotateY(270deg) rotateZ(180deg); }
+      50% { transform: translate(-50%, -60%) rotateX(1080deg) rotateY(540deg) rotateZ(360deg); }
+      75% { transform: translate(-50%, -55%) rotateX(1620deg) rotateY(810deg) rotateZ(540deg); }
+      100% { transform: translate(-50%, -50%) rotateX(2160deg) rotateY(1080deg) rotateZ(720deg); }
+    }
+
+    /* Result reveal */
+    .dice-3d.result {
+      animation: resultBounce 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    @keyframes resultBounce {
+      0% { transform: translate(-50%, -50%) scale(0.5); }
+      50% { transform: translate(-50%, -50%) scale(1.2); }
+      100% { transform: translate(-50%, -50%) scale(1); }
+    }
+
+    /* Critical hit glow */
+    .dice-3d.critical .dice-face {
+      border-color: var(--primary-400);
+      box-shadow: 
+        0 0 40px rgba(245, 158, 11, 0.6),
+        0 0 80px rgba(245, 158, 11, 0.4),
+        inset 0 0 30px rgba(245, 158, 11, 0.3);
+      animation: criticalPulse 0.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes criticalPulse {
+      from { box-shadow: 0 0 40px rgba(245, 158, 11, 0.6), 0 0 80px rgba(245, 158, 11, 0.4); }
+      to { box-shadow: 0 0 60px rgba(245, 158, 11, 0.8), 0 0 100px rgba(245, 158, 11, 0.5); }
+    }
+
+    /* Critical fail */
+    .dice-3d.fail .dice-face {
+      border-color: var(--error);
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+    }
+
+    /* Result Text */
+    .result-display {
+      margin-bottom: 2rem;
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .result-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 4rem;
+      font-weight: bold;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .result-value.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .result-value.critical {
+      color: var(--primary-400);
+      text-shadow: 0 0 30px rgba(245, 158, 11, 0.8);
+    }
+
+    .result-value.fail {
+      color: var(--error);
+    }
+
+    .result-value.success {
+      color: var(--success);
+    }
+
+    .result-label {
+      font-family: 'Cinzel', serif;
+      font-size: 1.5rem;
+      margin-top: 0.5rem;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s;
+    }
+
+    .result-label.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .result-label.critical {
+      color: var(--primary-400);
+    }
+
+    .result-label.fail {
+      color: var(--error);
+    }
+
+    .result-breakdown {
+      font-size: 1rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      opacity: 0;
+      transition: opacity 0.5s ease 0.4s;
+    }
+
+    .result-breakdown.visible {
+      opacity: 1;
+    }
+
+    /* Roll buttons */
+    .roll-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+
+    .roll-btn {
+      padding: 1rem 2rem;
+      background: var(--surface-dark);
+      border: 2px solid var(--border-subtle);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .roll-btn:hover {
+      border-color: var(--primary-500);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .roll-btn:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    .roll-btn.primary {
+      background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+      border-color: var(--primary-500);
+      color: var(--bg-primary);
+      font-weight: 600;
+    }
+
+    .roll-btn.primary:hover {
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.4);
+    }
+
+    .roll-btn .dice-icon {
+      font-size: 1.25rem;
+    }
+
+    /* Modifiers */
+    .modifiers {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+
+    .modifier {
+      padding: 0.75rem 1.25rem;
+      background: var(--surface-dark);
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .modifier-label {
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.25rem;
+    }
+
+    .modifier-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: var(--primary-400);
+    }
+
+    /* Advantage/Disadvantage toggle */
+    .advantage-toggle {
+      display: flex;
+      gap: 0.25rem;
+      background: var(--surface-dark);
+      border-radius: 12px;
+      padding: 0.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .adv-btn {
+      padding: 0.75rem 1.5rem;
+      background: transparent;
+      border: none;
+      border-radius: 10px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.875rem;
+    }
+
+    .adv-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .adv-btn.active {
+      background: var(--primary-500);
+      color: var(--bg-primary);
+    }
+
+    .adv-btn.disadvantage.active {
+      background: var(--error);
+    }
+
+    /* Roll history */
+    .roll-history {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .history-item {
+      width: 48px;
+      height: 48px;
+      background: var(--surface-dark);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: bold;
+      opacity: 0;
+      animation: historyIn 0.3s ease-out forwards;
+    }
+
+    .history-item.critical {
+      border: 2px solid var(--primary-500);
+      color: var(--primary-400);
+    }
+
+    .history-item.fail {
+      border: 2px solid var(--error);
+      color: var(--error);
+    }
+
+    @keyframes historyIn {
+      from { opacity: 0; transform: scale(0.5); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Particle effects */
+    .particle-burst {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .burst-particle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      animation: burst 1s ease-out forwards;
+    }
+
+    @keyframes burst {
+      0% { transform: translate(0, 0) scale(1); opacity: 1; }
+      100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+    }
+
+    /* Screen shake */
+    .screen-shake {
+      animation: shake 0.4s ease-out;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10% { transform: translateX(-10px); }
+      30% { transform: translateX(10px); }
+      50% { transform: translateX(-5px); }
+      70% { transform: translateX(5px); }
+    }
+
+    /* Critical text animation */
+    .critical-text {
+      position: fixed;
+      top: 30%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Cinzel', serif;
+      font-size: 4rem;
+      font-weight: bold;
+      color: var(--primary-400);
+      text-shadow: 0 0 40px rgba(245, 158, 11, 0.8);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .critical-text.visible {
+      animation: criticalText 1.5s ease-out forwards;
+    }
+
+    @keyframes criticalText {
+      0% { opacity: 0; transform: translateX(-50%) scale(0.5); }
+      20% { opacity: 1; transform: translateX(-50%) scale(1.2); }
+      40% { transform: translateX(-50%) scale(1); }
+      100% { opacity: 0; transform: translateX(-50%) translateY(-50px) scale(1); }
+    }
+
+    /* Sound indicator (visual feedback for when sound would play) */
+    .sound-indicator {
+      position: fixed;
+      bottom: 2rem;
+      left: 2rem;
+      padding: 0.5rem 1rem;
+      background: var(--surface-dark);
+      border-radius: 8px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .sound-indicator.visible {
+      opacity: 1;
+    }
+
+    /* Different dice types */
+    .dice-type-selector {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .dice-type {
+      width: 48px;
+      height: 48px;
+      background: var(--surface-dark);
+      border: 2px solid var(--border-subtle);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.875rem;
+      font-weight: bold;
+    }
+
+    .dice-type:hover {
+      border-color: var(--primary-600);
+    }
+
+    .dice-type.active {
+      background: var(--primary-500);
+      border-color: var(--primary-500);
+      color: var(--bg-primary);
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-animated"></div>
+  <div class="particles" id="particles"></div>
+
+  <div class="dice-container">
+    <div class="roll-context">
+      <div class="roll-type">Attack Roll</div>
+      <h1 class="roll-title font-display">Thorin attacks Goblin</h1>
+      <p class="roll-subtitle">Longsword • AC 13 to hit</p>
+    </div>
+
+    <!-- Dice Type Selector -->
+    <div class="dice-type-selector">
+      <div class="dice-type" onclick="selectDiceType('d4')">d4</div>
+      <div class="dice-type" onclick="selectDiceType('d6')">d6</div>
+      <div class="dice-type" onclick="selectDiceType('d8')">d8</div>
+      <div class="dice-type" onclick="selectDiceType('d10')">d10</div>
+      <div class="dice-type" onclick="selectDiceType('d12')">d12</div>
+      <div class="dice-type active" onclick="selectDiceType('d20')">d20</div>
+    </div>
+
+    <!-- 3D Dice Area -->
+    <div class="dice-area">
+      <div class="dice-3d idle" id="dice3d">
+        <div class="dice-face" id="diceFace">
+          <span id="diceValue">?</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result Display -->
+    <div class="result-display">
+      <div class="result-value" id="resultValue">--</div>
+      <div class="result-label font-display" id="resultLabel"></div>
+      <div class="result-breakdown" id="resultBreakdown"></div>
+    </div>
+
+    <!-- Modifiers -->
+    <div class="modifiers">
+      <div class="modifier">
+        <div class="modifier-label">Attack Bonus</div>
+        <div class="modifier-value">+7</div>
+      </div>
+      <div class="modifier">
+        <div class="modifier-label">Proficiency</div>
+        <div class="modifier-value">+3</div>
+      </div>
+      <div class="modifier">
+        <div class="modifier-label">STR Mod</div>
+        <div class="modifier-value">+4</div>
+      </div>
+    </div>
+
+    <!-- Advantage Toggle -->
+    <div class="advantage-toggle">
+      <button class="adv-btn disadvantage" onclick="setAdvantage('disadvantage', this)">Disadvantage</button>
+      <button class="adv-btn active" onclick="setAdvantage('normal', this)">Normal</button>
+      <button class="adv-btn" onclick="setAdvantage('advantage', this)">Advantage</button>
+    </div>
+
+    <!-- Roll Buttons -->
+    <div class="roll-buttons">
+      <button class="roll-btn primary" onclick="rollDice()">
+        <span class="dice-icon">🎲</span>
+        Roll d20
+      </button>
+      <button class="roll-btn" onclick="rollDice(true)">
+        <span class="dice-icon">⚡</span>
+        Quick Roll
+      </button>
+    </div>
+
+    <!-- Roll History -->
+    <div class="roll-history" id="rollHistory"></div>
+  </div>
+
+  <!-- Critical Text -->
+  <div class="critical-text" id="criticalText">CRITICAL HIT!</div>
+
+  <!-- Particle Burst Container -->
+  <div class="particle-burst" id="particleBurst"></div>
+
+  <!-- Sound Indicator -->
+  <div class="sound-indicator" id="soundIndicator">🔊 Sound: dice_roll.mp3</div>
+
+  <script>
+    let currentDiceType = 'd20';
+    let currentAdvantage = 'normal';
+    let rollHistory = [];
+
+    function selectDiceType(type) {
+      document.querySelectorAll('.dice-type').forEach(d => d.classList.remove('active'));
+      event.target.classList.add('active');
+      currentDiceType = type;
+    }
+
+    function setAdvantage(type, btn) {
+      document.querySelectorAll('.adv-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentAdvantage = type;
+    }
+
+    async function rollDice(quick = false) {
+      const dice = document.getElementById('dice3d');
+      const diceFace = document.getElementById('diceFace');
+      const diceValue = document.getElementById('diceValue');
+      const resultValue = document.getElementById('resultValue');
+      const resultLabel = document.getElementById('resultLabel');
+      const resultBreakdown = document.getElementById('resultBreakdown');
+      const criticalText = document.getElementById('criticalText');
+
+      // Reset
+      resultValue.classList.remove('visible', 'critical', 'fail', 'success');
+      resultLabel.classList.remove('visible', 'critical', 'fail');
+      resultBreakdown.classList.remove('visible');
+      dice.classList.remove('idle', 'rolling', 'result', 'critical', 'fail');
+      criticalText.classList.remove('visible');
+      diceFace.classList.remove('critical', 'fail');
+
+      // Show sound indicator
+      showSoundIndicator('dice_shake.mp3');
+
+      // Phase 1: Anticipation
+      dice.classList.add('anticipation');
+      await sleep(quick ? 200 : 500);
+      dice.classList.remove('anticipation');
+
+      // Phase 2: Rolling
+      showSoundIndicator('dice_roll.mp3');
+      dice.classList.add('rolling');
+      
+      // Rapid number changes during roll
+      const rollDuration = quick ? 500 : 1500;
+      const startTime = Date.now();
+      const maxVal = parseInt(currentDiceType.substring(1));
+      
+      while (Date.now() - startTime < rollDuration) {
+        diceValue.textContent = Math.floor(Math.random() * maxVal) + 1;
+        await sleep(50);
+      }
+
+      // Generate result
+      let roll1 = Math.floor(Math.random() * maxVal) + 1;
+      let roll2 = Math.floor(Math.random() * maxVal) + 1;
+      let finalRoll;
+
+      if (currentAdvantage === 'advantage') {
+        finalRoll = Math.max(roll1, roll2);
+      } else if (currentAdvantage === 'disadvantage') {
+        finalRoll = Math.min(roll1, roll2);
+      } else {
+        finalRoll = roll1;
+      }
+
+      // Special override for demo (20% chance of nat 20, 10% chance of nat 1)
+      if (currentDiceType === 'd20') {
+        const specialRoll = Math.random();
+        if (specialRoll < 0.2) finalRoll = 20;
+        else if (specialRoll < 0.3) finalRoll = 1;
+      }
+
+      dice.classList.remove('rolling');
+      diceValue.textContent = finalRoll;
+
+      // Phase 3: Result reveal
+      await sleep(100);
+      showSoundIndicator('dice_land.mp3');
+      dice.classList.add('result');
+
+      const total = finalRoll + 7; // +7 modifier
+      const isCrit = finalRoll === maxVal && currentDiceType === 'd20';
+      const isFail = finalRoll === 1 && currentDiceType === 'd20';
+
+      await sleep(300);
+
+      // Display result
+      resultValue.textContent = total;
+      resultValue.classList.add('visible');
+
+      if (isCrit) {
+        // CRITICAL HIT!
+        dice.classList.add('critical');
+        resultValue.classList.add('critical');
+        resultLabel.textContent = 'CRITICAL HIT!';
+        resultLabel.classList.add('critical');
+        
+        showSoundIndicator('critical_hit.mp3');
+        createParticleBurst('#F59E0B', '#FBBF24', 60);
+        document.body.classList.add('screen-shake');
+        criticalText.classList.add('visible');
+        
+        setTimeout(() => document.body.classList.remove('screen-shake'), 400);
+      } else if (isFail) {
+        // Critical fail
+        dice.classList.add('fail');
+        resultValue.classList.add('fail');
+        resultLabel.textContent = 'CRITICAL FAIL';
+        resultLabel.classList.add('fail');
+        showSoundIndicator('critical_fail.mp3');
+        createParticleBurst('#EF4444', '#991B1B', 20);
+      } else if (total >= 13) {
+        // Hit
+        resultValue.classList.add('success');
+        resultLabel.textContent = 'HIT!';
+        showSoundIndicator('hit.mp3');
+        createParticleBurst('#22C55E', '#16A34A', 30);
+      } else {
+        // Miss
+        resultLabel.textContent = 'Miss';
+      }
+
+      resultLabel.classList.add('visible');
+
+      // Show breakdown
+      let breakdown = `${finalRoll} + 7 = ${total}`;
+      if (currentAdvantage !== 'normal') {
+        breakdown = `(${roll1}, ${roll2}) → ${finalRoll} + 7 = ${total}`;
+      }
+      resultBreakdown.textContent = breakdown;
+      resultBreakdown.classList.add('visible');
+
+      // Add to history
+      addToHistory(finalRoll, isCrit, isFail);
+
+      // Return to idle after a moment
+      await sleep(2000);
+      dice.classList.remove('result', 'critical', 'fail');
+      dice.classList.add('idle');
+    }
+
+    function createParticleBurst(color1, color2, count) {
+      const container = document.getElementById('particleBurst');
+      container.innerHTML = '';
+
+      for (let i = 0; i < count; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'burst-particle';
+        particle.style.background = Math.random() > 0.5 ? color1 : color2;
+        particle.style.width = (4 + Math.random() * 8) + 'px';
+        particle.style.height = particle.style.width;
+
+        const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
+        const distance = 100 + Math.random() * 150;
+        particle.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
+        particle.style.setProperty('--ty', Math.sin(angle) * distance + 'px');
+        particle.style.animationDelay = (Math.random() * 0.2) + 's';
+
+        container.appendChild(particle);
+      }
+    }
+
+    function addToHistory(value, isCrit, isFail) {
+      rollHistory.unshift({ value, isCrit, isFail });
+      if (rollHistory.length > 8) rollHistory.pop();
+
+      const container = document.getElementById('rollHistory');
+      container.innerHTML = '';
+
+      rollHistory.forEach((roll, i) => {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        if (roll.isCrit) item.classList.add('critical');
+        if (roll.isFail) item.classList.add('fail');
+        item.textContent = roll.value;
+        item.style.animationDelay = (i * 0.05) + 's';
+        container.appendChild(item);
+      });
+    }
+
+    function showSoundIndicator(sound) {
+      const indicator = document.getElementById('soundIndicator');
+      indicator.textContent = `🔊 Sound: ${sound}`;
+      indicator.classList.add('visible');
+      setTimeout(() => indicator.classList.remove('visible'), 1000);
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Create background particles
+    function createBackgroundParticles() {
+      const container = document.getElementById('particles');
+      for (let i = 0; i < 15; i++) {
+        const particle = document.createElement('div');
+        particle.style.cssText = `
+          position: absolute;
+          width: 4px;
+          height: 4px;
+          background: rgba(139, 92, 246, 0.5);
+          border-radius: 50%;
+          left: ${Math.random() * 100}%;
+          animation: float ${10 + Math.random() * 10}s linear infinite;
+          animation-delay: ${-Math.random() * 20}s;
+        `;
+        container.appendChild(particle);
+      }
+
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes float {
+          0% { transform: translateY(100vh) scale(0); opacity: 0; }
+          10% { opacity: 0.8; }
+          90% { opacity: 0.8; }
+          100% { transform: translateY(-100px) scale(1); opacity: 0; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    // Keyboard shortcut
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        rollDice();
+      }
+    });
+
+    createBackgroundParticles();
+  </script>
+</body>
+</html>

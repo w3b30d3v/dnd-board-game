@@ -1,0 +1,67 @@
+{
+  "name": "dnd-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "D&D Digital Board Game Platform - RAW 5e Tactical Combat",
+  "author": "Your Team <team@example.com>",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0",
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=@dnd/web",
+    "dev:api": "turbo run dev --filter=@dnd/api-gateway",
+    "build": "turbo run build",
+    "build:web": "turbo run build --filter=@dnd/web",
+    "build:services": "turbo run build --filter=./services/*",
+    "test": "turbo run test",
+    "test:unit": "turbo run test:unit",
+    "test:golden": "turbo run test:golden",
+    "test:integration": "turbo run test:integration",
+    "test:e2e": "turbo run test:e2e",
+    "test:watch": "turbo run test:watch",
+    "test:coverage": "turbo run test:coverage",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "db:generate": "pnpm --filter @dnd/api-gateway db:generate",
+    "db:migrate": "pnpm --filter @dnd/api-gateway db:migrate",
+    "db:migrate:dev": "pnpm --filter @dnd/api-gateway db:migrate:dev",
+    "db:reset": "pnpm --filter @dnd/api-gateway db:reset",
+    "db:studio": "pnpm --filter @dnd/api-gateway db:studio",
+    "db:seed": "pnpm --filter @dnd/api-gateway db:seed",
+    "content:seed": "pnpm --filter @dnd/api-gateway content:seed",
+    "proto:generate": "pnpm --filter @dnd/shared proto:generate && pnpm --filter @dnd/api-gateway proto:generate",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.2.0",
+    "prisma": "5.22.0",
+    "turbo": "^1.12.0",
+    "typescript": "^5.3.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "dependencies": {
+    "@prisma/client": "5.22.0"
+  }
+}

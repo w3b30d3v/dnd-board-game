@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D Character Sheet - Interactive Prototype</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0F0D13;
+            --bg-surface: #1E1B26;
+            --bg-elevated: #2A2735;
+            --gold: #F59E0B;
+            --gold-light: #FBBF24;
+            --purple: #8B5CF6;
+            --red: #EF4444;
+            --green: #22C55E;
+            --blue: #3B82F6;
+            --text: #F4F4F5;
+            --text-muted: #A1A1AA;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--gold);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: float 15s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+            50% { transform: translateY(-100px) translateX(50px); opacity: 0.6; }
+        }
+
+        /* Main Container */
+        .sheet-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Character Header */
+        .character-header {
+            display: grid;
+            grid-template-columns: 200px 1fr auto;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-elevated) 100%);
+            border-radius: 20px;
+            border: 2px solid rgba(245, 158, 11, 0.3);
+            animation: slideDown 0.6s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .portrait-container {
+            position: relative;
+            width: 200px;
+            height: 250px;
+            border-radius: 15px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .portrait {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #3B82F6 0%, #1D4ED8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            transition: transform 0.4s ease;
+        }
+
+        .portrait-container:hover .portrait {
+            transform: scale(1.1);
+        }
+
+        .portrait-frame {
+            position: absolute;
+            inset: 0;
+            border: 3px solid var(--gold);
+            border-radius: 15px;
+            pointer-events: none;
+            box-shadow: inset 0 0 30px rgba(245, 158, 11, 0.3);
+        }
+
+        .portrait-level {
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, var(--gold) 0%, #D97706 100%);
+            color: var(--bg-dark);
+            font-weight: bold;
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            animation: shimmer 3s linear infinite;
+            background-size: 200% 100%;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .character-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .character-name {
+            font-family: 'Cinzel', serif;
+            font-size: 2.5rem;
+            color: var(--gold);
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+        }
+
+        .character-title {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .character-race-class {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            padding: 0.5rem 1rem;
+            background: var(--bg-elevated);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Vitals Section */
+        .vitals {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            min-width: 200px;
+        }
+
+        .vital-stat {
+            text-align: center;
+            padding: 1rem;
+            background: var(--bg-elevated);
+            border-radius: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .vital-stat:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+        }
+
+        .vital-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .vital-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .hp-value { color: var(--green); }
+        .ac-value { color: var(--blue); }
+
+        .hp-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-dark);
+            border-radius: 4px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--green) 0%, #16A34A 100%);
+            border-radius: 4px;
+            transition: width 0.8s ease;
+        }
+
+        /* Ability Scores */
+        .ability-scores {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+            animation: slideUp 0.6s ease-out 0.2s both;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .ability-score {
+            background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-elevated) 100%);
+            border-radius: 15px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ability-score::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .ability-score:hover::before {
+            left: 100%;
+        }
+
+        .ability-score:hover {
+            border-color: var(--gold);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(245, 158, 11, 0.2);
+        }
+
+        .ability-score.rolling {
+            animation: abilityRoll 0.5s ease;
+        }
+
+        @keyframes abilityRoll {
+            0%, 100% { transform: translateY(-5px); }
+            25% { transform: translateY(-5px) rotate(-5deg); }
+            75% { transform: translateY(-5px) rotate(5deg); }
+        }
+
+        .ability-name {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .ability-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--text);
+            margin-bottom: 0.25rem;
+        }
+
+        .ability-modifier {
+            font-size: 1.2rem;
+            color: var(--gold);
+            font-weight: bold;
+        }
+
+        .ability-modifier.positive::before { content: '+'; }
+
+        /* Skills Section */
+        .skills-section {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+            margin-bottom: 2rem;
+            animation: slideUp 0.6s ease-out 0.4s both;
+        }
+
+        .skills-panel {
+            background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-elevated) 100%);
+            border-radius: 20px;
+            padding: 1.5rem;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .panel-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.2rem;
+            color: var(--gold);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .skill-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .skill-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .skill-item:hover {
+            background: var(--bg-elevated);
+            transform: translateX(5px);
+        }
+
+        .skill-item.proficient {
+            border-left: 3px solid var(--gold);
+        }
+
+        .skill-name {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .proficiency-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--gold);
+        }
+
+        .skill-modifier {
+            font-weight: bold;
+            color: var(--gold);
+        }
+
+        /* Spells Section */
+        .spells-section {
+            margin-bottom: 2rem;
+            animation: slideUp 0.6s ease-out 0.6s both;
+        }
+
+        .spell-slots {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .spell-slot-level {
+            background: var(--bg-surface);
+            border-radius: 15px;
+            padding: 1rem;
+            text-align: center;
+            flex: 1;
+            border: 2px solid rgba(139, 92, 246, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .spell-slot-level:hover {
+            border-color: var(--purple);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+        }
+
+        .slot-level-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .slot-pips {
+            display: flex;
+            gap: 0.25rem;
+            justify-content: center;
+        }
+
+        .slot-pip {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid var(--purple);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .slot-pip.filled {
+            background: var(--purple);
+            box-shadow: 0 0 10px var(--purple);
+        }
+
+        .slot-pip:hover {
+            transform: scale(1.2);
+        }
+
+        .spell-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .spell-card {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%);
+            border-radius: 15px;
+            padding: 1rem;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .spell-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.3), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .spell-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+        }
+
+        .spell-card:hover::after {
+            opacity: 1;
+        }
+
+        .spell-card.casting {
+            animation: spellCast 0.6s ease;
+        }
+
+        @keyframes spellCast {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); box-shadow: 0 0 50px var(--purple); }
+            100% { transform: scale(1); }
+        }
+
+        .spell-name {
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .spell-school {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Equipment Section */
+        .equipment-section {
+            animation: slideUp 0.6s ease-out 0.8s both;
+        }
+
+        .equipment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+
+        .equipment-slot {
+            background: var(--bg-surface);
+            border-radius: 15px;
+            padding: 1rem;
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .equipment-slot.filled {
+            border-style: solid;
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+
+        .equipment-slot:hover {
+            border-color: var(--gold);
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+        }
+
+        .equipment-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .equipment-name {
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .equipment-type {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Dice Roll Modal */
+        .dice-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .dice-modal.active {
+            display: flex;
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        .dice-content {
+            text-align: center;
+            transform: scale(0.9);
+            animation: popIn 0.4s ease forwards;
+        }
+
+        @keyframes popIn {
+            to { transform: scale(1); }
+        }
+
+        .dice-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            color: var(--gold);
+            margin-bottom: 2rem;
+        }
+
+        .dice-display {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 2rem;
+            background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-elevated) 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            font-weight: bold;
+            border: 3px solid var(--gold);
+            box-shadow: 0 0 30px rgba(245, 158, 11, 0.5);
+        }
+
+        .dice-display.rolling {
+            animation: diceRoll 0.1s linear infinite;
+        }
+
+        @keyframes diceRoll {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .dice-result {
+            font-size: 1.2rem;
+            color: var(--text);
+        }
+
+        .dice-breakdown {
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .dice-result.critical {
+            color: var(--gold);
+            animation: criticalPulse 0.5s ease infinite;
+        }
+
+        @keyframes criticalPulse {
+            0%, 100% { text-shadow: 0 0 20px var(--gold); }
+            50% { text-shadow: 0 0 40px var(--gold), 0 0 60px var(--gold); }
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--bg-elevated);
+            border-left: 4px solid var(--gold);
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            transform: translateX(120%);
+            transition: transform 0.4s ease;
+            z-index: 1001;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .character-header {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .portrait-container {
+                margin: 0 auto;
+            }
+
+            .ability-scores {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .skills-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .ability-scores {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .character-name {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Background Particles -->
+    <div class="bg-particles" id="particles"></div>
+
+    <div class="sheet-container">
+        <!-- Character Header -->
+        <div class="character-header">
+            <div class="portrait-container">
+                <div class="portrait">🧙</div>
+                <div class="portrait-frame"></div>
+                <div class="portrait-level">LEVEL 5</div>
+            </div>
+
+            <div class="character-info">
+                <h1 class="character-name">Lyra Nightwhisper</h1>
+                <p class="character-title">Archmage of the Silver Tower</p>
+                <div class="character-race-class">
+                    <span class="tag">🧝 High Elf</span>
+                    <span class="tag">🔮 Wizard (Evocation)</span>
+                    <span class="tag">📚 Sage Background</span>
+                </div>
+            </div>
+
+            <div class="vitals">
+                <div class="vital-stat">
+                    <div class="vital-label">Hit Points</div>
+                    <div class="vital-value hp-value" id="hp-display">32/38</div>
+                    <div class="hp-bar">
+                        <div class="hp-fill" id="hp-fill" style="width: 84%"></div>
+                    </div>
+                </div>
+                <div class="vital-stat">
+                    <div class="vital-label">Armor Class</div>
+                    <div class="vital-value ac-value">15</div>
+                </div>
+                <div class="vital-stat">
+                    <div class="vital-label">Speed</div>
+                    <div class="vital-value">30 ft</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ability Scores -->
+        <div class="ability-scores">
+            <div class="ability-score" data-ability="str" data-mod="-1" onclick="rollAbility(this, 'Strength', -1)">
+                <div class="ability-name">Strength</div>
+                <div class="ability-value">8</div>
+                <div class="ability-modifier">-1</div>
+            </div>
+            <div class="ability-score" data-ability="dex" data-mod="2" onclick="rollAbility(this, 'Dexterity', 2)">
+                <div class="ability-name">Dexterity</div>
+                <div class="ability-value">14</div>
+                <div class="ability-modifier positive">2</div>
+            </div>
+            <div class="ability-score" data-ability="con" data-mod="1" onclick="rollAbility(this, 'Constitution', 1)">
+                <div class="ability-name">Constitution</div>
+                <div class="ability-value">13</div>
+                <div class="ability-modifier positive">1</div>
+            </div>
+            <div class="ability-score" data-ability="int" data-mod="4" onclick="rollAbility(this, 'Intelligence', 4)">
+                <div class="ability-name">Intelligence</div>
+                <div class="ability-value">18</div>
+                <div class="ability-modifier positive">4</div>
+            </div>
+            <div class="ability-score" data-ability="wis" data-mod="1" onclick="rollAbility(this, 'Wisdom', 1)">
+                <div class="ability-name">Wisdom</div>
+                <div class="ability-value">12</div>
+                <div class="ability-modifier positive">1</div>
+            </div>
+            <div class="ability-score" data-ability="cha" data-mod="0" onclick="rollAbility(this, 'Charisma', 0)">
+                <div class="ability-name">Charisma</div>
+                <div class="ability-value">10</div>
+                <div class="ability-modifier">0</div>
+            </div>
+        </div>
+
+        <!-- Skills Section -->
+        <div class="skills-section">
+            <div class="skills-panel">
+                <h3 class="panel-title">⚔️ Saving Throws</h3>
+                <div class="skill-list">
+                    <div class="skill-item" onclick="rollSkill('Strength Save', -1)">
+                        <span class="skill-name">Strength</span>
+                        <span class="skill-modifier">-1</span>
+                    </div>
+                    <div class="skill-item" onclick="rollSkill('Dexterity Save', 2)">
+                        <span class="skill-name">Dexterity</span>
+                        <span class="skill-modifier">+2</span>
+                    </div>
+                    <div class="skill-item" onclick="rollSkill('Constitution Save', 1)">
+                        <span class="skill-name">Constitution</span>
+                        <span class="skill-modifier">+1</span>
+                    </div>
+                    <div class="skill-item proficient" onclick="rollSkill('Intelligence Save', 7)">
+                        <span class="skill-name"><span class="proficiency-dot"></span> Intelligence</span>
+                        <span class="skill-modifier">+7</span>
+                    </div>
+                    <div class="skill-item proficient" onclick="rollSkill('Wisdom Save', 4)">
+                        <span class="skill-name"><span class="proficiency-dot"></span> Wisdom</span>
+                        <span class="skill-modifier">+4</span>
+                    </div>
+                    <div class="skill-item" onclick="rollSkill('Charisma Save', 0)">
+                        <span class="skill-name">Charisma</span>
+                        <span class="skill-modifier">+0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="skills-panel">
+                <h3 class="panel-title">📜 Skills</h3>
+                <div class="skill-list">
+                    <div class="skill-item proficient" onclick="rollSkill('Arcana', 7)">
+                        <span class="skill-name"><span class="proficiency-dot"></span> Arcana (Int)</span>
+                        <span class="skill-modifier">+7</span>
+                    </div>
+                    <div class="skill-item proficient" onclick="rollSkill('History', 7)">
+                        <span class="skill-name"><span class="proficiency-dot"></span> History (Int)</span>
+                        <span class="skill-modifier">+7</span>
+                    </div>
+                    <div class="skill-item proficient" onclick="rollSkill('Investigation', 7)">
+                        <span class="skill-name"><span class="proficiency-dot"></span> Investigation (Int)</span>
+                        <span class="skill-modifier">+7</span>
+                    </div>
+                    <div class="skill-item" onclick="rollSkill('Perception', 1)">
+                        <span class="skill-name">Perception (Wis)</span>
+                        <span class="skill-modifier">+1</span>
+                    </div>
+                    <div class="skill-item" onclick="rollSkill('Insight', 1)">
+                        <span class="skill-name">Insight (Wis)</span>
+                        <span class="skill-modifier">+1</span>
+                    </div>
+                    <div class="skill-item" onclick="rollSkill('Stealth', 2)">
+                        <span class="skill-name">Stealth (Dex)</span>
+                        <span class="skill-modifier">+2</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Spells Section -->
+        <div class="spells-section">
+            <div class="skills-panel">
+                <h3 class="panel-title">✨ Spellcasting</h3>
+                
+                <div class="spell-slots">
+                    <div class="spell-slot-level">
+                        <div class="slot-level-label">1st Level</div>
+                        <div class="slot-pips">
+                            <div class="slot-pip filled" onclick="toggleSlot(this)"></div>
+                            <div class="slot-pip filled" onclick="toggleSlot(this)"></div>
+                            <div class="slot-pip" onclick="toggleSlot(this)"></div>
+                            <div class="slot-pip" onclick="toggleSlot(this)"></div>
+                        </div>
+                    </div>
+                    <div class="spell-slot-level">
+                        <div class="slot-level-label">2nd Level</div>
+                        <div class="slot-pips">
+                            <div class="slot-pip filled" onclick="toggleSlot(this)"></div>
+                            <div class="slot-pip filled" onclick="toggleSlot(this)"></div>
+                            <div class="slot-pip" onclick="toggleSlot(this)"></div>
+                        </div>
+                    </div>
+                    <div class="spell-slot-level">
+                        <div class="slot-level-label">3rd Level</div>
+                        <div class="slot-pips">
+                            <div class="slot-pip filled" onclick="toggleSlot(this)"></div>
+                            <div class="slot-pip" onclick="toggleSlot(this)"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="spell-grid">
+                    <div class="spell-card" onclick="castSpell(this, 'Magic Missile')">
+                        <div class="spell-name">🔮 Magic Missile</div>
+                        <div class="spell-school">1st Level Evocation</div>
+                    </div>
+                    <div class="spell-card" onclick="castSpell(this, 'Shield')">
+                        <div class="spell-name">🛡️ Shield</div>
+                        <div class="spell-school">1st Level Abjuration</div>
+                    </div>
+                    <div class="spell-card" onclick="castSpell(this, 'Fireball')">
+                        <div class="spell-name">🔥 Fireball</div>
+                        <div class="spell-school">3rd Level Evocation</div>
+                    </div>
+                    <div class="spell-card" onclick="castSpell(this, 'Counterspell')">
+                        <div class="spell-name">✋ Counterspell</div>
+                        <div class="spell-school">3rd Level Abjuration</div>
+                    </div>
+                    <div class="spell-card" onclick="castSpell(this, 'Misty Step')">
+                        <div class="spell-name">💨 Misty Step</div>
+                        <div class="spell-school">2nd Level Conjuration</div>
+                    </div>
+                    <div class="spell-card" onclick="castSpell(this, 'Fire Bolt')">
+                        <div class="spell-name">🔥 Fire Bolt</div>
+                        <div class="spell-school">Cantrip</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Equipment Section -->
+        <div class="equipment-section">
+            <div class="skills-panel">
+                <h3 class="panel-title">🎒 Equipment</h3>
+                <div class="equipment-grid">
+                    <div class="equipment-slot filled" onclick="showItem('Staff of Power')">
+                        <div class="equipment-icon">🪄</div>
+                        <div class="equipment-name">Staff of Power</div>
+                        <div class="equipment-type">Quarterstaff, Arcane Focus</div>
+                    </div>
+                    <div class="equipment-slot filled" onclick="showItem('Robe of Stars')">
+                        <div class="equipment-icon">🧥</div>
+                        <div class="equipment-name">Robe of Stars</div>
+                        <div class="equipment-type">Armor, Wondrous</div>
+                    </div>
+                    <div class="equipment-slot filled" onclick="showItem('Ring of Protection')">
+                        <div class="equipment-icon">💍</div>
+                        <div class="equipment-name">Ring of Protection</div>
+                        <div class="equipment-type">Ring, Magical</div>
+                    </div>
+                    <div class="equipment-slot filled" onclick="showItem('Spellbook')">
+                        <div class="equipment-icon">📖</div>
+                        <div class="equipment-name">Spellbook</div>
+                        <div class="equipment-type">Book</div>
+                    </div>
+                    <div class="equipment-slot">
+                        <div class="equipment-icon" style="opacity: 0.3">➕</div>
+                        <div class="equipment-type">Empty Slot</div>
+                    </div>
+                    <div class="equipment-slot">
+                        <div class="equipment-icon" style="opacity: 0.3">➕</div>
+                        <div class="equipment-type">Empty Slot</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dice Roll Modal -->
+    <div class="dice-modal" id="diceModal" onclick="closeDiceModal(event)">
+        <div class="dice-content" onclick="event.stopPropagation()">
+            <div class="dice-title" id="diceTitle">Rolling...</div>
+            <div class="dice-display" id="diceDisplay">?</div>
+            <div class="dice-result" id="diceResult"></div>
+            <div class="dice-breakdown" id="diceBreakdown"></div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Create background particles
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (10 + Math.random() * 10) + 's';
+                container.appendChild(particle);
+            }
+        }
+        createParticles();
+
+        // Roll ability check
+        function rollAbility(element, name, modifier) {
+            element.classList.add('rolling');
+            setTimeout(() => element.classList.remove('rolling'), 500);
+            
+            showDiceRoll(name + ' Check', modifier);
+        }
+
+        // Roll skill
+        function rollSkill(name, modifier) {
+            showDiceRoll(name, modifier);
+        }
+
+        // Show dice roll modal
+        function showDiceRoll(title, modifier) {
+            const modal = document.getElementById('diceModal');
+            const display = document.getElementById('diceDisplay');
+            const titleEl = document.getElementById('diceTitle');
+            const resultEl = document.getElementById('diceResult');
+            const breakdownEl = document.getElementById('diceBreakdown');
+            
+            modal.classList.add('active');
+            titleEl.textContent = title;
+            display.classList.add('rolling');
+            resultEl.textContent = '';
+            breakdownEl.textContent = '';
+            resultEl.classList.remove('critical');
+            
+            // Animate roll
+            let frame = 0;
+            const rollInterval = setInterval(() => {
+                display.textContent = Math.floor(Math.random() * 20) + 1;
+                frame++;
+            }, 50);
+            
+            setTimeout(() => {
+                clearInterval(rollInterval);
+                display.classList.remove('rolling');
+                
+                const roll = Math.floor(Math.random() * 20) + 1;
+                const total = roll + modifier;
+                display.textContent = roll;
+                
+                const modText = modifier >= 0 ? `+${modifier}` : modifier;
+                breakdownEl.textContent = `d20(${roll}) ${modText} = ${total}`;
+                
+                if (roll === 20) {
+                    resultEl.textContent = 'NATURAL 20! CRITICAL SUCCESS!';
+                    resultEl.classList.add('critical');
+                    createCritParticles();
+                } else if (roll === 1) {
+                    resultEl.textContent = 'Natural 1... Critical Failure';
+                    resultEl.style.color = '#EF4444';
+                } else {
+                    resultEl.textContent = `Total: ${total}`;
+                    resultEl.style.color = '#F4F4F5';
+                }
+            }, 1500);
+        }
+
+        // Create critical hit particles
+        function createCritParticles() {
+            const display = document.getElementById('diceDisplay');
+            const rect = display.getBoundingClientRect();
+            
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.style.cssText = `
+                    position: fixed;
+                    left: ${rect.left + rect.width/2}px;
+                    top: ${rect.top + rect.height/2}px;
+                    width: 8px;
+                    height: 8px;
+                    background: #F59E0B;
+                    border-radius: 50%;
+                    pointer-events: none;
+                    z-index: 1002;
+                `;
+                document.body.appendChild(particle);
+                
+                const angle = (Math.PI * 2 * i) / 20;
+                const distance = 100 + Math.random() * 100;
+                const duration = 800 + Math.random() * 400;
+                
+                particle.animate([
+                    { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+                    { 
+                        transform: `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px) scale(0)`,
+                        opacity: 0 
+                    }
+                ], {
+                    duration: duration,
+                    easing: 'cubic-bezier(0.16, 1, 0.3, 1)'
+                }).onfinish = () => particle.remove();
+            }
+        }
+
+        // Close dice modal
+        function closeDiceModal(event) {
+            if (event.target === document.getElementById('diceModal')) {
+                document.getElementById('diceModal').classList.remove('active');
+            }
+        }
+
+        // Toggle spell slot
+        function toggleSlot(element) {
+            element.classList.toggle('filled');
+        }
+
+        // Cast spell animation
+        function castSpell(element, name) {
+            element.classList.add('casting');
+            setTimeout(() => element.classList.remove('casting'), 600);
+            showToast(`Casting ${name}...`);
+        }
+
+        // Show item toast
+        function showItem(name) {
+            showToast(`Equipped: ${name}`);
+        }
+
+        // Show toast notification
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.getElementById('diceModal').classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D Digital - Combat Board Prototype</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-400: #FBBF24;
+      --primary-500: #F59E0B;
+      --primary-600: #D97706;
+      --secondary-400: #A78BFA;
+      --secondary-500: #8B5CF6;
+      --bg-primary: #0F0D13;
+      --bg-secondary: #1A1720;
+      --bg-tertiary: #252231;
+      --surface-dark: #1E1B26;
+      --text-primary: #F4F4F5;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+      --border-subtle: #27272A;
+      --player-blue: #3B82F6;
+      --enemy-red: #EF4444;
+      --ally-green: #22C55E;
+      --health-full: #22C55E;
+      --health-medium: #EAB308;
+      --health-low: #EF4444;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .font-display { font-family: 'Cinzel', serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Main Layout */
+    .game-container {
+      display: grid;
+      grid-template-columns: 280px 1fr 320px;
+      grid-template-rows: 80px 1fr 100px;
+      height: 100vh;
+      gap: 0;
+    }
+
+    /* Top Bar - Initiative Tracker */
+    .top-bar {
+      grid-column: 1 / -1;
+      background: rgba(15, 13, 19, 0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(245, 158, 11, 0.1);
+      display: flex;
+      align-items: center;
+      padding: 0 1.5rem;
+      gap: 1rem;
+    }
+
+    .round-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 1rem;
+      background: var(--surface-dark);
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .round-label {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .round-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--primary-400);
+    }
+
+    .initiative-track {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding: 0.5rem;
+    }
+
+    .init-token {
+      position: relative;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--surface-dark);
+      border: 3px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 1.25rem;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      flex-shrink: 0;
+    }
+
+    .init-token.player { border-color: var(--player-blue); }
+    .init-token.enemy { border-color: var(--enemy-red); }
+    .init-token.ally { border-color: var(--ally-green); }
+
+    .init-token.active {
+      transform: scale(1.15);
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.5);
+      border-color: var(--primary-500);
+    }
+
+    .init-token.active::after {
+      content: '▼';
+      position: absolute;
+      bottom: -20px;
+      font-size: 0.75rem;
+      color: var(--primary-400);
+      animation: bounce 1s ease-in-out infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+
+    .init-number {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: var(--bg-primary);
+      border: 2px solid var(--border-subtle);
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      font-size: 0.7rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .init-health {
+      position: absolute;
+      bottom: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 6px;
+      background: rgba(0,0,0,0.5);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .init-health-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+
+    /* Left Panel - Character Info */
+    .left-panel {
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-subtle);
+      padding: 1rem;
+      overflow-y: auto;
+    }
+
+    .char-panel {
+      background: var(--surface-dark);
+      border-radius: 16px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .char-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .char-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--player-blue), #1E40AF);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+      border: 3px solid var(--player-blue);
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    }
+
+    .char-details h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.125rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .char-details p {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+
+    .char-hp {
+      margin-bottom: 1rem;
+    }
+
+    .hp-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    .hp-bar {
+      height: 12px;
+      background: rgba(0,0,0,0.5);
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hp-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .hp-fill.high { background: linear-gradient(90deg, #16A34A, #22C55E); }
+    .hp-fill.medium { background: linear-gradient(90deg, #CA8A04, #EAB308); }
+    .hp-fill.low { 
+      background: linear-gradient(90deg, #DC2626, #EF4444);
+      animation: pulse-urgent 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse-urgent {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .hp-fill::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 50%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.3), transparent);
+    }
+
+    .temp-hp {
+      position: absolute;
+      right: 0;
+      top: 0;
+      height: 100%;
+      background: rgba(59, 130, 246, 0.5);
+      border-radius: 0 6px 6px 0;
+    }
+
+    .char-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .stat-box {
+      background: var(--bg-primary);
+      border-radius: 8px;
+      padding: 0.5rem;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 0.625rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: var(--primary-400);
+    }
+
+    .conditions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .condition-tag {
+      padding: 0.25rem 0.75rem;
+      background: rgba(139, 92, 246, 0.2);
+      border: 1px solid var(--secondary-500);
+      border-radius: 20px;
+      font-size: 0.75rem;
+      color: var(--secondary-400);
+    }
+
+    /* Center - Game Board */
+    .board-container {
+      position: relative;
+      background: var(--bg-primary);
+      overflow: hidden;
+    }
+
+    .board-canvas {
+      position: absolute;
+      inset: 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(16, 48px);
+      grid-template-rows: repeat(10, 48px);
+      gap: 1px;
+      background: rgba(255,255,255,0.05);
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .tile {
+      width: 48px;
+      height: 48px;
+      position: relative;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .tile.floor {
+      background: linear-gradient(135deg, #2A2735 0%, #1E1B26 100%);
+    }
+
+    .tile.wall {
+      background: linear-gradient(135deg, #1C1917 0%, #0F0D13 100%);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .tile.water {
+      background: linear-gradient(135deg, #0369A1 0%, #0284C7 100%);
+      animation: water-shimmer 3s ease-in-out infinite;
+    }
+
+    @keyframes water-shimmer {
+      0%, 100% { opacity: 0.8; }
+      50% { opacity: 1; }
+    }
+
+    .tile.difficult {
+      background: linear-gradient(135deg, #422006 0%, #78350F 100%);
+    }
+
+    .tile.difficult::after {
+      content: '⚠';
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      font-size: 0.625rem;
+      opacity: 0.5;
+    }
+
+    .tile:hover:not(.wall) {
+      box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.5);
+    }
+
+    .tile.walkable {
+      box-shadow: inset 0 0 0 2px rgba(34, 197, 94, 0.5);
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05));
+    }
+
+    .tile.attack-range {
+      box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.5);
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+    }
+
+    .tile.spell-aoe {
+      box-shadow: inset 0 0 0 2px rgba(139, 92, 246, 0.7);
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.3), rgba(139, 92, 246, 0.1));
+      animation: aoe-pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes aoe-pulse {
+      0%, 100% { opacity: 0.7; }
+      50% { opacity: 1; }
+    }
+
+    /* Tokens on board */
+    .token {
+      position: absolute;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 10;
+    }
+
+    .token.player {
+      background: linear-gradient(135deg, var(--player-blue), #1E40AF);
+      border: 3px solid var(--player-blue);
+      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+    }
+
+    .token.enemy {
+      background: linear-gradient(135deg, var(--enemy-red), #B91C1C);
+      border: 3px solid var(--enemy-red);
+      box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+    }
+
+    .token.ally {
+      background: linear-gradient(135deg, var(--ally-green), #15803D);
+      border: 3px solid var(--ally-green);
+      box-shadow: 0 4px 20px rgba(34, 197, 94, 0.4);
+    }
+
+    .token:hover {
+      transform: scale(1.15);
+      z-index: 20;
+    }
+
+    .token.selected {
+      animation: token-selected 1s ease-in-out infinite;
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.6);
+      border-color: var(--primary-500);
+    }
+
+    @keyframes token-selected {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    .token-health {
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 36px;
+      height: 5px;
+      background: rgba(0,0,0,0.7);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .token-health-fill {
+      height: 100%;
+      border-radius: 3px;
+    }
+
+    /* Floating damage numbers */
+    .damage-float {
+      position: absolute;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: bold;
+      font-size: 1.5rem;
+      pointer-events: none;
+      animation: damage-float 1.5s ease-out forwards;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      z-index: 100;
+    }
+
+    .damage-float.damage { color: var(--enemy-red); }
+    .damage-float.healing { color: var(--ally-green); }
+    .damage-float.critical { 
+      color: var(--primary-400); 
+      font-size: 2rem;
+      animation: critical-float 1.5s ease-out forwards;
+    }
+
+    @keyframes damage-float {
+      0% { transform: translateY(0) scale(0.5); opacity: 0; }
+      20% { transform: translateY(-20px) scale(1.2); opacity: 1; }
+      100% { transform: translateY(-60px) scale(1); opacity: 0; }
+    }
+
+    @keyframes critical-float {
+      0% { transform: translateY(0) scale(0.5) rotate(-10deg); opacity: 0; }
+      20% { transform: translateY(-30px) scale(1.5) rotate(5deg); opacity: 1; }
+      100% { transform: translateY(-80px) scale(1); opacity: 0; }
+    }
+
+    /* Right Panel - Combat Log */
+    .right-panel {
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .combat-log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+
+    .log-entry {
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      background: var(--surface-dark);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      animation: log-slide-in 0.3s ease-out;
+      border-left: 3px solid transparent;
+    }
+
+    .log-entry.attack { border-left-color: var(--enemy-red); }
+    .log-entry.spell { border-left-color: var(--secondary-500); }
+    .log-entry.heal { border-left-color: var(--ally-green); }
+    .log-entry.move { border-left-color: var(--player-blue); }
+    .log-entry.critical { 
+      border-left-color: var(--primary-500);
+      background: linear-gradient(90deg, rgba(245, 158, 11, 0.1), var(--surface-dark));
+    }
+
+    @keyframes log-slide-in {
+      from {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .log-actor {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .log-action {
+      color: var(--text-secondary);
+    }
+
+    .log-target {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .log-result {
+      margin-top: 0.25rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+    }
+
+    .log-damage {
+      color: var(--enemy-red);
+      font-weight: bold;
+    }
+
+    .log-healing {
+      color: var(--ally-green);
+      font-weight: bold;
+    }
+
+    .log-roll {
+      color: var(--text-muted);
+    }
+
+    .log-critical {
+      color: var(--primary-400);
+      font-weight: bold;
+    }
+
+    /* Dice Display */
+    .dice-display {
+      padding: 1rem;
+      border-top: 1px solid var(--border-subtle);
+      background: var(--surface-dark);
+    }
+
+    .last-roll {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .dice-result {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, var(--bg-tertiary), var(--surface-dark));
+      border: 2px solid var(--primary-600);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.75rem;
+      font-weight: bold;
+      color: var(--primary-400);
+    }
+
+    .dice-result.rolling {
+      animation: dice-spin 0.5s ease-in-out;
+    }
+
+    @keyframes dice-spin {
+      0% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(180deg) scale(0.8); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+
+    .dice-result.critical {
+      border-color: var(--primary-400);
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.6);
+      animation: critical-glow 0.5s ease-out;
+    }
+
+    @keyframes critical-glow {
+      0% { transform: scale(0.8); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+
+    .roll-breakdown {
+      text-align: center;
+    }
+
+    .roll-total {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .roll-formula {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    /* Bottom Bar - Action Bar */
+    .bottom-bar {
+      grid-column: 1 / -1;
+      background: rgba(15, 13, 19, 0.95);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(245, 158, 11, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 2rem;
+      gap: 0.75rem;
+    }
+
+    .action-btn {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.75rem 1.5rem;
+      background: var(--surface-dark);
+      border: 2px solid var(--border-subtle);
+      border-radius: 12px;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 100px;
+    }
+
+    .action-btn:hover {
+      border-color: var(--primary-500);
+      background: rgba(245, 158, 11, 0.1);
+      transform: translateY(-4px);
+    }
+
+    .action-btn:active {
+      transform: translateY(-2px) scale(0.98);
+    }
+
+    .action-btn.primary {
+      background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+      border-color: var(--primary-500);
+      color: var(--bg-primary);
+    }
+
+    .action-btn.primary:hover {
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.4);
+    }
+
+    .action-btn.spell {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.1));
+      border-color: var(--secondary-500);
+    }
+
+    .action-btn.spell:hover {
+      box-shadow: 0 0 30px rgba(139, 92, 246, 0.3);
+    }
+
+    .action-btn.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .action-icon {
+      font-size: 1.5rem;
+    }
+
+    .action-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .action-hotkey {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.625rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-muted);
+    }
+
+    .end-turn-btn {
+      margin-left: 2rem;
+      padding: 1rem 2rem;
+      background: linear-gradient(135deg, var(--ally-green), #15803D);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .end-turn-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(34, 197, 94, 0.4);
+    }
+
+    /* Spell targeting overlay */
+    .targeting-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+
+    .targeting-overlay.active {
+      display: flex;
+    }
+
+    .targeting-panel {
+      background: var(--bg-secondary);
+      border: 1px solid var(--secondary-500);
+      border-radius: 20px;
+      padding: 2rem;
+      max-width: 400px;
+      animation: panel-in 0.3s ease-out;
+    }
+
+    @keyframes panel-in {
+      from {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .targeting-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .targeting-header h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.5rem;
+      color: var(--secondary-400);
+      margin-bottom: 0.5rem;
+    }
+
+    .targeting-header p {
+      color: var(--text-secondary);
+    }
+
+    .target-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .target-option {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 1rem;
+      background: var(--surface-dark);
+      border: 2px solid var(--border-subtle);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .target-option:hover {
+      border-color: var(--secondary-500);
+      background: rgba(139, 92, 246, 0.1);
+    }
+
+    .target-option.selected {
+      border-color: var(--secondary-500);
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+    }
+
+    .target-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    .target-info {
+      flex: 1;
+    }
+
+    .target-name {
+      font-weight: 600;
+    }
+
+    .target-hp {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .targeting-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+    }
+
+    .cancel-btn {
+      padding: 0.75rem 1.5rem;
+      background: var(--surface-dark);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .cancel-btn:hover {
+      border-color: var(--enemy-red);
+      color: var(--enemy-red);
+    }
+
+    .cast-btn {
+      padding: 0.75rem 1.5rem;
+      background: linear-gradient(135deg, var(--secondary-500), var(--secondary-600));
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .cast-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+    }
+
+    /* Toast notifications */
+    .toast-container {
+      position: fixed;
+      bottom: 120px;
+      right: 340px;
+      z-index: 200;
+    }
+
+    .toast {
+      background: var(--surface-dark);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      margin-bottom: 0.5rem;
+      animation: toast-in 0.3s ease-out;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .toast.success { border-left: 4px solid var(--ally-green); }
+    .toast.damage { border-left: 4px solid var(--enemy-red); }
+    .toast.info { border-left: 4px solid var(--player-blue); }
+
+    @keyframes toast-in {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* Particles */
+    .particle-container {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 150;
+    }
+
+    .spell-particle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--secondary-400);
+      animation: spell-particle 1s ease-out forwards;
+    }
+
+    @keyframes spell-particle {
+      0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(var(--tx), var(--ty)) scale(0);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <!-- Top Bar - Initiative Tracker -->
+    <div class="top-bar">
+      <div class="round-indicator">
+        <span class="round-label">Round</span>
+        <span class="round-number" id="roundNumber">3</span>
+      </div>
+      
+      <div class="initiative-track" id="initiativeTrack">
+        <div class="init-token player active" data-name="Thorin">
+          T
+          <span class="init-number">18</span>
+          <div class="init-health">
+            <div class="init-health-fill" style="width: 86%; background: var(--health-full);"></div>
+          </div>
+        </div>
+        <div class="init-token enemy" data-name="Goblin 1">
+          G1
+          <span class="init-number">15</span>
+          <div class="init-health">
+            <div class="init-health-fill" style="width: 40%; background: var(--health-medium);"></div>
+          </div>
+        </div>
+        <div class="init-token player" data-name="Lyra">
+          L
+          <span class="init-number">14</span>
+          <div class="init-health">
+            <div class="init-health-fill" style="width: 100%; background: var(--health-full);"></div>
+          </div>
+        </div>
+        <div class="init-token enemy" data-name="Goblin 2">
+          G2
+          <span class="init-number">12</span>
+          <div class="init-health">
+            <div class="init-health-fill" style="width: 70%; background: var(--health-full);"></div>
+          </div>
+        </div>
+        <div class="init-token player" data-name="Shadowmere">
+          S
+          <span class="init-number">10</span>
+          <div class="init-health">
+            <div class="init-health-fill" style="width: 32%; background: var(--health-low);"></div>
+          </div>
+        </div>
+        <div class="init-token enemy" data-name="Hobgoblin">
+          H
+          <span class="init-number">8</span>
+          <div class="init-health">
+            <div class="init-health-fill" style="width: 100%; background: var(--health-full);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Left Panel - Character Info -->
+    <div class="left-panel">
+      <div class="char-panel">
+        <div class="char-header">
+          <div class="char-avatar">T</div>
+          <div class="char-details">
+            <h3 class="font-display">Thorin Ironforge</h3>
+            <p>Dwarf Fighter 5</p>
+          </div>
+        </div>
+        
+        <div class="char-hp">
+          <div class="hp-label">
+            <span>Hit Points</span>
+            <span class="font-mono" id="currentHp">45</span>/<span class="font-mono">52</span>
+          </div>
+          <div class="hp-bar">
+            <div class="hp-fill high" id="hpFill" style="width: 86%"></div>
+          </div>
+        </div>
+
+        <div class="char-stats">
+          <div class="stat-box">
+            <div class="stat-label">AC</div>
+            <div class="stat-value">18</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Speed</div>
+            <div class="stat-value">25</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Init</div>
+            <div class="stat-value">+1</div>
+          </div>
+        </div>
+
+        <div class="conditions">
+          <span class="condition-tag">🎯 Concentrating</span>
+        </div>
+      </div>
+
+      <div class="char-panel">
+        <h4 class="font-display" style="margin-bottom: 1rem; font-size: 0.875rem;">Resources</h4>
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+          <span style="color: var(--text-muted); font-size: 0.75rem;">Action Surge:</span>
+          <span style="color: var(--primary-400); font-family: 'JetBrains Mono';">1/1</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <span style="color: var(--text-muted); font-size: 0.75rem;">Second Wind:</span>
+          <span style="color: var(--text-muted); font-family: 'JetBrains Mono';">0/1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center - Game Board -->
+    <div class="board-container">
+      <div class="grid" id="gameGrid"></div>
+      
+      <!-- Tokens will be positioned absolutely -->
+      <div id="tokenContainer"></div>
+      
+      <!-- Floating damage numbers appear here -->
+      <div id="damageContainer"></div>
+    </div>
+
+    <!-- Right Panel - Combat Log -->
+    <div class="right-panel">
+      <div class="panel-header">
+        📜 Combat Log
+      </div>
+      <div class="combat-log" id="combatLog">
+        <div class="log-entry attack">
+          <span class="log-actor">Thorin</span>
+          <span class="log-action"> attacks </span>
+          <span class="log-target">Goblin 1</span>
+          <div class="log-result">
+            <span class="log-roll">🎲 15 + 7 = 22 vs AC 13</span>
+            <span class="log-damage"> → 12 slashing</span>
+          </div>
+        </div>
+        <div class="log-entry critical">
+          <span class="log-actor">Lyra</span>
+          <span class="log-action"> casts </span>
+          <span class="log-target">Magic Missile</span>
+          <div class="log-result">
+            <span class="log-critical">⚡ CRITICAL!</span>
+            <span class="log-damage"> → 14 force damage</span>
+          </div>
+        </div>
+        <div class="log-entry move">
+          <span class="log-actor">Shadowmere</span>
+          <span class="log-action"> moves 30ft and hides</span>
+          <div class="log-result">
+            <span class="log-roll">🎲 Stealth: 18 + 8 = 26</span>
+          </div>
+        </div>
+        <div class="log-entry heal">
+          <span class="log-actor">Aria</span>
+          <span class="log-action"> casts </span>
+          <span class="log-target">Cure Wounds</span>
+          <span class="log-action"> on Shadowmere</span>
+          <div class="log-result">
+            <span class="log-healing">💚 +8 HP</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="dice-display">
+        <div class="last-roll">
+          <div class="dice-result" id="diceResult">15</div>
+          <div class="roll-breakdown">
+            <div class="roll-total">Attack Roll</div>
+            <div class="roll-formula">15 + 7 = 22</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Bar - Action Bar -->
+    <div class="bottom-bar">
+      <div class="action-btn primary" onclick="performAttack()">
+        <span class="action-hotkey">1</span>
+        <span class="action-icon">⚔️</span>
+        <span class="action-label">Attack</span>
+      </div>
+      <div class="action-btn spell" onclick="openSpellTargeting()">
+        <span class="action-hotkey">2</span>
+        <span class="action-icon">✨</span>
+        <span class="action-label">Cast Spell</span>
+      </div>
+      <div class="action-btn" onclick="showMovement()">
+        <span class="action-hotkey">3</span>
+        <span class="action-icon">🏃</span>
+        <span class="action-label">Move</span>
+      </div>
+      <div class="action-btn" onclick="performDodge()">
+        <span class="action-hotkey">4</span>
+        <span class="action-icon">🛡️</span>
+        <span class="action-label">Dodge</span>
+      </div>
+      <div class="action-btn">
+        <span class="action-hotkey">5</span>
+        <span class="action-icon">🎯</span>
+        <span class="action-label">Dash</span>
+      </div>
+      <div class="action-btn">
+        <span class="action-hotkey">E</span>
+        <span class="action-icon">📦</span>
+        <span class="action-label">Inventory</span>
+      </div>
+      
+      <button class="end-turn-btn" onclick="endTurn()">End Turn →</button>
+    </div>
+  </div>
+
+  <!-- Spell Targeting Overlay -->
+  <div class="targeting-overlay" id="targetingOverlay">
+    <div class="targeting-panel">
+      <div class="targeting-header">
+        <h3>✨ Magic Missile</h3>
+        <p>Select up to 3 targets</p>
+      </div>
+      <div class="target-list">
+        <div class="target-option" onclick="toggleTarget(this)">
+          <div class="target-avatar" style="background: linear-gradient(135deg, #EF4444, #B91C1C);">G1</div>
+          <div class="target-info">
+            <div class="target-name">Goblin 1</div>
+            <div class="target-hp">HP: 5/12 • 15ft away</div>
+          </div>
+        </div>
+        <div class="target-option" onclick="toggleTarget(this)">
+          <div class="target-avatar" style="background: linear-gradient(135deg, #EF4444, #B91C1C);">G2</div>
+          <div class="target-info">
+            <div class="target-name">Goblin 2</div>
+            <div class="target-hp">HP: 8/12 • 20ft away</div>
+          </div>
+        </div>
+        <div class="target-option" onclick="toggleTarget(this)">
+          <div class="target-avatar" style="background: linear-gradient(135deg, #EF4444, #B91C1C);">H</div>
+          <div class="target-info">
+            <div class="target-name">Hobgoblin</div>
+            <div class="target-hp">HP: 22/22 • 30ft away</div>
+          </div>
+        </div>
+      </div>
+      <div class="targeting-actions">
+        <button class="cancel-btn" onclick="closeTargeting()">Cancel</button>
+        <button class="cast-btn" onclick="castSpell()">Cast Spell (1st)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Particle Container -->
+  <div class="particle-container" id="particleContainer"></div>
+
+  <script>
+    // Generate game grid
+    function generateGrid() {
+      const grid = document.getElementById('gameGrid');
+      const layout = [
+        'wwwwwwwwwwwwwwww',
+        'w..............w',
+        'w..ww....ww....w',
+        'w..ww....ww..d.w',
+        'w..............w',
+        'w......~~......w',
+        'w......~~......w',
+        'w..dd..........w',
+        'w..............w',
+        'wwwwwwwwwwwwwwww',
+      ];
+
+      const tileTypes = {
+        'w': 'wall',
+        '.': 'floor',
+        '~': 'water',
+        'd': 'difficult'
+      };
+
+      layout.forEach((row, y) => {
+        row.split('').forEach((char, x) => {
+          const tile = document.createElement('div');
+          tile.className = `tile ${tileTypes[char] || 'floor'}`;
+          tile.dataset.x = x;
+          tile.dataset.y = y;
+          tile.onclick = () => tileClicked(x, y);
+          grid.appendChild(tile);
+        });
+      });
+    }
+
+    // Create tokens
+    function createTokens() {
+      const container = document.getElementById('tokenContainer');
+      const grid = document.getElementById('gameGrid');
+      const gridRect = grid.getBoundingClientRect();
+
+      const tokens = [
+        { id: 'thorin', label: 'T', type: 'player', x: 3, y: 4, hp: 86 },
+        { id: 'lyra', label: 'L', type: 'player', x: 4, y: 3, hp: 100 },
+        { id: 'shadow', label: 'S', type: 'player', x: 2, y: 5, hp: 32 },
+        { id: 'goblin1', label: 'G1', type: 'enemy', x: 8, y: 3, hp: 40 },
+        { id: 'goblin2', label: 'G2', type: 'enemy', x: 10, y: 5, hp: 70 },
+        { id: 'hobgoblin', label: 'H', type: 'enemy', x: 12, y: 4, hp: 100 },
+      ];
+
+      tokens.forEach(t => {
+        const token = document.createElement('div');
+        token.className = `token ${t.type}`;
+        token.id = t.id;
+        token.textContent = t.label;
+        token.style.left = `calc(50% - ${(8 - t.x) * 49}px + ${t.x * 49}px - 370px)`;
+        token.style.top = `calc(50% - ${(5 - t.y) * 49}px + ${t.y * 49}px - 220px)`;
+        token.onclick = () => selectToken(t.id);
+
+        const healthBar = document.createElement('div');
+        healthBar.className = 'token-health';
+        const healthFill = document.createElement('div');
+        healthFill.className = 'token-health-fill';
+        healthFill.style.width = `${t.hp}%`;
+        healthFill.style.background = t.hp > 50 ? '#22C55E' : t.hp > 25 ? '#EAB308' : '#EF4444';
+        healthBar.appendChild(healthFill);
+        token.appendChild(healthBar);
+
+        container.appendChild(token);
+      });
+
+      // Select Thorin by default
+      selectToken('thorin');
+    }
+
+    let selectedToken = null;
+
+    function selectToken(id) {
+      document.querySelectorAll('.token').forEach(t => t.classList.remove('selected'));
+      const token = document.getElementById(id);
+      if (token) {
+        token.classList.add('selected');
+        selectedToken = id;
+      }
+    }
+
+    function tileClicked(x, y) {
+      showToast(`Tile clicked: (${x}, ${y})`, 'info');
+    }
+
+    function showMovement() {
+      const tiles = document.querySelectorAll('.tile.floor');
+      tiles.forEach(tile => {
+        const x = parseInt(tile.dataset.x);
+        const y = parseInt(tile.dataset.y);
+        // Show walkable range (simplified)
+        if (x > 1 && x < 7 && y > 1 && y < 8) {
+          tile.classList.add('walkable');
+        }
+      });
+      showToast('Select a tile to move to', 'info');
+      
+      setTimeout(() => {
+        tiles.forEach(tile => tile.classList.remove('walkable'));
+      }, 5000);
+    }
+
+    function performAttack() {
+      const dice = document.getElementById('diceResult');
+      dice.classList.add('rolling');
+      dice.textContent = '?';
+
+      setTimeout(() => {
+        const roll = Math.floor(Math.random() * 20) + 1;
+        dice.classList.remove('rolling');
+        dice.textContent = roll;
+
+        if (roll === 20) {
+          dice.classList.add('critical');
+          showDamage('goblin1', 24, true);
+          addLogEntry('Thorin', 'attacks', 'Goblin 1', `🎲 ${roll} + 7 = ${roll + 7}`, 24, true);
+          createCriticalEffect();
+          setTimeout(() => dice.classList.remove('critical'), 1000);
+        } else if (roll + 7 >= 13) {
+          const damage = Math.floor(Math.random() * 8) + 5;
+          showDamage('goblin1', damage, false);
+          addLogEntry('Thorin', 'attacks', 'Goblin 1', `🎲 ${roll} + 7 = ${roll + 7}`, damage, false);
+        } else {
+          showToast('Attack missed!', 'info');
+          addLogEntry('Thorin', 'attacks', 'Goblin 1', `🎲 ${roll} + 7 = ${roll + 7} - MISS`, 0, false);
+        }
+      }, 500);
+    }
+
+    function showDamage(tokenId, amount, critical) {
+      const token = document.getElementById(tokenId);
+      if (!token) return;
+
+      const rect = token.getBoundingClientRect();
+      const container = document.getElementById('damageContainer');
+
+      const dmg = document.createElement('div');
+      dmg.className = `damage-float ${critical ? 'critical' : 'damage'}`;
+      dmg.textContent = critical ? `💥 ${amount}!` : `-${amount}`;
+      dmg.style.left = rect.left + 'px';
+      dmg.style.top = rect.top + 'px';
+
+      container.appendChild(dmg);
+      setTimeout(() => dmg.remove(), 1500);
+
+      // Flash the token
+      token.style.animation = 'none';
+      token.offsetHeight; // Trigger reflow
+      token.style.animation = 'damage-shake 0.3s ease';
+    }
+
+    function addLogEntry(actor, action, target, roll, damage, critical) {
+      const log = document.getElementById('combatLog');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${critical ? 'critical' : 'attack'}`;
+      
+      let result = `<span class="log-roll">${roll}</span>`;
+      if (damage > 0) {
+        result += ` <span class="log-damage">→ ${damage} slashing</span>`;
+      }
+      if (critical) {
+        result = `<span class="log-critical">⚡ CRITICAL!</span> ` + result;
+      }
+
+      entry.innerHTML = `
+        <span class="log-actor">${actor}</span>
+        <span class="log-action"> ${action} </span>
+        <span class="log-target">${target}</span>
+        <div class="log-result">${result}</div>
+      `;
+
+      log.insertBefore(entry, log.firstChild);
+    }
+
+    function openSpellTargeting() {
+      document.getElementById('targetingOverlay').classList.add('active');
+      
+      // Show AoE on grid (simplified)
+      const tiles = document.querySelectorAll('.tile.floor');
+      tiles.forEach(tile => {
+        const x = parseInt(tile.dataset.x);
+        const y = parseInt(tile.dataset.y);
+        if (x > 6 && x < 14 && y > 1 && y < 8) {
+          tile.classList.add('attack-range');
+        }
+      });
+    }
+
+    function closeTargeting() {
+      document.getElementById('targetingOverlay').classList.remove('active');
+      document.querySelectorAll('.tile').forEach(t => {
+        t.classList.remove('attack-range', 'spell-aoe');
+      });
+    }
+
+    function toggleTarget(el) {
+      el.classList.toggle('selected');
+    }
+
+    function castSpell() {
+      closeTargeting();
+      
+      // Create spell particles
+      createSpellEffect();
+      
+      setTimeout(() => {
+        showDamage('goblin1', 7, false);
+        showDamage('goblin2', 7, false);
+        addLogEntry('Lyra', 'casts', 'Magic Missile', '3d4+3', 14, false);
+        showToast('Magic Missile hits for 14 force damage!', 'success');
+      }, 500);
+    }
+
+    function createSpellEffect() {
+      const container = document.getElementById('particleContainer');
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+
+      for (let i = 0; i < 30; i++) {
+        setTimeout(() => {
+          const particle = document.createElement('div');
+          particle.className = 'spell-particle';
+          particle.style.left = centerX + 'px';
+          particle.style.top = centerY + 'px';
+          particle.style.background = `hsl(${260 + Math.random() * 40}, 80%, ${60 + Math.random() * 20}%)`;
+
+          const angle = Math.random() * Math.PI * 2;
+          const distance = 100 + Math.random() * 200;
+          particle.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
+          particle.style.setProperty('--ty', Math.sin(angle) * distance + 'px');
+
+          container.appendChild(particle);
+          setTimeout(() => particle.remove(), 1000);
+        }, i * 20);
+      }
+    }
+
+    function createCriticalEffect() {
+      const container = document.getElementById('particleContainer');
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+
+      for (let i = 0; i < 40; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'spell-particle';
+        particle.style.left = centerX + 'px';
+        particle.style.top = centerY + 'px';
+        particle.style.background = Math.random() > 0.5 ? '#F59E0B' : '#FBBF24';
+        particle.style.width = (4 + Math.random() * 8) + 'px';
+        particle.style.height = particle.style.width;
+
+        const angle = (Math.PI * 2 * i) / 40;
+        const distance = 150 + Math.random() * 100;
+        particle.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
+        particle.style.setProperty('--ty', Math.sin(angle) * distance + 'px');
+
+        container.appendChild(particle);
+        setTimeout(() => particle.remove(), 1000);
+      }
+
+      showToast('⚡ CRITICAL HIT! ⚡', 'success');
+    }
+
+    function performDodge() {
+      showToast('Dodge action taken! Attacks against you have disadvantage.', 'success');
+      addLogEntry('Thorin', 'takes the', 'Dodge', 'action', 0, false);
+    }
+
+    function endTurn() {
+      // Rotate initiative
+      const track = document.getElementById('initiativeTrack');
+      const tokens = track.querySelectorAll('.init-token');
+      tokens.forEach(t => t.classList.remove('active'));
+      tokens[1].classList.add('active');
+
+      showToast('Turn ended. Goblin 1\'s turn!', 'info');
+
+      // Increment round if needed
+      const roundEl = document.getElementById('roundNumber');
+      // roundEl.textContent = parseInt(roundEl.textContent) + 1;
+    }
+
+    function showToast(message, type) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.animation = 'toast-in 0.3s ease-out reverse';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Add damage shake animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes damage-shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      switch(e.key) {
+        case '1': performAttack(); break;
+        case '2': openSpellTargeting(); break;
+        case '3': showMovement(); break;
+        case '4': performDodge(); break;
+        case 'Escape': closeTargeting(); break;
+      }
+    });
+
+    // Initialize
+    generateGrid();
+    createTokens();
+  </script>
+</body>
+</html>

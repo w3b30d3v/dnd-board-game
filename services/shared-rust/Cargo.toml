@@ -1,0 +1,17 @@
+[package]
+name = "shared-rust"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Shared Rust types and utilities for D&D Platform services"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+
+[lib]
+name = "shared_rust"
+path = "src/lib.rs"

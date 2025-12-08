@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D Digital - Spell & Ability UI Mockup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-400: #FBBF24;
+      --primary-500: #F59E0B;
+      --primary-600: #D97706;
+      --primary-700: #B45309;
+      --secondary-400: #A78BFA;
+      --secondary-500: #8B5CF6;
+      --secondary-600: #7C3AED;
+      --secondary-700: #6D28D9;
+      --secondary-900: #4C1D95;
+      --bg-primary: #0F0D13;
+      --bg-secondary: #1A1720;
+      --bg-tertiary: #252231;
+      --bg-hover: #2D2A3A;
+      --surface-dark: #1E1B26;
+      --surface-medium: #2A2735;
+      --text-primary: #F4F4F5;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+      --border-subtle: #27272A;
+      --border-default: #3F3F46;
+      --health-full: #22C55E;
+      --damage-fire: #F97316;
+      --damage-cold: #06B6D4;
+      --damage-lightning: #FACC15;
+      --damage-radiant: #FEF08A;
+      --damage-necrotic: #6B21A8;
+      --damage-force: #EC4899;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0F0D13 0%, #1A1720 100%);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .font-display { font-family: 'Cinzel', serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    .demo-container {
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    .demo-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.5rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    /* Spell Panel */
+    .spell-panel {
+      background: rgba(30, 27, 38, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-default);
+      border-radius: 20px;
+      padding: 1.5rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+      max-width: 800px;
+      margin: 0 auto 3rem;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .panel-header h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .panel-header h2::before {
+      content: '✨';
+    }
+
+    .close-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--bg-tertiary);
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .close-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    /* Spell Slots */
+    .spell-slots {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .slot-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .slot-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .slot-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .slot-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--secondary-500);
+      border: 2px solid var(--secondary-400);
+    }
+
+    .slot-dot.used {
+      background: var(--bg-tertiary);
+      border-color: var(--border-default);
+    }
+
+    /* Spell Tabs */
+    .spell-tabs {
+      display: flex;
+      gap: 0.25rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 0.5rem;
+    }
+
+    .spell-tab {
+      padding: 0.5rem 1rem;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.15s;
+      font-size: 0.875rem;
+    }
+
+    .spell-tab:hover {
+      background: var(--bg-hover);
+      color: var(--text-secondary);
+    }
+
+    .spell-tab.active {
+      background: var(--secondary-600);
+      color: white;
+    }
+
+    /* Spell Grid */
+    .spell-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+
+    /* Spell Card */
+    .spell-card {
+      background: linear-gradient(135deg, rgba(76, 29, 149, 0.3) 0%, var(--surface-dark) 100%);
+      border: 1px solid var(--secondary-600);
+      border-radius: 12px;
+      padding: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .spell-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--secondary-500), var(--secondary-400));
+    }
+
+    .spell-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+      border-color: var(--secondary-400);
+    }
+
+    .spell-card.selected {
+      border-color: var(--primary-500);
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3), 0 10px 30px rgba(245, 158, 11, 0.2);
+    }
+
+    .spell-card.selected::before {
+      background: linear-gradient(90deg, var(--primary-500), var(--primary-400));
+    }
+
+    .spell-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+    }
+
+    .spell-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      color: var(--secondary-400);
+    }
+
+    .spell-card.selected .spell-name {
+      color: var(--primary-400);
+    }
+
+    .spell-level {
+      background: var(--secondary-700);
+      color: var(--secondary-300);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.6875rem;
+      font-weight: 600;
+    }
+
+    .spell-meta {
+      display: flex;
+      gap: 0.75rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .spell-meta span {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .spell-desc {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 0.75rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .spell-damage {
+      background: var(--bg-primary);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .spell-damage .dice {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: bold;
+      color: var(--damage-fire);
+    }
+
+    .spell-damage .type {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Cantrip styling */
+    .spell-card.cantrip {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.2) 0%, var(--surface-dark) 100%);
+      border-color: #3B82F6;
+    }
+
+    .spell-card.cantrip::before {
+      background: linear-gradient(90deg, #3B82F6, #60A5FA);
+    }
+
+    .spell-card.cantrip .spell-name {
+      color: #60A5FA;
+    }
+
+    .spell-card.cantrip .spell-level {
+      background: #1E3A5F;
+      color: #60A5FA;
+    }
+
+    /* Individual Spell Cards Demo */
+    .cards-row {
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 2rem;
+    }
+
+    .spell-card-large {
+      width: 280px;
+      background: linear-gradient(135deg, rgba(76, 29, 149, 0.4) 0%, var(--surface-dark) 100%);
+      border: 2px solid var(--secondary-500);
+      border-radius: 16px;
+      padding: 1.25rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .spell-card-large::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--secondary-500), var(--secondary-400), var(--secondary-500));
+    }
+
+    .spell-card-large .spell-icon {
+      width: 56px;
+      height: 56px;
+      background: var(--secondary-600);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .spell-card-large .spell-name {
+      font-size: 1.25rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .spell-card-large .spell-school {
+      font-size: 0.75rem;
+      color: var(--secondary-400);
+      margin-bottom: 1rem;
+    }
+
+    .spell-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .spell-stat {
+      text-align: center;
+      padding: 0.5rem;
+      background: var(--bg-primary);
+      border-radius: 8px;
+    }
+
+    .spell-stat .label {
+      font-size: 0.625rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+
+    .spell-stat .value {
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    .spell-card-large .spell-desc {
+      -webkit-line-clamp: 3;
+      margin-bottom: 1rem;
+    }
+
+    .spell-card-large .spell-damage {
+      font-size: 1rem;
+    }
+
+    .spell-card-large .spell-damage .dice {
+      font-size: 1.25rem;
+    }
+
+    /* Damage type colors */
+    .damage-fire { color: var(--damage-fire); }
+    .damage-cold { color: var(--damage-cold); }
+    .damage-lightning { color: var(--damage-lightning); }
+    .damage-radiant { color: var(--damage-radiant); }
+    .damage-necrotic { color: var(--damage-necrotic); }
+    .damage-force { color: var(--damage-force); }
+
+    /* Targeting Preview */
+    .targeting-ui {
+      background: var(--surface-dark);
+      border: 1px solid var(--border-default);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .targeting-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .targeting-spell {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--secondary-600);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+    }
+
+    .targeting-spell .icon {
+      font-size: 1.25rem;
+    }
+
+    .targeting-spell .name {
+      font-family: 'Cinzel', serif;
+    }
+
+    .targeting-instruction {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+
+    .target-options {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .target-option {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--bg-tertiary);
+      border: 2px solid var(--border-default);
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .target-option:hover {
+      border-color: var(--primary-600);
+    }
+
+    .target-option.selected {
+      border-color: var(--primary-500);
+      background: rgba(245, 158, 11, 0.1);
+    }
+
+    .target-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    .target-avatar.enemy { background: #DC2626; }
+    .target-avatar.ally { background: #22C55E; }
+
+    .target-info h4 {
+      font-size: 0.9375rem;
+      margin-bottom: 2px;
+    }
+
+    .target-info p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Cast Button */
+    .cast-section {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .cast-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .slot-usage {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .slot-usage .dot {
+      width: 10px;
+      height: 10px;
+      background: var(--secondary-500);
+      border-radius: 50%;
+    }
+
+    .cast-btn {
+      background: linear-gradient(180deg, var(--secondary-500) 0%, var(--secondary-600) 100%);
+      border: none;
+      color: white;
+      padding: 0.875rem 2rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.15s;
+      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+    }
+
+    .cast-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+    }
+
+    .cast-btn::before {
+      content: '✨';
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-container">
+    <h1 class="demo-title">Spell Selection & Targeting UI</h1>
+
+    <!-- Spell Panel -->
+    <div class="spell-panel">
+      <div class="panel-header">
+        <h2 class="font-display">Spellbook</h2>
+        <button class="close-btn">✕</button>
+      </div>
+
+      <!-- Spell Slots -->
+      <div class="spell-slots">
+        <div class="slot-group">
+          <span class="slot-label">1st</span>
+          <div class="slot-dots">
+            <div class="slot-dot used"></div>
+            <div class="slot-dot used"></div>
+            <div class="slot-dot"></div>
+            <div class="slot-dot"></div>
+          </div>
+        </div>
+        <div class="slot-group">
+          <span class="slot-label">2nd</span>
+          <div class="slot-dots">
+            <div class="slot-dot"></div>
+            <div class="slot-dot"></div>
+            <div class="slot-dot"></div>
+          </div>
+        </div>
+        <div class="slot-group">
+          <span class="slot-label">3rd</span>
+          <div class="slot-dots">
+            <div class="slot-dot"></div>
+            <div class="slot-dot"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spell Tabs -->
+      <div class="spell-tabs">
+        <button class="spell-tab active">All Spells</button>
+        <button class="spell-tab">Cantrips</button>
+        <button class="spell-tab">1st Level</button>
+        <button class="spell-tab">2nd Level</button>
+        <button class="spell-tab">3rd Level</button>
+      </div>
+
+      <!-- Spell Grid -->
+      <div class="spell-grid">
+        <div class="spell-card cantrip">
+          <div class="spell-header">
+            <div class="spell-name font-display">Fire Bolt</div>
+            <div class="spell-level">Cantrip</div>
+          </div>
+          <div class="spell-meta">
+            <span>⏱️ 1 Action</span>
+            <span>📏 120 ft</span>
+          </div>
+          <div class="spell-desc">Hurl a mote of fire at a creature or object within range.</div>
+          <div class="spell-damage">
+            <span class="dice damage-fire">2d10</span>
+            <span class="type">fire damage</span>
+          </div>
+        </div>
+
+        <div class="spell-card selected">
+          <div class="spell-header">
+            <div class="spell-name font-display">Magic Missile</div>
+            <div class="spell-level">1st</div>
+          </div>
+          <div class="spell-meta">
+            <span>⏱️ 1 Action</span>
+            <span>📏 120 ft</span>
+          </div>
+          <div class="spell-desc">Create three glowing darts of magical force that automatically hit.</div>
+          <div class="spell-damage">
+            <span class="dice damage-force">3×(1d4+1)</span>
+            <span class="type">force damage</span>
+          </div>
+        </div>
+
+        <div class="spell-card">
+          <div class="spell-header">
+            <div class="spell-name font-display">Fireball</div>
+            <div class="spell-level">3rd</div>
+          </div>
+          <div class="spell-meta">
+            <span>⏱️ 1 Action</span>
+            <span>📏 150 ft</span>
+            <span>🎯 20 ft sphere</span>
+          </div>
+          <div class="spell-desc">A bright streak flashes to a point you choose and then blossoms.</div>
+          <div class="spell-damage">
+            <span class="dice damage-fire">8d6</span>
+            <span class="type">fire damage</span>
+          </div>
+        </div>
+
+        <div class="spell-card">
+          <div class="spell-header">
+            <div class="spell-name font-display">Lightning Bolt</div>
+            <div class="spell-level">3rd</div>
+          </div>
+          <div class="spell-meta">
+            <span>⏱️ 1 Action</span>
+            <span>📏 100 ft line</span>
+          </div>
+          <div class="spell-desc">A stroke of lightning forming a 100-foot line blasts out.</div>
+          <div class="spell-damage">
+            <span class="dice damage-lightning">8d6</span>
+            <span class="type">lightning</span>
+          </div>
+        </div>
+
+        <div class="spell-card cantrip">
+          <div class="spell-header">
+            <div class="spell-name font-display">Ray of Frost</div>
+            <div class="spell-level">Cantrip</div>
+          </div>
+          <div class="spell-meta">
+            <span>⏱️ 1 Action</span>
+            <span>📏 60 ft</span>
+          </div>
+          <div class="spell-desc">A frigid beam of blue-white light streaks toward a creature.</div>
+          <div class="spell-damage">
+            <span class="dice damage-cold">2d8</span>
+            <span class="type">cold damage</span>
+          </div>
+        </div>
+
+        <div class="spell-card">
+          <div class="spell-header">
+            <div class="spell-name font-display">Shield</div>
+            <div class="spell-level">1st</div>
+          </div>
+          <div class="spell-meta">
+            <span>⚡ Reaction</span>
+            <span>📏 Self</span>
+          </div>
+          <div class="spell-desc">An invisible barrier of magical force protects you. +5 AC until your next turn.</div>
+          <div class="spell-damage">
+            <span class="dice" style="color: var(--secondary-400);">+5 AC</span>
+            <span class="type">defense</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Large Spell Cards -->
+    <div class="cards-row">
+      <div class="spell-card-large">
+        <div class="spell-icon">🔥</div>
+        <div class="spell-name font-display">Fireball</div>
+        <div class="spell-school">3rd-level Evocation</div>
+        <div class="spell-stats">
+          <div class="spell-stat">
+            <div class="label">Cast Time</div>
+            <div class="value">1 Action</div>
+          </div>
+          <div class="spell-stat">
+            <div class="label">Range</div>
+            <div class="value">150 ft</div>
+          </div>
+          <div class="spell-stat">
+            <div class="label">Area</div>
+            <div class="value">20 ft ⭕</div>
+          </div>
+        </div>
+        <div class="spell-desc">A bright streak flashes from your pointing finger to a point you choose within range and then blossoms with a low roar into an explosion of flame.</div>
+        <div class="spell-damage">
+          <span class="dice damage-fire">8d6</span>
+          <span class="type">fire damage (DEX save half)</span>
+        </div>
+      </div>
+
+      <div class="spell-card-large" style="border-color: #22C55E; background: linear-gradient(135deg, rgba(22, 163, 74, 0.3) 0%, var(--surface-dark) 100%);">
+        <div class="spell-icon" style="background: #16A34A;">💚</div>
+        <div class="spell-name font-display" style="color: #4ADE80;">Cure Wounds</div>
+        <div class="spell-school" style="color: #4ADE80;">1st-level Evocation</div>
+        <div class="spell-stats">
+          <div class="spell-stat">
+            <div class="label">Cast Time</div>
+            <div class="value">1 Action</div>
+          </div>
+          <div class="spell-stat">
+            <div class="label">Range</div>
+            <div class="value">Touch</div>
+          </div>
+          <div class="spell-stat">
+            <div class="label">Target</div>
+            <div class="value">1 Creature</div>
+          </div>
+        </div>
+        <div class="spell-desc">A creature you touch regains a number of hit points. This spell has no effect on undead or constructs.</div>
+        <div class="spell-damage">
+          <span class="dice" style="color: #22C55E;">1d8 + 4</span>
+          <span class="type">HP restored</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Targeting UI -->
+    <div class="targeting-ui">
+      <div class="targeting-header">
+        <div class="targeting-spell">
+          <span class="icon">✨</span>
+          <span class="name font-display">Magic Missile</span>
+        </div>
+        <span class="targeting-instruction">Select up to 3 targets (can target same creature multiple times)</span>
+      </div>
+
+      <div class="target-options">
+        <div class="target-option selected">
+          <div class="target-avatar enemy">G</div>
+          <div class="target-info">
+            <h4>Goblin</h4>
+            <p>15 ft away • HP: 7/7</p>
+          </div>
+        </div>
+        <div class="target-option selected">
+          <div class="target-avatar enemy">G</div>
+          <div class="target-info">
+            <h4>Goblin</h4>
+            <p>20 ft away • HP: 4/7</p>
+          </div>
+        </div>
+        <div class="target-option">
+          <div class="target-avatar enemy">G</div>
+          <div class="target-info">
+            <h4>Goblin Boss</h4>
+            <p>25 ft away • HP: 21/21</p>
+          </div>
+        </div>
+        <div class="target-option selected">
+          <div class="target-avatar enemy">G</div>
+          <div class="target-info">
+            <h4>Goblin</h4>
+            <p>15 ft away • HP: 7/7</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="cast-section">
+        <div class="cast-info">
+          <div class="slot-usage">
+            <span class="dot"></span>
+            <span>Uses 1st-level spell slot (2 remaining)</span>
+          </div>
+        </div>
+        <button class="cast-btn">Cast Spell</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

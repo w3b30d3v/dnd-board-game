@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D Digital - Spell System Prototype</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-400: #FBBF24;
+      --primary-500: #F59E0B;
+      --secondary-400: #A78BFA;
+      --secondary-500: #8B5CF6;
+      --secondary-600: #7C3AED;
+      --bg-primary: #0F0D13;
+      --bg-secondary: #1A1720;
+      --surface-dark: #1E1B26;
+      --text-primary: #F4F4F5;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+      --border-subtle: #27272A;
+      
+      /* Spell school colors */
+      --evocation: #EF4444;
+      --abjuration: #3B82F6;
+      --necromancy: #6B21A8;
+      --divination: #FBBF24;
+      --conjuration: #10B981;
+      --transmutation: #F97316;
+      --enchantment: #EC4899;
+      --illusion: #8B5CF6;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .font-display { font-family: 'Cinzel', serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Magical background */
+    .bg-magic {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: 
+        radial-gradient(ellipse at 20% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+        var(--bg-primary);
+    }
+
+    /* Floating particles */
+    .particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .magic-particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: var(--secondary-400);
+      border-radius: 50%;
+      opacity: 0;
+      animation: float-magic 12s infinite;
+    }
+
+    @keyframes float-magic {
+      0% { transform: translateY(100vh) scale(0); opacity: 0; }
+      10% { opacity: 0.8; }
+      90% { opacity: 0.8; }
+      100% { transform: translateY(-100px) scale(1); opacity: 0; }
+    }
+
+    /* Layout */
+    .spell-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Header */
+    .spell-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .spell-header h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 2rem;
+    }
+
+    /* Spell Slots */
+    .spell-slots {
+      display: flex;
+      gap: 1.5rem;
+      padding: 1.5rem;
+      background: var(--surface-dark);
+      border-radius: 16px;
+      margin-bottom: 2rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .slot-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .slot-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      min-width: 60px;
+    }
+
+    .slot-dots {
+      display: flex;
+      gap: 0.375rem;
+    }
+
+    .slot-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--bg-primary);
+      border: 2px solid var(--secondary-500);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .slot-dot.filled {
+      background: var(--secondary-500);
+      box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+    }
+
+    .slot-dot:hover {
+      transform: scale(1.2);
+    }
+
+    /* Tabs */
+    .spell-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 1rem;
+    }
+
+    .tab {
+      padding: 0.75rem 1.5rem;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 0.9375rem;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .tab:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tab.active {
+      color: var(--secondary-400);
+      background: rgba(139, 92, 246, 0.15);
+    }
+
+    .tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1rem;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--secondary-500);
+    }
+
+    .tab-count {
+      margin-left: 0.5rem;
+      padding: 0.125rem 0.5rem;
+      background: rgba(139, 92, 246, 0.2);
+      border-radius: 10px;
+      font-size: 0.75rem;
+    }
+
+    /* Spell Grid */
+    .spell-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    /* Spell Card */
+    .spell-card {
+      position: relative;
+      background: linear-gradient(145deg, var(--surface-dark), var(--bg-secondary));
+      border-radius: 16px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      transform-style: preserve-3d;
+    }
+
+    .spell-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+    }
+
+    .spell-card[data-school="evocation"]::before { background: var(--evocation); }
+    .spell-card[data-school="abjuration"]::before { background: var(--abjuration); }
+    .spell-card[data-school="necromancy"]::before { background: var(--necromancy); }
+    .spell-card[data-school="divination"]::before { background: var(--divination); }
+    .spell-card[data-school="conjuration"]::before { background: var(--conjuration); }
+    .spell-card[data-school="transmutation"]::before { background: var(--transmutation); }
+    .spell-card[data-school="enchantment"]::before { background: var(--enchantment); }
+    .spell-card[data-school="illusion"]::before { background: var(--illusion); }
+
+    .spell-card:hover {
+      transform: translateY(-8px) rotateX(2deg);
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), 0 0 40px rgba(139, 92, 246, 0.15);
+    }
+
+    .spell-card.selected {
+      box-shadow: 0 0 0 3px var(--secondary-500), 0 30px 60px rgba(0, 0, 0, 0.4);
+    }
+
+    .spell-card.cantrip {
+      border: 1px dashed rgba(139, 92, 246, 0.3);
+    }
+
+    /* Card particles on hover */
+    .spell-card .card-particles {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .spell-card:hover .card-particles {
+      opacity: 1;
+    }
+
+    .card-particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      animation: card-float 2s ease-in-out infinite;
+    }
+
+    @keyframes card-float {
+      0%, 100% { transform: translateY(0); opacity: 0.5; }
+      50% { transform: translateY(-20px); opacity: 1; }
+    }
+
+    .spell-content {
+      padding: 1.5rem;
+    }
+
+    .spell-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+    }
+
+    .spell-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .spell-level {
+      padding: 0.25rem 0.75rem;
+      background: rgba(139, 92, 246, 0.2);
+      border-radius: 20px;
+      font-size: 0.75rem;
+      color: var(--secondary-400);
+      white-space: nowrap;
+    }
+
+    .spell-level.cantrip {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22C55E;
+    }
+
+    .spell-school {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+
+    .spell-meta {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      font-size: 0.8125rem;
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      color: var(--text-secondary);
+    }
+
+    .meta-icon {
+      font-size: 0.875rem;
+    }
+
+    .spell-desc {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .spell-damage {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem;
+      background: var(--bg-primary);
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+
+    .damage-dice {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: var(--secondary-400);
+    }
+
+    .damage-type {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .damage-type.fire { color: #EF4444; }
+    .damage-type.cold { color: #06B6D4; }
+    .damage-type.lightning { color: #FBBF24; }
+    .damage-type.force { color: #EC4899; }
+    .damage-type.radiant { color: #FCD34D; }
+    .damage-type.necrotic { color: #A855F7; }
+    .damage-type.healing { color: #22C55E; }
+
+    .spell-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .spell-tag {
+      padding: 0.25rem 0.5rem;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+    }
+
+    .spell-tag.concentration {
+      background: rgba(239, 68, 68, 0.15);
+      color: #EF4444;
+    }
+
+    .spell-tag.ritual {
+      background: rgba(34, 197, 94, 0.15);
+      color: #22C55E;
+    }
+
+    /* Cast Button */
+    .cast-section {
+      padding: 1rem 1.5rem;
+      background: rgba(139, 92, 246, 0.1);
+      border-top: 1px solid rgba(139, 92, 246, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .cast-cost {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    .cast-btn {
+      padding: 0.5rem 1rem;
+      background: linear-gradient(135deg, var(--secondary-500), var(--secondary-600));
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .cast-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+    }
+
+    .cast-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Spell Detail Modal */
+    .spell-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(10px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 2rem;
+    }
+
+    .spell-modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: linear-gradient(145deg, var(--bg-secondary), var(--bg-primary));
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 24px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: modal-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modal-in {
+      from {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .modal-header {
+      position: relative;
+      padding: 2rem;
+      background: linear-gradient(180deg, rgba(139, 92, 246, 0.2), transparent);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .modal-close:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: var(--text-primary);
+    }
+
+    .modal-spell-name {
+      font-family: 'Cinzel', serif;
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal-spell-sub {
+      color: var(--text-secondary);
+    }
+
+    .modal-body {
+      padding: 2rem;
+    }
+
+    .modal-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .modal-stat {
+      text-align: center;
+      padding: 1rem;
+      background: var(--surface-dark);
+      border-radius: 12px;
+    }
+
+    .modal-stat-label {
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+
+    .modal-stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      font-weight: bold;
+      color: var(--secondary-400);
+    }
+
+    .modal-desc {
+      font-size: 1rem;
+      line-height: 1.8;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+    }
+
+    .modal-damage-section {
+      padding: 1.5rem;
+      background: var(--surface-dark);
+      border-radius: 16px;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .modal-damage-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal-damage-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: var(--secondary-400);
+    }
+
+    .modal-damage-type {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .at-higher-levels {
+      padding: 1rem;
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      border-radius: 12px;
+      margin-bottom: 2rem;
+    }
+
+    .at-higher-levels h4 {
+      font-size: 0.875rem;
+      color: var(--primary-400);
+      margin-bottom: 0.5rem;
+    }
+
+    .at-higher-levels p {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .modal-footer {
+      padding: 1.5rem 2rem;
+      background: var(--surface-dark);
+      border-radius: 0 0 24px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .slot-selector {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .slot-selector label {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .slot-select {
+      padding: 0.5rem 1rem;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 0.875rem;
+    }
+
+    .modal-cast-btn {
+      padding: 1rem 2rem;
+      background: linear-gradient(135deg, var(--secondary-500), var(--secondary-600));
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .modal-cast-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+    }
+
+    /* Cast Animation Overlay */
+    .cast-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+
+    .cast-overlay.active {
+      display: flex;
+    }
+
+    .cast-animation {
+      text-align: center;
+    }
+
+    .cast-spell-name {
+      font-family: 'Cinzel', serif;
+      font-size: 3rem;
+      color: var(--secondary-400);
+      text-shadow: 0 0 40px rgba(139, 92, 246, 0.8);
+      animation: cast-name 1.5s ease-out;
+      margin-bottom: 2rem;
+    }
+
+    @keyframes cast-name {
+      0% { transform: scale(0.5); opacity: 0; }
+      50% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .cast-damage {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 5rem;
+      font-weight: bold;
+      color: var(--text-primary);
+      animation: cast-damage 1s ease-out 0.5s both;
+    }
+
+    @keyframes cast-damage {
+      0% { transform: translateY(50px) scale(0.5); opacity: 0; }
+      50% { transform: translateY(-10px) scale(1.2); }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    .cast-type {
+      font-size: 1.5rem;
+      color: var(--secondary-400);
+      margin-top: 1rem;
+      animation: cast-type 0.5s ease-out 1s both;
+    }
+
+    @keyframes cast-type {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* Particle explosion */
+    .cast-particles {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      pointer-events: none;
+    }
+
+    .cast-particle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--secondary-400);
+      animation: explode 1s ease-out forwards;
+    }
+
+    @keyframes explode {
+      0% { transform: translate(0, 0) scale(1); opacity: 1; }
+      100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 300;
+    }
+
+    .toast {
+      background: var(--surface-dark);
+      border: 1px solid var(--secondary-500);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      animation: toast-in 0.3s ease-out;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-magic"></div>
+  <div class="particles" id="particles"></div>
+
+  <div class="spell-container">
+    <div class="spell-header">
+      <h1 class="font-display">✨ Spellbook</h1>
+      <div style="color: var(--text-secondary);">Lyra Moonwhisper • Wizard 5</div>
+    </div>
+
+    <!-- Spell Slots -->
+    <div class="spell-slots">
+      <div class="slot-group">
+        <span class="slot-label">1st Level</span>
+        <div class="slot-dots">
+          <div class="slot-dot filled" onclick="toggleSlot(this)"></div>
+          <div class="slot-dot filled" onclick="toggleSlot(this)"></div>
+          <div class="slot-dot filled" onclick="toggleSlot(this)"></div>
+          <div class="slot-dot" onclick="toggleSlot(this)"></div>
+        </div>
+      </div>
+      <div class="slot-group">
+        <span class="slot-label">2nd Level</span>
+        <div class="slot-dots">
+          <div class="slot-dot filled" onclick="toggleSlot(this)"></div>
+          <div class="slot-dot filled" onclick="toggleSlot(this)"></div>
+          <div class="slot-dot" onclick="toggleSlot(this)"></div>
+        </div>
+      </div>
+      <div class="slot-group">
+        <span class="slot-label">3rd Level</span>
+        <div class="slot-dots">
+          <div class="slot-dot filled" onclick="toggleSlot(this)"></div>
+          <div class="slot-dot filled" onclick="toggleSlot(this)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="spell-tabs">
+      <button class="tab active" onclick="filterSpells('all', this)">All Spells <span class="tab-count">12</span></button>
+      <button class="tab" onclick="filterSpells('cantrip', this)">Cantrips <span class="tab-count">4</span></button>
+      <button class="tab" onclick="filterSpells('1', this)">1st Level <span class="tab-count">4</span></button>
+      <button class="tab" onclick="filterSpells('2', this)">2nd Level <span class="tab-count">2</span></button>
+      <button class="tab" onclick="filterSpells('3', this)">3rd Level <span class="tab-count">2</span></button>
+    </div>
+
+    <!-- Spell Grid -->
+    <div class="spell-grid" id="spellGrid">
+      <!-- Cantrips -->
+      <div class="spell-card cantrip" data-school="evocation" data-level="0" onclick="openSpellModal('firebolt')">
+        <div class="card-particles">
+          <div class="card-particle" style="left: 20%; top: 80%; background: #EF4444; animation-delay: 0s;"></div>
+          <div class="card-particle" style="left: 50%; top: 70%; background: #F97316; animation-delay: 0.3s;"></div>
+          <div class="card-particle" style="left: 80%; top: 85%; background: #EF4444; animation-delay: 0.6s;"></div>
+        </div>
+        <div class="spell-content">
+          <div class="spell-header-row">
+            <div>
+              <div class="spell-name font-display">Fire Bolt</div>
+              <div class="spell-school">Evocation cantrip</div>
+            </div>
+            <div class="spell-level cantrip">Cantrip</div>
+          </div>
+          <div class="spell-meta">
+            <div class="meta-item"><span class="meta-icon">⏱️</span> 1 action</div>
+            <div class="meta-item"><span class="meta-icon">📏</span> 120 ft</div>
+          </div>
+          <div class="spell-damage">
+            <span class="damage-dice">2d10</span>
+            <span class="damage-type fire">fire damage</span>
+          </div>
+          <div class="spell-desc">You hurl a mote of fire at a creature or object within range.</div>
+        </div>
+        <div class="cast-section">
+          <span class="cast-cost">No slot required</span>
+          <button class="cast-btn" onclick="event.stopPropagation(); castSpell('Fire Bolt', '2d10', 'fire')">
+            🔥 Cast
+          </button>
+        </div>
+      </div>
+
+      <div class="spell-card cantrip" data-school="evocation" data-level="0" onclick="openSpellModal('rayoffrost')">
+        <div class="spell-content">
+          <div class="spell-header-row">
+            <div>
+              <div class="spell-name font-display">Ray of Frost</div>
+              <div class="spell-school">Evocation cantrip</div>
+            </div>
+            <div class="spell-level cantrip">Cantrip</div>
+          </div>
+          <div class="spell-meta">
+            <div class="meta-item"><span class="meta-icon">⏱️</span> 1 action</div>
+            <div class="meta-item"><span class="meta-icon">📏</span> 60 ft</div>
+          </div>
+          <div class="spell-damage">
+            <span class="damage-dice">2d8</span>
+            <span class="damage-type cold">cold damage</span>
+          </div>
+          <div class="spell-desc">A frigid beam of blue-white light streaks toward a creature.</div>
+        </div>
+        <div class="cast-section">
+          <span class="cast-cost">No slot required</span>
+          <button class="cast-btn" onclick="event.stopPropagation(); castSpell('Ray of Frost', '2d8', 'cold')">
+            ❄️ Cast
+          </button>
+        </div>
+      </div>
+
+      <!-- 1st Level -->
+      <div class="spell-card" data-school="evocation" data-level="1" onclick="openSpellModal('magicmissile')">
+        <div class="card-particles">
+          <div class="card-particle" style="left: 30%; top: 75%; background: #EC4899; animation-delay: 0.2s;"></div>
+          <div class="card-particle" style="left: 60%; top: 80%; background: #EC4899; animation-delay: 0.5s;"></div>
+        </div>
+        <div class="spell-content">
+          <div class="spell-header-row">
+            <div>
+              <div class="spell-name font-display">Magic Missile</div>
+              <div class="spell-school">1st-level evocation</div>
+            </div>
+            <div class="spell-level">1st</div>
+          </div>
+          <div class="spell-meta">
+            <div class="meta-item"><span class="meta-icon">⏱️</span> 1 action</div>
+            <div class="meta-item"><span class="meta-icon">📏</span> 120 ft</div>
+          </div>
+          <div class="spell-damage">
+            <span class="damage-dice">3d4+3</span>
+            <span class="damage-type force">force damage</span>
+          </div>
+          <div class="spell-desc">Three glowing darts of magical force strike targets automatically.</div>
+        </div>
+        <div class="cast-section">
+          <span class="cast-cost">1st level slot</span>
+          <button class="cast-btn" onclick="event.stopPropagation(); castSpell('Magic Missile', '3d4+3', 'force')">
+            ✨ Cast
+          </button>
+        </div>
+      </div>
+
+      <div class="spell-card" data-school="abjuration" data-level="1" onclick="openSpellModal('shield')">
+        <div class="spell-content">
+          <div class="spell-header-row">
+            <div>
+              <div class="spell-name font-display">Shield</div>
+              <div class="spell-school">1st-level abjuration</div>
+            </div>
+            <div class="spell-level">1st</div>
+          </div>
+          <div class="spell-meta">
+            <div class="meta-item"><span class="meta-icon">⚡</span> 1 reaction</div>
+            <div class="meta-item"><span class="meta-icon">📏</span> Self</div>
+          </div>
+          <div class="spell-desc">An invisible barrier of magical force protects you. +5 AC until your next turn.</div>
+          <div class="spell-tags">
+            <span class="spell-tag">+5 AC</span>
+          </div>
+        </div>
+        <div class="cast-section">
+          <span class="cast-cost">1st level slot</span>
+          <button class="cast-btn" onclick="event.stopPropagation(); castSpell('Shield', '+5 AC', 'defense')">
+            🛡️ Cast
+          </button>
+        </div>
+      </div>
+
+      <!-- 2nd Level -->
+      <div class="spell-card" data-school="evocation" data-level="2" onclick="openSpellModal('scorchingray')">
+        <div class="spell-content">
+          <div class="spell-header-row">
+            <div>
+              <div class="spell-name font-display">Scorching Ray</div>
+              <div class="spell-school">2nd-level evocation</div>
+            </div>
+            <div class="spell-level">2nd</div>
+          </div>
+          <div class="spell-meta">
+            <div class="meta-item"><span class="meta-icon">⏱️</span> 1 action</div>
+            <div class="meta-item"><span class="meta-icon">📏</span> 120 ft</div>
+          </div>
+          <div class="spell-damage">
+            <span class="damage-dice">6d6</span>
+            <span class="damage-type fire">fire damage</span>
+          </div>
+          <div class="spell-desc">You create three rays of fire and hurl them at targets within range.</div>
+        </div>
+        <div class="cast-section">
+          <span class="cast-cost">2nd level slot</span>
+          <button class="cast-btn" onclick="event.stopPropagation(); castSpell('Scorching Ray', '6d6', 'fire')">
+            🔥 Cast
+          </button>
+        </div>
+      </div>
+
+      <!-- 3rd Level -->
+      <div class="spell-card" data-school="evocation" data-level="3" onclick="openSpellModal('fireball')">
+        <div class="card-particles">
+          <div class="card-particle" style="left: 15%; top: 70%; background: #EF4444; animation-delay: 0s;"></div>
+          <div class="card-particle" style="left: 45%; top: 75%; background: #F97316; animation-delay: 0.2s;"></div>
+          <div class="card-particle" style="left: 75%; top: 70%; background: #EF4444; animation-delay: 0.4s;"></div>
+          <div class="card-particle" style="left: 30%; top: 85%; background: #FBBF24; animation-delay: 0.6s;"></div>
+          <div class="card-particle" style="left: 60%; top: 80%; background: #F97316; animation-delay: 0.8s;"></div>
+        </div>
+        <div class="spell-content">
+          <div class="spell-header-row">
+            <div>
+              <div class="spell-name font-display">Fireball</div>
+              <div class="spell-school">3rd-level evocation</div>
+            </div>
+            <div class="spell-level">3rd</div>
+          </div>
+          <div class="spell-meta">
+            <div class="meta-item"><span class="meta-icon">⏱️</span> 1 action</div>
+            <div class="meta-item"><span class="meta-icon">📏</span> 150 ft</div>
+            <div class="meta-item"><span class="meta-icon">🎯</span> 20ft radius</div>
+          </div>
+          <div class="spell-damage">
+            <span class="damage-dice">8d6</span>
+            <span class="damage-type fire">fire damage</span>
+          </div>
+          <div class="spell-desc">A bright streak flashes and blossoms into an explosion of flame.</div>
+        </div>
+        <div class="cast-section">
+          <span class="cast-cost">3rd level slot</span>
+          <button class="cast-btn" onclick="event.stopPropagation(); castSpell('Fireball', '8d6', 'fire')">
+            💥 Cast
+          </button>
+        </div>
+      </div>
+
+      <div class="spell-card" data-school="abjuration" data-level="3" onclick="openSpellModal('counterspell')">
+        <div class="spell-content">
+          <div class="spell-header-row">
+            <div>
+              <div class="spell-name font-display">Counterspell</div>
+              <div class="spell-school">3rd-level abjuration</div>
+            </div>
+            <div class="spell-level">3rd</div>
+          </div>
+          <div class="spell-meta">
+            <div class="meta-item"><span class="meta-icon">⚡</span> 1 reaction</div>
+            <div class="meta-item"><span class="meta-icon">📏</span> 60 ft</div>
+          </div>
+          <div class="spell-desc">You attempt to interrupt a creature in the process of casting a spell.</div>
+          <div class="spell-tags">
+            <span class="spell-tag">Counter magic</span>
+          </div>
+        </div>
+        <div class="cast-section">
+          <span class="cast-cost">3rd level slot</span>
+          <button class="cast-btn" onclick="event.stopPropagation(); castSpell('Counterspell', 'Countered!', 'abjuration')">
+            🚫 Cast
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Spell Detail Modal -->
+  <div class="spell-modal" id="spellModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button class="modal-close" onclick="closeSpellModal()">×</button>
+        <div class="modal-spell-name font-display" id="modalSpellName">Fireball</div>
+        <div class="modal-spell-sub">3rd-level evocation</div>
+      </div>
+      <div class="modal-body">
+        <div class="modal-stats">
+          <div class="modal-stat">
+            <div class="modal-stat-label">Casting Time</div>
+            <div class="modal-stat-value">1 action</div>
+          </div>
+          <div class="modal-stat">
+            <div class="modal-stat-label">Range</div>
+            <div class="modal-stat-value">150 ft</div>
+          </div>
+          <div class="modal-stat">
+            <div class="modal-stat-label">Components</div>
+            <div class="modal-stat-value">V, S, M</div>
+          </div>
+          <div class="modal-stat">
+            <div class="modal-stat-label">Duration</div>
+            <div class="modal-stat-value">Instant</div>
+          </div>
+        </div>
+
+        <div class="modal-damage-section">
+          <div class="modal-damage-label">Damage</div>
+          <div class="modal-damage-value">8d6</div>
+          <div class="modal-damage-type">fire damage (DEX save for half)</div>
+        </div>
+
+        <div class="modal-desc">
+          A bright streak flashes from your pointing finger to a point you choose within range and then blossoms with a low roar into an explosion of flame. Each creature in a 20-foot-radius sphere centered on that point must make a Dexterity saving throw. A target takes 8d6 fire damage on a failed save, or half as much damage on a successful one.
+        </div>
+
+        <div class="at-higher-levels">
+          <h4>At Higher Levels</h4>
+          <p>When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 for each slot level above 3rd.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="slot-selector">
+          <label>Cast at level:</label>
+          <select class="slot-select">
+            <option>3rd (8d6)</option>
+            <option>4th (9d6)</option>
+            <option>5th (10d6)</option>
+          </select>
+        </div>
+        <button class="modal-cast-btn" onclick="castSpell('Fireball', '8d6', 'fire'); closeSpellModal();">
+          💥 Cast Fireball
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cast Animation Overlay -->
+  <div class="cast-overlay" id="castOverlay">
+    <div class="cast-particles" id="castParticles"></div>
+    <div class="cast-animation">
+      <div class="cast-spell-name" id="castSpellName"></div>
+      <div class="cast-damage" id="castDamage"></div>
+      <div class="cast-type" id="castType"></div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    // Create floating particles
+    function createParticles() {
+      const container = document.getElementById('particles');
+      for (let i = 0; i < 20; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'magic-particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 12 + 's';
+        particle.style.animationDuration = (8 + Math.random() * 8) + 's';
+        container.appendChild(particle);
+      }
+    }
+    createParticles();
+
+    // Toggle spell slot
+    function toggleSlot(dot) {
+      dot.classList.toggle('filled');
+    }
+
+    // Filter spells by level
+    function filterSpells(level, tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      document.querySelectorAll('.spell-card').forEach(card => {
+        const cardLevel = card.dataset.level;
+        if (level === 'all' || cardLevel === level) {
+          card.style.display = 'block';
+          card.style.animation = 'fadeIn 0.3s ease-out';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    // Open spell modal
+    function openSpellModal(spellId) {
+      document.getElementById('spellModal').classList.add('active');
+    }
+
+    // Close spell modal
+    function closeSpellModal() {
+      document.getElementById('spellModal').classList.remove('active');
+    }
+
+    // Cast spell with animation
+    function castSpell(name, damage, type) {
+      const overlay = document.getElementById('castOverlay');
+      const particles = document.getElementById('castParticles');
+      
+      document.getElementById('castSpellName').textContent = name;
+      document.getElementById('castDamage').textContent = damage;
+      document.getElementById('castType').textContent = type + ' damage';
+      
+      // Clear old particles
+      particles.innerHTML = '';
+      
+      // Create explosion particles
+      const colors = {
+        fire: ['#EF4444', '#F97316', '#FBBF24'],
+        cold: ['#06B6D4', '#22D3EE', '#FFFFFF'],
+        force: ['#EC4899', '#F472B6', '#FFFFFF'],
+        lightning: ['#FBBF24', '#FDE047', '#FFFFFF'],
+        defense: ['#3B82F6', '#60A5FA', '#FFFFFF'],
+        abjuration: ['#3B82F6', '#8B5CF6', '#FFFFFF']
+      };
+      
+      const particleColors = colors[type] || colors.force;
+      
+      for (let i = 0; i < 50; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'cast-particle';
+        particle.style.background = particleColors[Math.floor(Math.random() * particleColors.length)];
+        
+        const angle = (Math.PI * 2 * i) / 50;
+        const distance = 150 + Math.random() * 200;
+        particle.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
+        particle.style.setProperty('--ty', Math.sin(angle) * distance + 'px');
+        particle.style.animationDelay = (Math.random() * 0.3) + 's';
+        
+        particles.appendChild(particle);
+      }
+      
+      overlay.classList.add('active');
+      
+      // Hide after animation
+      setTimeout(() => {
+        overlay.classList.remove('active');
+        showToast(`${name} cast successfully!`);
+      }, 2000);
+    }
+
+    // Show toast notification
+    function showToast(message) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `<span style="font-size: 1.25rem;">✨</span> ${message}`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(20px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Close modal on escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeSpellModal();
+      }
+    });
+
+    // Close modal on outside click
+    document.getElementById('spellModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('spellModal')) {
+        closeSpellModal();
+      }
+    });
+
+    // Add fadeIn animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    `;
+    document.head.appendChild(style);
+  </script>
+</body>
+</html>

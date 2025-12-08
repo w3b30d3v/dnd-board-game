@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D Digital - Initiative Tracker Prototype</title>
+  <style>
+    :root {
+      --bg-dark: #0F0D13;
+      --bg-surface: #1E1B26;
+      --bg-elevated: #2A2735;
+      --gold-primary: #F59E0B;
+      --gold-light: #FCD34D;
+      --gold-dark: #D97706;
+      --purple-primary: #8B5CF6;
+      --green-success: #22C55E;
+      --red-danger: #EF4444;
+      --blue-info: #3B82F6;
+      --text-primary: #F4F4F5;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .demo-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.5rem;
+      color: var(--gold-primary);
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    /* Initiative Track - Horizontal */
+    .initiative-track {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 24px;
+      background: linear-gradient(180deg, rgba(30, 27, 38, 0.95), rgba(15, 13, 19, 0.98));
+      border-radius: 16px;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      margin-bottom: 32px;
+      overflow-x: auto;
+      max-width: 100%;
+    }
+
+    .round-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-right: 16px;
+      border-right: 2px solid rgba(245, 158, 11, 0.3);
+      margin-right: 8px;
+    }
+
+    .round-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .round-number {
+      font-family: 'Cinzel', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--gold-primary);
+    }
+
+    /* Initiative Token */
+    .init-token {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px;
+      border-radius: 12px;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      min-width: 70px;
+    }
+
+    .init-token:hover {
+      transform: translateY(-4px);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .init-token.active {
+      transform: scale(1.15);
+      z-index: 10;
+    }
+
+    .init-token.active .token-avatar {
+      animation: activePulse 2s ease-in-out infinite;
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.6);
+    }
+
+    @keyframes activePulse {
+      0%, 100% { 
+        box-shadow: 0 0 20px rgba(245, 158, 11, 0.4), 0 0 40px rgba(245, 158, 11, 0.2);
+        transform: scale(1);
+      }
+      50% { 
+        box-shadow: 0 0 30px rgba(245, 158, 11, 0.6), 0 0 60px rgba(245, 158, 11, 0.3);
+        transform: scale(1.05);
+      }
+    }
+
+    .init-token.waiting {
+      opacity: 0.5;
+      filter: grayscale(30%);
+    }
+
+    .init-token.dead {
+      opacity: 0.3;
+      filter: grayscale(100%);
+    }
+
+    .token-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      border: 3px solid;
+      transition: all 0.4s ease;
+      position: relative;
+    }
+
+    .token-avatar.player {
+      background: linear-gradient(135deg, #22C55E, #16A34A);
+      border-color: #22C55E;
+    }
+
+    .token-avatar.enemy {
+      background: linear-gradient(135deg, #EF4444, #B91C1C);
+      border-color: #EF4444;
+    }
+
+    .token-avatar.npc {
+      background: linear-gradient(135deg, #3B82F6, #1D4ED8);
+      border-color: #3B82F6;
+    }
+
+    .init-token.active .token-avatar {
+      border-color: var(--gold-primary);
+      border-width: 4px;
+    }
+
+    .init-value {
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      background: var(--bg-dark);
+      color: var(--gold-primary);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 8px;
+      border: 2px solid var(--gold-primary);
+    }
+
+    .token-name {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      margin-top: 6px;
+      text-align: center;
+      max-width: 70px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .init-token.active .token-name {
+      color: var(--gold-primary);
+      font-weight: 600;
+    }
+
+    /* Turn Marker */
+    .turn-marker {
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.7rem;
+      animation: bounceArrow 1s ease-in-out infinite;
+    }
+
+    @keyframes bounceArrow {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-4px); }
+    }
+
+    /* Condition Icons */
+    .condition-icons {
+      display: flex;
+      gap: 2px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 60px;
+    }
+
+    .condition-icon {
+      font-size: 0.6rem;
+      background: var(--bg-dark);
+      padding: 2px 4px;
+      border-radius: 4px;
+      animation: conditionPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes conditionPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* Next Turn Arrow */
+    .next-turn-arrow {
+      font-size: 1.5rem;
+      color: var(--text-muted);
+      opacity: 0.3;
+    }
+
+    /* Vertical Initiative Panel */
+    .initiative-panel {
+      background: linear-gradient(180deg, rgba(30, 27, 38, 0.95), rgba(15, 13, 19, 0.98));
+      border-radius: 16px;
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      padding: 20px;
+      width: 320px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .panel-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.125rem;
+      color: var(--gold-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .round-badge {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--gold-primary);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    /* Initiative List */
+    .init-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .init-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg-surface);
+      border-radius: 12px;
+      border: 2px solid transparent;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .init-item:hover {
+      background: var(--bg-elevated);
+      transform: translateX(4px);
+    }
+
+    .init-item.current {
+      border-color: var(--gold-primary);
+      background: linear-gradient(90deg, rgba(245, 158, 11, 0.15), transparent);
+      animation: currentTurnGlow 2s ease-in-out infinite;
+    }
+
+    @keyframes currentTurnGlow {
+      0%, 100% { box-shadow: 0 0 10px rgba(245, 158, 11, 0.2); }
+      50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.4); }
+    }
+
+    .init-item.current::before {
+      content: '▶';
+      position: absolute;
+      left: -20px;
+      color: var(--gold-primary);
+      animation: slideIn 0.5s ease-out forwards;
+    }
+
+    @keyframes slideIn {
+      from { left: -20px; opacity: 0; }
+      to { left: 8px; opacity: 1; }
+    }
+
+    .init-item.current .item-avatar {
+      animation: avatarBounce 0.5s ease-out;
+    }
+
+    @keyframes avatarBounce {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+
+    .init-item.dead {
+      opacity: 0.4;
+      filter: grayscale(100%);
+    }
+
+    .init-order {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.875rem;
+      background: var(--bg-elevated);
+      border-radius: 8px;
+      color: var(--text-muted);
+    }
+
+    .init-item.current .init-order {
+      background: var(--gold-primary);
+      color: black;
+    }
+
+    .item-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+
+    .item-info {
+      flex: 1;
+    }
+
+    .item-name {
+      font-weight: 600;
+      font-size: 0.875rem;
+      margin-bottom: 2px;
+    }
+
+    .item-details {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .item-hp {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .hp-bar {
+      width: 50px;
+      height: 6px;
+      background: var(--bg-dark);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .hp-fill {
+      height: 100%;
+      background: var(--green-success);
+      border-radius: 3px;
+      transition: all 0.5s ease;
+    }
+
+    .hp-fill.hurt {
+      background: linear-gradient(90deg, var(--green-success), #EAB308);
+    }
+
+    .hp-fill.critical {
+      background: var(--red-danger);
+      animation: criticalPulse 1s ease-in-out infinite;
+    }
+
+    @keyframes criticalPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .item-init-value {
+      font-weight: 700;
+      color: var(--gold-primary);
+      font-size: 0.875rem;
+      min-width: 24px;
+      text-align: right;
+    }
+
+    .item-conditions {
+      display: flex;
+      gap: 4px;
+    }
+
+    .mini-condition {
+      font-size: 0.7rem;
+      background: rgba(139, 92, 246, 0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* Action Buttons */
+    .panel-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .action-btn.primary {
+      background: linear-gradient(135deg, var(--gold-primary), var(--gold-dark));
+      color: black;
+    }
+
+    .action-btn.primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(245, 158, 11, 0.4);
+    }
+
+    .action-btn.secondary {
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .action-btn.secondary:hover {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+    }
+
+    /* Turn Transition Animation */
+    .turn-transition {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .turn-transition.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .turn-content {
+      text-align: center;
+      animation: turnReveal 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    @keyframes turnReveal {
+      0% { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    .turn-avatar-large {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      margin: 0 auto 16px;
+      border: 4px solid var(--gold-primary);
+      animation: turnAvatarPulse 1s ease-in-out infinite;
+    }
+
+    @keyframes turnAvatarPulse {
+      0%, 100% { box-shadow: 0 0 30px rgba(245, 158, 11, 0.4); }
+      50% { box-shadow: 0 0 60px rgba(245, 158, 11, 0.6); }
+    }
+
+    .turn-name {
+      font-family: 'Cinzel', serif;
+      font-size: 2rem;
+      color: var(--gold-primary);
+      margin-bottom: 8px;
+    }
+
+    .turn-subtitle {
+      font-size: 1rem;
+      color: var(--text-secondary);
+    }
+
+    /* Timer */
+    .turn-timer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-top: 16px;
+    }
+
+    .timer-bar {
+      flex: 1;
+      height: 4px;
+      background: var(--bg-dark);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .timer-fill {
+      height: 100%;
+      background: var(--gold-primary);
+      transition: width 1s linear;
+    }
+
+    .timer-fill.warning {
+      background: #EAB308;
+    }
+
+    .timer-fill.danger {
+      background: var(--red-danger);
+      animation: timerPulse 0.5s ease-in-out infinite;
+    }
+
+    @keyframes timerPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .demo-controls {
+      margin-top: 24px;
+      display: flex;
+      gap: 12px;
+    }
+
+    .demo-btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      background: var(--purple-primary);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .demo-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
+    }
+
+    .layouts {
+      display: flex;
+      gap: 48px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .layout-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1 class="demo-title">⚔️ Initiative Tracker Prototypes</h1>
+
+  <div class="layouts">
+    <!-- Horizontal Track -->
+    <div>
+      <div class="layout-label">Horizontal Track (Top of Screen)</div>
+      <div class="initiative-track" id="horizontalTrack">
+        <div class="round-indicator">
+          <span class="round-label">Round</span>
+          <span class="round-number" id="roundNum">3</span>
+        </div>
+
+        <div class="init-token active" data-init="21">
+          <span class="turn-marker">⬇️</span>
+          <div class="token-avatar player">🛡️</div>
+          <span class="init-value">21</span>
+          <span class="token-name">Sir Aldric</span>
+        </div>
+
+        <span class="next-turn-arrow">→</span>
+
+        <div class="init-token" data-init="18">
+          <div class="token-avatar enemy">🐺</div>
+          <span class="init-value">18</span>
+          <span class="token-name">Dire Wolf</span>
+          <div class="condition-icons">
+            <span class="condition-icon">🩸</span>
+          </div>
+        </div>
+
+        <span class="next-turn-arrow">→</span>
+
+        <div class="init-token" data-init="15">
+          <div class="token-avatar player">🔮</div>
+          <span class="init-value">15</span>
+          <span class="token-name">Lyralei</span>
+          <div class="condition-icons">
+            <span class="condition-icon">🛡️</span>
+          </div>
+        </div>
+
+        <span class="next-turn-arrow">→</span>
+
+        <div class="init-token" data-init="12">
+          <div class="token-avatar enemy">👹</div>
+          <span class="init-value">12</span>
+          <span class="token-name">Goblin 1</span>
+        </div>
+
+        <span class="next-turn-arrow">→</span>
+
+        <div class="init-token" data-init="11">
+          <div class="token-avatar enemy">👹</div>
+          <span class="init-value">11</span>
+          <span class="token-name">Goblin 2</span>
+        </div>
+
+        <span class="next-turn-arrow">→</span>
+
+        <div class="init-token" data-init="9">
+          <div class="token-avatar player">🗡️</div>
+          <span class="init-value">9</span>
+          <span class="token-name">Shadow</span>
+        </div>
+
+        <span class="next-turn-arrow">→</span>
+
+        <div class="init-token dead" data-init="5">
+          <div class="token-avatar enemy">💀</div>
+          <span class="init-value">5</span>
+          <span class="token-name">Skeleton</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vertical Panel -->
+    <div>
+      <div class="layout-label">Vertical Panel (Side of Screen)</div>
+      <div class="initiative-panel">
+        <div class="panel-header">
+          <h3 class="panel-title">⚔️ Turn Order</h3>
+          <span class="round-badge">Round 3</span>
+        </div>
+
+        <div class="init-list" id="initList">
+          <div class="init-item current" data-id="1">
+            <span class="init-order">1</span>
+            <div class="item-avatar player">🛡️</div>
+            <div class="item-info">
+              <div class="item-name">Sir Aldric</div>
+              <div class="item-details">
+                <span class="item-hp">
+                  <span>❤️</span>
+                  <div class="hp-bar">
+                    <div class="hp-fill" style="width: 85%;"></div>
+                  </div>
+                  <span>34/40</span>
+                </span>
+              </div>
+            </div>
+            <span class="item-init-value">21</span>
+          </div>
+
+          <div class="init-item" data-id="2">
+            <span class="init-order">2</span>
+            <div class="item-avatar enemy">🐺</div>
+            <div class="item-info">
+              <div class="item-name">Dire Wolf</div>
+              <div class="item-details">
+                <span class="item-hp">
+                  <span>❤️</span>
+                  <div class="hp-bar">
+                    <div class="hp-fill hurt" style="width: 45%;"></div>
+                  </div>
+                  <span>17/37</span>
+                </span>
+                <div class="item-conditions">
+                  <span class="mini-condition">🩸</span>
+                </div>
+              </div>
+            </div>
+            <span class="item-init-value">18</span>
+          </div>
+
+          <div class="init-item" data-id="3">
+            <span class="init-order">3</span>
+            <div class="item-avatar player">🔮</div>
+            <div class="item-info">
+              <div class="item-name">Lyralei Moonshadow</div>
+              <div class="item-details">
+                <span class="item-hp">
+                  <span>❤️</span>
+                  <div class="hp-bar">
+                    <div class="hp-fill" style="width: 100%;"></div>
+                  </div>
+                  <span>24/24</span>
+                </span>
+                <div class="item-conditions">
+                  <span class="mini-condition">🛡️</span>
+                </div>
+              </div>
+            </div>
+            <span class="item-init-value">15</span>
+          </div>
+
+          <div class="init-item" data-id="4">
+            <span class="init-order">4</span>
+            <div class="item-avatar enemy">👹</div>
+            <div class="item-info">
+              <div class="item-name">Goblin Archer</div>
+              <div class="item-details">
+                <span class="item-hp">
+                  <span>❤️</span>
+                  <div class="hp-bar">
+                    <div class="hp-fill critical" style="width: 15%;"></div>
+                  </div>
+                  <span>3/20</span>
+                </span>
+              </div>
+            </div>
+            <span class="item-init-value">12</span>
+          </div>
+
+          <div class="init-item" data-id="5">
+            <span class="init-order">5</span>
+            <div class="item-avatar player">🗡️</div>
+            <div class="item-info">
+              <div class="item-name">Shadow</div>
+              <div class="item-details">
+                <span class="item-hp">
+                  <span>❤️</span>
+                  <div class="hp-bar">
+                    <div class="hp-fill hurt" style="width: 60%;"></div>
+                  </div>
+                  <span>18/30</span>
+                </span>
+              </div>
+            </div>
+            <span class="item-init-value">9</span>
+          </div>
+
+          <div class="init-item dead" data-id="6">
+            <span class="init-order">—</span>
+            <div class="item-avatar enemy">💀</div>
+            <div class="item-info">
+              <div class="item-name">Skeleton Warrior</div>
+              <div class="item-details">
+                <span style="color: var(--red-danger);">☠️ Defeated</span>
+              </div>
+            </div>
+            <span class="item-init-value">5</span>
+          </div>
+        </div>
+
+        <div class="turn-timer">
+          <span>⏱️</span>
+          <div class="timer-bar">
+            <div class="timer-fill" id="timerFill" style="width: 70%;"></div>
+          </div>
+          <span id="timerText">42s</span>
+        </div>
+
+        <div class="panel-actions">
+          <button class="action-btn secondary" id="delayBtn">
+            ⏸️ Delay
+          </button>
+          <button class="action-btn primary" id="endTurnBtn">
+            ➡️ End Turn
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Turn Transition Overlay -->
+  <div class="turn-transition" id="turnTransition">
+    <div class="turn-content">
+      <div class="turn-avatar-large player" id="turnAvatar">🐺</div>
+      <div class="turn-name" id="turnName">Dire Wolf's Turn</div>
+      <div class="turn-subtitle">Enemy Phase</div>
+    </div>
+  </div>
+
+  <div class="demo-controls">
+    <button class="demo-btn" id="nextTurnBtn">▶️ Simulate Next Turn</button>
+    <button class="demo-btn" id="damageBtn">💥 Simulate Damage</button>
+    <button class="demo-btn" id="resetBtn">🔄 Reset</button>
+  </div>
+
+  <script>
+    const initList = document.getElementById('initList');
+    const turnTransition = document.getElementById('turnTransition');
+    const turnAvatar = document.getElementById('turnAvatar');
+    const turnName = document.getElementById('turnName');
+    const timerFill = document.getElementById('timerFill');
+    const timerText = document.getElementById('timerText');
+    const horizontalTrack = document.getElementById('horizontalTrack');
+    const roundNum = document.getElementById('roundNum');
+
+    let currentIndex = 0;
+    let round = 3;
+    let timerValue = 42;
+    let timerInterval;
+
+    const characters = [
+      { name: 'Sir Aldric', emoji: '🛡️', type: 'player', subtitle: 'Your Turn!' },
+      { name: 'Dire Wolf', emoji: '🐺', type: 'enemy', subtitle: 'Enemy Phase' },
+      { name: 'Lyralei Moonshadow', emoji: '🔮', type: 'player', subtitle: 'Your Turn!' },
+      { name: 'Goblin Archer', emoji: '👹', type: 'enemy', subtitle: 'Enemy Phase' },
+      { name: 'Shadow', emoji: '🗡️', type: 'player', subtitle: 'Your Turn!' },
+    ];
+
+    // Timer countdown
+    function startTimer() {
+      clearInterval(timerInterval);
+      timerValue = 60;
+      timerInterval = setInterval(() => {
+        timerValue--;
+        const percentage = (timerValue / 60) * 100;
+        timerFill.style.width = percentage + '%';
+        timerText.textContent = timerValue + 's';
+        
+        timerFill.classList.remove('warning', 'danger');
+        if (timerValue <= 10) {
+          timerFill.classList.add('danger');
+        } else if (timerValue <= 20) {
+          timerFill.classList.add('warning');
+        }
+        
+        if (timerValue <= 0) {
+          clearInterval(timerInterval);
+        }
+      }, 1000);
+    }
+
+    // Next turn
+    document.getElementById('nextTurnBtn').addEventListener('click', () => {
+      currentIndex = (currentIndex + 1) % characters.length;
+      
+      if (currentIndex === 0) {
+        round++;
+        roundNum.textContent = round;
+      }
+      
+      const char = characters[currentIndex];
+      
+      // Show transition
+      turnAvatar.className = 'turn-avatar-large ' + char.type;
+      turnAvatar.textContent = char.emoji;
+      turnName.textContent = char.name + "'s Turn";
+      turnTransition.querySelector('.turn-subtitle').textContent = char.subtitle;
+      turnTransition.classList.add('active');
+      
+      setTimeout(() => {
+        turnTransition.classList.remove('active');
+        
+        // Update vertical list
+        const items = initList.querySelectorAll('.init-item:not(.dead)');
+        items.forEach((item, i) => {
+          item.classList.remove('current');
+          if (i === currentIndex) {
+            item.classList.add('current');
+          }
+        });
+        
+        // Update horizontal track
+        const tokens = horizontalTrack.querySelectorAll('.init-token:not(.dead)');
+        tokens.forEach((token, i) => {
+          token.classList.remove('active');
+          const marker = token.querySelector('.turn-marker');
+          if (marker) marker.remove();
+          
+          if (i === currentIndex) {
+            token.classList.add('active');
+            const newMarker = document.createElement('span');
+            newMarker.className = 'turn-marker';
+            newMarker.textContent = '⬇️';
+            token.insertBefore(newMarker, token.firstChild);
+          }
+        });
+        
+        startTimer();
+      }, 1500);
+    });
+
+    // Simulate damage
+    document.getElementById('damageBtn').addEventListener('click', () => {
+      const items = initList.querySelectorAll('.init-item:not(.dead)');
+      const randomItem = items[Math.floor(Math.random() * items.length)];
+      const hpFill = randomItem.querySelector('.hp-fill');
+      const currentWidth = parseInt(hpFill.style.width);
+      const newWidth = Math.max(0, currentWidth - 20);
+      
+      // Flash red
+      randomItem.style.background = 'rgba(239, 68, 68, 0.3)';
+      randomItem.style.transform = 'translateX(10px)';
+      
+      setTimeout(() => {
+        hpFill.style.width = newWidth + '%';
+        hpFill.classList.remove('hurt', 'critical');
+        if (newWidth <= 25) {
+          hpFill.classList.add('critical');
+        } else if (newWidth <= 50) {
+          hpFill.classList.add('hurt');
+        }
+        
+        randomItem.style.background = '';
+        randomItem.style.transform = '';
+      }, 200);
+    });
+
+    // Reset
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      location.reload();
+    });
+
+    // End turn button
+    document.getElementById('endTurnBtn').addEventListener('click', () => {
+      document.getElementById('nextTurnBtn').click();
+    });
+
+    // Start initial timer
+    startTimer();
+  </script>
+</body>
+</html>

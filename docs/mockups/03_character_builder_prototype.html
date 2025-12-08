@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D Digital - Character Builder Prototype</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-400: #FBBF24;
+      --primary-500: #F59E0B;
+      --primary-600: #D97706;
+      --secondary-400: #A78BFA;
+      --secondary-500: #8B5CF6;
+      --bg-primary: #0F0D13;
+      --bg-secondary: #1A1720;
+      --bg-tertiary: #252231;
+      --surface-dark: #1E1B26;
+      --text-primary: #F4F4F5;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+      --border-subtle: #27272A;
+      --success: #22C55E;
+      --error: #EF4444;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    .font-display { font-family: 'Cinzel', serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Animated Background */
+    .bg-animated {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: 
+        radial-gradient(ellipse at 30% 20%, rgba(139, 92, 246, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 70% 80%, rgba(245, 158, 11, 0.08) 0%, transparent 50%),
+        var(--bg-primary);
+    }
+
+    /* Layout */
+    .builder-container {
+      display: grid;
+      grid-template-columns: 280px 1fr 320px;
+      min-height: 100vh;
+    }
+
+    /* Left Sidebar - Steps */
+    .sidebar {
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-subtle);
+      padding: 2rem 1.5rem;
+    }
+
+    .sidebar-header {
+      margin-bottom: 2rem;
+    }
+
+    .sidebar-header h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .sidebar-header p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+    }
+
+    .step:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .step.active {
+      background: rgba(245, 158, 11, 0.1);
+      border-color: var(--primary-500);
+    }
+
+    .step.completed {
+      background: rgba(34, 197, 94, 0.1);
+    }
+
+    .step-number {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--surface-dark);
+      border: 2px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.875rem;
+      transition: all 0.3s ease;
+    }
+
+    .step.active .step-number {
+      background: var(--primary-500);
+      border-color: var(--primary-500);
+      color: var(--bg-primary);
+    }
+
+    .step.completed .step-number {
+      background: var(--success);
+      border-color: var(--success);
+      color: white;
+    }
+
+    .step-info h4 {
+      font-size: 0.9375rem;
+      margin-bottom: 0.125rem;
+    }
+
+    .step-info p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .step.completed .step-info p {
+      color: var(--success);
+    }
+
+    /* Main Content */
+    .main-content {
+      padding: 2rem 3rem;
+      overflow-y: auto;
+    }
+
+    .content-header {
+      margin-bottom: 2rem;
+      animation: fadeInUp 0.5s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .content-header h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .content-header p {
+      color: var(--text-secondary);
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      margin-bottom: 2rem;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: var(--surface-dark);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary-500), var(--primary-400));
+      border-radius: 3px;
+      transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Selection Grid */
+    .selection-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .option-card {
+      position: relative;
+      background: var(--surface-dark);
+      border: 2px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+    }
+
+    .option-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(245, 158, 11, 0.1), transparent 50%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .option-card:hover::before {
+      opacity: 1;
+    }
+
+    .option-card:hover {
+      border-color: var(--primary-600);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .option-card.selected {
+      border-color: var(--primary-500);
+      background: rgba(245, 158, 11, 0.1);
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.2);
+    }
+
+    .option-card.selected::after {
+      content: '✓';
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 28px;
+      height: 28px;
+      background: var(--primary-500);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+      color: var(--bg-primary);
+      animation: checkmark 0.3s ease-out;
+    }
+
+    @keyframes checkmark {
+      from { transform: scale(0); }
+      to { transform: scale(1); }
+    }
+
+    .option-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, var(--bg-tertiary), var(--surface-dark));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .option-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1.125rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .option-desc {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+      line-height: 1.5;
+    }
+
+    .option-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .tag {
+      padding: 0.25rem 0.75rem;
+      background: rgba(139, 92, 246, 0.15);
+      border-radius: 20px;
+      font-size: 0.6875rem;
+      color: var(--secondary-400);
+      font-weight: 500;
+    }
+
+    .tag.stat { background: rgba(245, 158, 11, 0.15); color: var(--primary-400); }
+    .tag.skill { background: rgba(59, 130, 246, 0.15); color: #60A5FA; }
+
+    /* Ability Scores Section */
+    .ability-scores {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .ability-card {
+      background: var(--surface-dark);
+      border: 2px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 1.5rem;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .ability-card:hover {
+      border-color: var(--primary-600);
+    }
+
+    .ability-name {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+
+    .ability-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: var(--primary-400);
+      margin-bottom: 0.25rem;
+    }
+
+    .ability-modifier {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+    }
+
+    .ability-controls {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .ability-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 1.25rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .ability-btn:hover {
+      background: var(--primary-500);
+      border-color: var(--primary-500);
+      color: var(--bg-primary);
+    }
+
+    .ability-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .points-remaining {
+      text-align: center;
+      padding: 1rem;
+      background: var(--surface-dark);
+      border-radius: 12px;
+      margin-bottom: 2rem;
+    }
+
+    .points-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--primary-400);
+    }
+
+    .points-label {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    /* Name Input */
+    .name-input-section {
+      max-width: 500px;
+      margin-bottom: 2rem;
+    }
+
+    .input-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .input-label {
+      display: block;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    .text-input {
+      width: 100%;
+      padding: 1rem 1.25rem;
+      background: var(--surface-dark);
+      border: 2px solid var(--border-subtle);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-size: 1.125rem;
+      font-family: 'Cinzel', serif;
+      transition: all 0.3s ease;
+    }
+
+    .text-input:focus {
+      outline: none;
+      border-color: var(--primary-500);
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+    }
+
+    .text-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .btn {
+      padding: 1rem 2rem;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-secondary {
+      background: var(--surface-dark);
+      border: 2px solid var(--border-subtle);
+      color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--text-muted);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+      border: none;
+      color: var(--bg-primary);
+      box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(245, 158, 11, 0.4);
+    }
+
+    /* Right Panel - Preview */
+    .preview-panel {
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-subtle);
+      padding: 2rem 1.5rem;
+    }
+
+    .preview-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .preview-header h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.125rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .preview-header p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .preview-card {
+      background: linear-gradient(145deg, var(--surface-dark), var(--bg-tertiary));
+      border: 2px solid var(--border-subtle);
+      border-radius: 20px;
+      overflow: hidden;
+      animation: cardFloat 4s ease-in-out infinite;
+    }
+
+    @keyframes cardFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .preview-portrait {
+      aspect-ratio: 1;
+      background: linear-gradient(135deg, var(--bg-tertiary), var(--surface-dark));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .preview-portrait::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(0deg, var(--surface-dark) 0%, transparent 50%);
+    }
+
+    .preview-level {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 0.5rem 1rem;
+      background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: var(--bg-primary);
+      z-index: 1;
+    }
+
+    .preview-info {
+      padding: 1.5rem;
+    }
+
+    .preview-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .preview-meta {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+    }
+
+    .preview-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .preview-stat {
+      background: var(--bg-primary);
+      border-radius: 8px;
+      padding: 0.5rem;
+      text-align: center;
+    }
+
+    .preview-stat-label {
+      font-size: 0.625rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .preview-stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      font-weight: bold;
+      color: var(--primary-400);
+    }
+
+    .preview-abilities {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 0.25rem;
+    }
+
+    .preview-ability {
+      text-align: center;
+      padding: 0.5rem 0;
+    }
+
+    .preview-ability-label {
+      font-size: 0.5rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .preview-ability-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      font-weight: bold;
+    }
+
+    /* Step Content Sections (hidden by default) */
+    .step-content {
+      display: none;
+    }
+
+    .step-content.active {
+      display: block;
+      animation: fadeInUp 0.5s ease-out;
+    }
+
+    /* Subrace Selection */
+    .subrace-section {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .subrace-section h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 100;
+    }
+
+    .toast {
+      background: var(--surface-dark);
+      border: 1px solid var(--success);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      animation: toastIn 0.3s ease-out;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-animated"></div>
+
+  <div class="builder-container">
+    <!-- Left Sidebar - Steps -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2 class="font-display">Create Hero</h2>
+        <p>Build your character step by step</p>
+      </div>
+
+      <div class="steps">
+        <div class="step active" data-step="1" onclick="goToStep(1)">
+          <div class="step-number">1</div>
+          <div class="step-info">
+            <h4>Name</h4>
+            <p>Choose a name</p>
+          </div>
+        </div>
+        <div class="step" data-step="2" onclick="goToStep(2)">
+          <div class="step-number">2</div>
+          <div class="step-info">
+            <h4>Race</h4>
+            <p>Select your race</p>
+          </div>
+        </div>
+        <div class="step" data-step="3" onclick="goToStep(3)">
+          <div class="step-number">3</div>
+          <div class="step-info">
+            <h4>Class</h4>
+            <p>Choose your class</p>
+          </div>
+        </div>
+        <div class="step" data-step="4" onclick="goToStep(4)">
+          <div class="step-number">4</div>
+          <div class="step-info">
+            <h4>Abilities</h4>
+            <p>Assign ability scores</p>
+          </div>
+        </div>
+        <div class="step" data-step="5" onclick="goToStep(5)">
+          <div class="step-number">5</div>
+          <div class="step-info">
+            <h4>Background</h4>
+            <p>Select background</p>
+          </div>
+        </div>
+        <div class="step" data-step="6" onclick="goToStep(6)">
+          <div class="step-number">6</div>
+          <div class="step-info">
+            <h4>Review</h4>
+            <p>Finalize character</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Progress -->
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill" style="width: 16.6%"></div>
+        </div>
+        <div class="progress-label">
+          <span>Step <span id="currentStepNum">1</span> of 6</span>
+          <span id="progressPercent">17%</span>
+        </div>
+      </div>
+
+      <!-- Step 1: Name -->
+      <div class="step-content active" id="step1">
+        <div class="content-header">
+          <h1 class="font-display">Name Your Hero</h1>
+          <p>What shall the bards sing of? Choose a name that will echo through the ages.</p>
+        </div>
+
+        <div class="name-input-section">
+          <div class="input-group">
+            <label class="input-label">Character Name</label>
+            <input type="text" class="text-input" id="charName" placeholder="Enter your hero's name..." oninput="updatePreview()">
+          </div>
+        </div>
+
+        <div class="nav-buttons">
+          <div></div>
+          <button class="btn btn-primary" onclick="nextStep()">
+            Continue <span>→</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: Race -->
+      <div class="step-content" id="step2">
+        <div class="content-header">
+          <h1 class="font-display">Choose Your Race</h1>
+          <p>Each race offers unique traits and abilities that shape your character.</p>
+        </div>
+
+        <div class="selection-grid" id="raceGrid">
+          <div class="option-card" data-value="dwarf" onclick="selectOption('race', 'dwarf', this)">
+            <div class="option-icon">🪓</div>
+            <div class="option-name font-display">Dwarf</div>
+            <div class="option-desc">Bold and hardy, dwarves are known for their skill in warfare and their ability to endure hardship.</div>
+            <div class="option-tags">
+              <span class="tag stat">+2 CON</span>
+              <span class="tag">Darkvision</span>
+              <span class="tag">Poison Resist</span>
+            </div>
+          </div>
+
+          <div class="option-card" data-value="elf" onclick="selectOption('race', 'elf', this)">
+            <div class="option-icon">🏹</div>
+            <div class="option-name font-display">Elf</div>
+            <div class="option-desc">Elves are a magical people with grace and mastery of magic.</div>
+            <div class="option-tags">
+              <span class="tag stat">+2 DEX</span>
+              <span class="tag">Darkvision</span>
+              <span class="tag">Trance</span>
+            </div>
+          </div>
+
+          <div class="option-card" data-value="human" onclick="selectOption('race', 'human', this)">
+            <div class="option-icon">⚔️</div>
+            <div class="option-name font-display">Human</div>
+            <div class="option-desc">Versatile and ambitious, humans are the most adaptable of the common races.</div>
+            <div class="option-tags">
+              <span class="tag stat">+1 All Stats</span>
+              <span class="tag skill">Extra Skill</span>
+            </div>
+          </div>
+
+          <div class="option-card" data-value="halfling" onclick="selectOption('race', 'halfling', this)">
+            <div class="option-icon">🍀</div>
+            <div class="option-name font-display">Halfling</div>
+            <div class="option-desc">Small but capable, halflings are known for their luck and bravery.</div>
+            <div class="option-tags">
+              <span class="tag stat">+2 DEX</span>
+              <span class="tag">Lucky</span>
+              <span class="tag">Brave</span>
+            </div>
+          </div>
+
+          <div class="option-card" data-value="dragonborn" onclick="selectOption('race', 'dragonborn', this)">
+            <div class="option-icon">🐉</div>
+            <div class="option-name font-display">Dragonborn</div>
+            <div class="option-desc">Born of dragons, these proud warriors wield breath weapons.</div>
+            <div class="option-tags">
+              <span class="tag stat">+2 STR +1 CHA</span>
+              <span class="tag">Breath Weapon</span>
+            </div>
+          </div>
+
+          <div class="option-card" data-value="tiefling" onclick="selectOption('race', 'tiefling', this)">
+            <div class="option-icon">😈</div>
+            <div class="option-name font-display">Tiefling</div>
+            <div class="option-desc">Descended from fiends, tieflings wield dark magic with ease.</div>
+            <div class="option-tags">
+              <span class="tag stat">+2 CHA +1 INT</span>
+              <span class="tag">Fire Resist</span>
+              <span class="tag">Darkvision</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn btn-secondary" onclick="prevStep()">
+            <span>←</span> Back
+          </button>
+          <button class="btn btn-primary" onclick="nextStep()" id="raceNextBtn" disabled>
+            Continue <span>→</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 3: Class -->
+      <div class="step-content" id="step3">
+        <div class="content-header">
+          <h1 class="font-display">Choose Your Class</h1>
+          <p>Your class defines your abilities and role in the party.</p>
+        </div>
+
+        <div class="selection-grid" id="classGrid">
+          <div class="option-card" data-value="fighter" onclick="selectOption('class', 'fighter', this)">
+            <div class="option-icon">⚔️</div>
+            <div class="option-name font-display">Fighter</div>
+            <div class="option-desc">Masters of martial combat, fighters are versatile warriors.</div>
+            <div class="option-tags">
+              <span class="tag">d10 Hit Die</span>
+              <span class="tag">Heavy Armor</span>
+              <span class="tag">Extra Attack</span>
+            </div>
+          </div>
+
+          <div class="option-card" data-value="wizard" onclick="selectOption('class', 'wizard', this)">
+            <div class="option-icon">🔮</div>
+            <div class="option-name font-display">Wizard</div>
+            <div class="option-desc">Scholarly magic-users who wield arcane power through study.</div>
+            <div class="option-tags">
+              <span class="tag">d6 Hit Die</span>
+              <span class="tag">Spellcasting</span>
+              <span class="tag">Arcane Recovery</span>
+            </div>
+          </div>
+
+          <div class="option-card" data-value="rogue" onclick="selectOption('class', 'rogue', this)">
+            <div class="option-icon">🗡️</div>
+            <div class="option-name font-display">Rogue</div>
+            <div class="option-desc">Skilled in stealth and precision strikes.</div>
+            <div class="option-tags">
+              <span class="tag">d8 Hit Die</span>
+              <span class="tag">Sneak Attack</span>
+              <span class="tag">Expertise</span>
+            </div>
+          </div>
+
+          <div class="option-card" data-value="cleric" onclick="selectOption('class', 'cleric', this)">
+            <div class="option-icon">✨</div>
+            <div class="option-name font-display">Cleric</div>
+            <div class="option-desc">Divine spellcasters who channel the power of their deity.</div>
+            <div class="option-tags">
+              <span class="tag">d8 Hit Die</span>
+              <span class="tag">Spellcasting</span>
+              <span class="tag">Channel Divinity</span>
+            </div>
+          </div>
+
+          <div class="option-card" data-value="barbarian" onclick="selectOption('class', 'barbarian', this)">
+            <div class="option-icon">💪</div>
+            <div class="option-name font-display">Barbarian</div>
+            <div class="option-desc">Fierce warriors who tap into primal rage.</div>
+            <div class="option-tags">
+              <span class="tag">d12 Hit Die</span>
+              <span class="tag">Rage</span>
+              <span class="tag">Unarmored Defense</span>
+            </div>
+          </div>
+
+          <div class="option-card" data-value="paladin" onclick="selectOption('class', 'paladin', this)">
+            <div class="option-icon">🛡️</div>
+            <div class="option-name font-display">Paladin</div>
+            <div class="option-desc">Holy warriors bound by a sacred oath.</div>
+            <div class="option-tags">
+              <span class="tag">d10 Hit Die</span>
+              <span class="tag">Divine Smite</span>
+              <span class="tag">Lay on Hands</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn btn-secondary" onclick="prevStep()">
+            <span>←</span> Back
+          </button>
+          <button class="btn btn-primary" onclick="nextStep()" id="classNextBtn" disabled>
+            Continue <span>→</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 4: Ability Scores -->
+      <div class="step-content" id="step4">
+        <div class="content-header">
+          <h1 class="font-display">Assign Ability Scores</h1>
+          <p>Distribute 27 points among your abilities using point buy.</p>
+        </div>
+
+        <div class="points-remaining">
+          <div class="points-value" id="pointsRemaining">27</div>
+          <div class="points-label">Points Remaining</div>
+        </div>
+
+        <div class="ability-scores" id="abilityScores">
+          <div class="ability-card" data-ability="str">
+            <div class="ability-name">Strength</div>
+            <div class="ability-value" id="strValue">8</div>
+            <div class="ability-modifier" id="strMod">-1</div>
+            <div class="ability-controls">
+              <button class="ability-btn" onclick="adjustAbility('str', -1)">−</button>
+              <button class="ability-btn" onclick="adjustAbility('str', 1)">+</button>
+            </div>
+          </div>
+
+          <div class="ability-card" data-ability="dex">
+            <div class="ability-name">Dexterity</div>
+            <div class="ability-value" id="dexValue">8</div>
+            <div class="ability-modifier" id="dexMod">-1</div>
+            <div class="ability-controls">
+              <button class="ability-btn" onclick="adjustAbility('dex', -1)">−</button>
+              <button class="ability-btn" onclick="adjustAbility('dex', 1)">+</button>
+            </div>
+          </div>
+
+          <div class="ability-card" data-ability="con">
+            <div class="ability-name">Constitution</div>
+            <div class="ability-value" id="conValue">8</div>
+            <div class="ability-modifier" id="conMod">-1</div>
+            <div class="ability-controls">
+              <button class="ability-btn" onclick="adjustAbility('con', -1)">−</button>
+              <button class="ability-btn" onclick="adjustAbility('con', 1)">+</button>
+            </div>
+          </div>
+
+          <div class="ability-card" data-ability="int">
+            <div class="ability-name">Intelligence</div>
+            <div class="ability-value" id="intValue">8</div>
+            <div class="ability-modifier" id="intMod">-1</div>
+            <div class="ability-controls">
+              <button class="ability-btn" onclick="adjustAbility('int', -1)">−</button>
+              <button class="ability-btn" onclick="adjustAbility('int', 1)">+</button>
+            </div>
+          </div>
+
+          <div class="ability-card" data-ability="wis">
+            <div class="ability-name">Wisdom</div>
+            <div class="ability-value" id="wisValue">8</div>
+            <div class="ability-modifier" id="wisMod">-1</div>
+            <div class="ability-controls">
+              <button class="ability-btn" onclick="adjustAbility('wis', -1)">−</button>
+              <button class="ability-btn" onclick="adjustAbility('wis', 1)">+</button>
+            </div>
+          </div>
+
+          <div class="ability-card" data-ability="cha">
+            <div class="ability-name">Charisma</div>
+            <div class="ability-value" id="chaValue">8</div>
+            <div class="ability-modifier" id="chaMod">-1</div>
+            <div class="ability-controls">
+              <button class="ability-btn" onclick="adjustAbility('cha', -1)">−</button>
+              <button class="ability-btn" onclick="adjustAbility('cha', 1)">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn btn-secondary" onclick="prevStep()">
+            <span>←</span> Back
+          </button>
+          <button class="btn btn-primary" onclick="nextStep()">
+            Continue <span>→</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 5: Background -->
+      <div class="step-content" id="step5">
+        <div class="content-header">
+          <h1 class="font-display">Choose Background</h1>
+          <p>Your background defines your character's history and grants additional skills.</p>
+        </div>
+
+        <div class="selection-grid" id="bgGrid">
+          <div class="option-card" data-value="soldier" onclick="selectOption('background', 'soldier', this)">
+            <div class="option-icon">⚔️</div>
+            <div class="option-name font-display">Soldier</div>
+            <div class="option-desc">You served in an army and know war firsthand.</div>
+            <div class="option-tags">
+              <span class="tag skill">Athletics</span>
+              <span class="tag skill">Intimidation</span>
+            </div>
+          </div>
+
+          <div class="option-card" data-value="sage" onclick="selectOption('background', 'sage', this)">
+            <div class="option-icon">📚</div>
+            <div class="option-name font-display">Sage</div>
+            <div class="option-desc">You spent years studying lore and ancient secrets.</div>
+            <div class="option-tags">
+              <span class="tag skill">Arcana</span>
+              <span class="tag skill">History</span>
+            </div>
+          </div>
+
+          <div class="option-card" data-value="criminal" onclick="selectOption('background', 'criminal', this)">
+            <div class="option-icon">🔓</div>
+            <div class="option-name font-display">Criminal</div>
+            <div class="option-desc">You have a history of breaking the law.</div>
+            <div class="option-tags">
+              <span class="tag skill">Deception</span>
+              <span class="tag skill">Stealth</span>
+            </div>
+          </div>
+
+          <div class="option-card" data-value="acolyte" onclick="selectOption('background', 'acolyte', this)">
+            <div class="option-icon">🙏</div>
+            <div class="option-name font-display">Acolyte</div>
+            <div class="option-desc">You devoted your life to serving a temple.</div>
+            <div class="option-tags">
+              <span class="tag skill">Insight</span>
+              <span class="tag skill">Religion</span>
+            </div>
+          </div>
+
+          <div class="option-card" data-value="noble" onclick="selectOption('background', 'noble', this)">
+            <div class="option-icon">👑</div>
+            <div class="option-name font-display">Noble</div>
+            <div class="option-desc">You come from a family of wealth and privilege.</div>
+            <div class="option-tags">
+              <span class="tag skill">History</span>
+              <span class="tag skill">Persuasion</span>
+            </div>
+          </div>
+
+          <div class="option-card" data-value="outlander" onclick="selectOption('background', 'outlander', this)">
+            <div class="option-icon">🏔️</div>
+            <div class="option-name font-display">Outlander</div>
+            <div class="option-desc">You grew up in the wilds, far from civilization.</div>
+            <div class="option-tags">
+              <span class="tag skill">Athletics</span>
+              <span class="tag skill">Survival</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn btn-secondary" onclick="prevStep()">
+            <span>←</span> Back
+          </button>
+          <button class="btn btn-primary" onclick="nextStep()" id="bgNextBtn" disabled>
+            Continue <span>→</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 6: Review -->
+      <div class="step-content" id="step6">
+        <div class="content-header">
+          <h1 class="font-display">Review Your Hero</h1>
+          <p>Make sure everything looks right before creating your character.</p>
+        </div>
+
+        <div style="max-width: 600px;">
+          <div style="background: var(--surface-dark); border-radius: 16px; padding: 2rem; margin-bottom: 2rem;">
+            <h3 class="font-display" style="margin-bottom: 1rem;">Summary</h3>
+            <div style="display: grid; gap: 1rem;">
+              <div style="display: flex; justify-content: space-between; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-subtle);">
+                <span style="color: var(--text-muted);">Name</span>
+                <span class="font-display" id="reviewName">-</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-subtle);">
+                <span style="color: var(--text-muted);">Race</span>
+                <span id="reviewRace">-</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-subtle);">
+                <span style="color: var(--text-muted);">Class</span>
+                <span id="reviewClass">-</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-subtle);">
+                <span style="color: var(--text-muted);">Background</span>
+                <span id="reviewBg">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn btn-secondary" onclick="prevStep()">
+            <span>←</span> Back
+          </button>
+          <button class="btn btn-primary" onclick="createCharacter()" style="background: linear-gradient(135deg, #22C55E, #16A34A);">
+            ✨ Create Character
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel - Preview -->
+    <div class="preview-panel">
+      <div class="preview-header">
+        <h3 class="font-display">Character Preview</h3>
+        <p>Live preview of your hero</p>
+      </div>
+
+      <div class="preview-card">
+        <div class="preview-portrait">
+          <span id="previewIcon">?</span>
+          <div class="preview-level">Level 1</div>
+        </div>
+        <div class="preview-info">
+          <div class="preview-name font-display" id="previewName">Your Hero</div>
+          <div class="preview-meta" id="previewMeta">Choose race and class</div>
+
+          <div class="preview-stats">
+            <div class="preview-stat">
+              <div class="preview-stat-label">AC</div>
+              <div class="preview-stat-value" id="previewAC">10</div>
+            </div>
+            <div class="preview-stat">
+              <div class="preview-stat-label">HP</div>
+              <div class="preview-stat-value" id="previewHP">8</div>
+            </div>
+            <div class="preview-stat">
+              <div class="preview-stat-label">Speed</div>
+              <div class="preview-stat-value" id="previewSpeed">30</div>
+            </div>
+          </div>
+
+          <div class="preview-abilities">
+            <div class="preview-ability">
+              <div class="preview-ability-label">STR</div>
+              <div class="preview-ability-value" id="previewStr">8</div>
+            </div>
+            <div class="preview-ability">
+              <div class="preview-ability-label">DEX</div>
+              <div class="preview-ability-value" id="previewDex">8</div>
+            </div>
+            <div class="preview-ability">
+              <div class="preview-ability-label">CON</div>
+              <div class="preview-ability-value" id="previewCon">8</div>
+            </div>
+            <div class="preview-ability">
+              <div class="preview-ability-label">INT</div>
+              <div class="preview-ability-value" id="previewInt">8</div>
+            </div>
+            <div class="preview-ability">
+              <div class="preview-ability-label">WIS</div>
+              <div class="preview-ability-value" id="previewWis">8</div>
+            </div>
+            <div class="preview-ability">
+              <div class="preview-ability-label">CHA</div>
+              <div class="preview-ability-value" id="previewCha">8</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    // Character state
+    let character = {
+      name: '',
+      race: null,
+      class: null,
+      background: null,
+      abilities: {
+        str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8
+      }
+    };
+
+    let currentStep = 1;
+    let pointsRemaining = 27;
+
+    // Point buy costs
+    const pointCosts = {
+      8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9
+    };
+
+    // Race icons
+    const raceIcons = {
+      dwarf: '🪓', elf: '🏹', human: '⚔️', halfling: '🍀', dragonborn: '🐉', tiefling: '😈'
+    };
+
+    // Class data
+    const classData = {
+      fighter: { hitDie: 10, icon: '⚔️' },
+      wizard: { hitDie: 6, icon: '🔮' },
+      rogue: { hitDie: 8, icon: '🗡️' },
+      cleric: { hitDie: 8, icon: '✨' },
+      barbarian: { hitDie: 12, icon: '💪' },
+      paladin: { hitDie: 10, icon: '🛡️' }
+    };
+
+    function goToStep(step) {
+      if (step > currentStep + 1) return; // Can't skip ahead
+
+      document.querySelectorAll('.step-content').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+
+      document.getElementById(`step${step}`).classList.add('active');
+      document.querySelector(`.step[data-step="${step}"]`).classList.add('active');
+
+      currentStep = step;
+      updateProgress();
+      updateReview();
+    }
+
+    function nextStep() {
+      if (currentStep < 6) {
+        // Mark current step as completed
+        document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('completed');
+        goToStep(currentStep + 1);
+      }
+    }
+
+    function prevStep() {
+      if (currentStep > 1) {
+        goToStep(currentStep - 1);
+      }
+    }
+
+    function updateProgress() {
+      const percent = Math.round((currentStep / 6) * 100);
+      document.getElementById('progressFill').style.width = `${percent}%`;
+      document.getElementById('currentStepNum').textContent = currentStep;
+      document.getElementById('progressPercent').textContent = `${percent}%`;
+    }
+
+    function selectOption(type, value, element) {
+      // Deselect others in same grid
+      const grid = element.parentElement;
+      grid.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+
+      // Select this one
+      element.classList.add('selected');
+
+      // Update character
+      character[type] = value;
+
+      // Enable next button
+      const btnId = type + 'NextBtn';
+      const btn = document.getElementById(btnId);
+      if (btn) btn.disabled = false;
+
+      // Update preview
+      updatePreview();
+
+      // Update step info
+      const stepEl = document.querySelector(`.step[data-step="${currentStep}"] .step-info p`);
+      if (stepEl) {
+        stepEl.textContent = value.charAt(0).toUpperCase() + value.slice(1);
+        stepEl.style.color = 'var(--success)';
+      }
+    }
+
+    function adjustAbility(ability, delta) {
+      const currentValue = character.abilities[ability];
+      const newValue = currentValue + delta;
+
+      // Check bounds
+      if (newValue < 8 || newValue > 15) return;
+
+      // Calculate point cost difference
+      const currentCost = pointCosts[currentValue];
+      const newCost = pointCosts[newValue];
+      const costDiff = newCost - currentCost;
+
+      // Check if we have enough points
+      if (pointsRemaining - costDiff < 0) return;
+
+      // Apply change
+      character.abilities[ability] = newValue;
+      pointsRemaining -= costDiff;
+
+      // Update UI
+      document.getElementById(`${ability}Value`).textContent = newValue;
+      document.getElementById(`${ability}Mod`).textContent = getModifier(newValue);
+      document.getElementById('pointsRemaining').textContent = pointsRemaining;
+
+      // Animate the change
+      const valueEl = document.getElementById(`${ability}Value`);
+      valueEl.style.transform = 'scale(1.2)';
+      valueEl.style.color = delta > 0 ? 'var(--success)' : 'var(--error)';
+      setTimeout(() => {
+        valueEl.style.transform = 'scale(1)';
+        valueEl.style.color = 'var(--primary-400)';
+      }, 200);
+
+      updatePreview();
+    }
+
+    function getModifier(score) {
+      const mod = Math.floor((score - 10) / 2);
+      return mod >= 0 ? `+${mod}` : `${mod}`;
+    }
+
+    function updatePreview() {
+      // Name
+      const name = document.getElementById('charName').value || 'Your Hero';
+      character.name = name;
+      document.getElementById('previewName').textContent = name;
+
+      // Race & Class
+      let meta = [];
+      if (character.race) meta.push(character.race.charAt(0).toUpperCase() + character.race.slice(1));
+      if (character.class) meta.push(character.class.charAt(0).toUpperCase() + character.class.slice(1));
+      document.getElementById('previewMeta').textContent = meta.length ? meta.join(' ') : 'Choose race and class';
+
+      // Icon
+      if (character.class && classData[character.class]) {
+        document.getElementById('previewIcon').textContent = classData[character.class].icon;
+      } else if (character.race && raceIcons[character.race]) {
+        document.getElementById('previewIcon').textContent = raceIcons[character.race];
+      }
+
+      // Stats
+      const conMod = Math.floor((character.abilities.con - 10) / 2);
+      const dexMod = Math.floor((character.abilities.dex - 10) / 2);
+
+      // HP based on class
+      if (character.class && classData[character.class]) {
+        const hp = classData[character.class].hitDie + conMod;
+        document.getElementById('previewHP').textContent = hp;
+      }
+
+      // AC (base 10 + dex)
+      document.getElementById('previewAC').textContent = 10 + dexMod;
+
+      // Ability scores in preview
+      ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(ab => {
+        document.getElementById(`preview${ab.charAt(0).toUpperCase() + ab.slice(1)}`).textContent = character.abilities[ab];
+      });
+    }
+
+    function updateReview() {
+      document.getElementById('reviewName').textContent = character.name || '-';
+      document.getElementById('reviewRace').textContent = character.race ? character.race.charAt(0).toUpperCase() + character.race.slice(1) : '-';
+      document.getElementById('reviewClass').textContent = character.class ? character.class.charAt(0).toUpperCase() + character.class.slice(1) : '-';
+      document.getElementById('reviewBg').textContent = character.background ? character.background.charAt(0).toUpperCase() + character.background.slice(1) : '-';
+    }
+
+    function createCharacter() {
+      // Show success toast
+      showToast('✨ Character created successfully!');
+
+      // In real app, this would save to backend
+      console.log('Character created:', character);
+    }
+
+    function showToast(message) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `<span style="font-size: 1.5rem;">✅</span> ${message}`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(20px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Card hover effect
+    document.querySelectorAll('.option-card').forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        card.style.setProperty('--mouse-x', x + '%');
+        card.style.setProperty('--mouse-y', y + '%');
+      });
+    });
+
+    // Initialize
+    updatePreview();
+  </script>
+</body>
+</html>

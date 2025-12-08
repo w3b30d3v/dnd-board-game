@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D Death Save - Dramatic Prototype</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0F0D13;
+            --bg-surface: #1E1B26;
+            --gold: #F59E0B;
+            --red: #DC2626;
+            --red-dark: #7F1D1D;
+            --green: #22C55E;
+            --text: #F4F4F5;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Start Controls */
+        .controls {
+            position: fixed;
+            top: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+            z-index: 1000;
+        }
+
+        .control-btn {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-surface);
+            border: 2px solid var(--red);
+            border-radius: 10px;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: var(--red);
+            color: white;
+        }
+
+        .control-btn.success {
+            border-color: var(--green);
+        }
+
+        .control-btn.success:hover {
+            background: var(--green);
+        }
+
+        /* Death Save Container */
+        .death-save-container {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-dark);
+            z-index: 100;
+        }
+
+        .death-save-container.active {
+            display: flex;
+        }
+
+        /* Vignette */
+        .vignette {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, transparent 30%, rgba(127, 29, 29, 0.6) 100%);
+            pointer-events: none;
+            animation: vignetteBreath 3s ease-in-out infinite;
+        }
+
+        @keyframes vignetteBreath {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        /* Heartbeat Effect */
+        .heartbeat-overlay {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, rgba(220, 38, 38, 0.3) 0%, transparent 50%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .heartbeat-overlay.beat {
+            animation: heartbeat 0.3s ease-out;
+        }
+
+        @keyframes heartbeat {
+            0% { opacity: 0.6; transform: scale(0.95); }
+            100% { opacity: 0; transform: scale(1.1); }
+        }
+
+        /* Blood Drip Effect */
+        .blood-drips {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .blood-drip {
+            position: absolute;
+            width: 3px;
+            height: 0;
+            background: linear-gradient(180deg, var(--red) 0%, var(--red-dark) 100%);
+            border-radius: 0 0 3px 3px;
+            animation: drip 4s ease-in infinite;
+        }
+
+        @keyframes drip {
+            0% { height: 0; top: 0; }
+            50% { height: 80px; top: 0; }
+            100% { height: 80px; top: 100%; }
+        }
+
+        /* Main Content */
+        .death-save-content {
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Character Dying */
+        .character-dying {
+            width: 180px;
+            height: 220px;
+            margin: 0 auto 2rem;
+            background: linear-gradient(180deg, #3B82F6 0%, #1D4ED8 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            border: 4px solid var(--red);
+            position: relative;
+            opacity: 0;
+            filter: grayscale(50%);
+            animation: characterFade 1s ease-out forwards;
+        }
+
+        @keyframes characterFade {
+            0% { opacity: 0; transform: translateY(-20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .character-dying.pulse {
+            animation: dyingPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes dyingPulse {
+            0%, 100% { 
+                filter: grayscale(50%) brightness(0.8);
+                box-shadow: 0 0 20px var(--red);
+            }
+            50% { 
+                filter: grayscale(30%) brightness(1);
+                box-shadow: 0 0 40px var(--red);
+            }
+        }
+
+        /* Title */
+        .death-save-title {
+            font-family: 'Cinzel', serif;
+            font-size: 2.5rem;
+            color: var(--red);
+            text-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
+            margin-bottom: 0.5rem;
+            opacity: 0;
+            animation: titleReveal 0.8s ease-out 0.3s forwards;
+            letter-spacing: 0.1em;
+        }
+
+        @keyframes titleReveal {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .character-name-death {
+            font-size: 1.5rem;
+            color: var(--text);
+            margin-bottom: 2rem;
+            opacity: 0;
+            animation: titleReveal 0.8s ease-out 0.5s forwards;
+        }
+
+        /* Save Tracker */
+        .save-tracker {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-bottom: 2rem;
+            opacity: 0;
+            animation: titleReveal 0.8s ease-out 0.7s forwards;
+        }
+
+        .save-column {
+            text-align: center;
+        }
+
+        .save-label {
+            font-size: 0.9rem;
+            color: var(--text);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .save-label.success { color: var(--green); }
+        .save-label.failure { color: var(--red); }
+
+        .save-pips {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .save-pip {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 3px solid;
+            transition: all 0.3s ease;
+        }
+
+        .save-pip.success-pip {
+            border-color: var(--green);
+        }
+
+        .save-pip.failure-pip {
+            border-color: var(--red);
+        }
+
+        .save-pip.filled.success-pip {
+            background: var(--green);
+            box-shadow: 0 0 15px var(--green);
+        }
+
+        .save-pip.filled.failure-pip {
+            background: var(--red);
+            box-shadow: 0 0 15px var(--red);
+        }
+
+        .save-pip.animating {
+            animation: pipPop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        @keyframes pipPop {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        /* Dice Area */
+        .dice-area {
+            margin-bottom: 2rem;
+            opacity: 0;
+            animation: titleReveal 0.8s ease-out 0.9s forwards;
+        }
+
+        .roll-prompt {
+            font-family: 'Cinzel', serif;
+            font-size: 1.2rem;
+            color: var(--gold);
+            margin-bottom: 1rem;
+        }
+
+        .death-dice {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, var(--bg-surface) 0%, #2A2735 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: bold;
+            border: 3px solid var(--red);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .death-dice:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(220, 38, 38, 0.5);
+        }
+
+        .death-dice.rolling {
+            animation: diceShake 0.1s linear infinite;
+            border-color: var(--gold);
+        }
+
+        @keyframes diceShake {
+            0%, 100% { transform: rotate(0deg) scale(1.05); }
+            25% { transform: rotate(-15deg) scale(1.05); }
+            75% { transform: rotate(15deg) scale(1.05); }
+        }
+
+        .death-dice.success-result {
+            border-color: var(--green);
+            box-shadow: 0 0 40px var(--green);
+        }
+
+        .death-dice.failure-result {
+            border-color: var(--red);
+            box-shadow: 0 0 40px var(--red);
+        }
+
+        .death-dice.crit-result {
+            border-color: var(--gold);
+            box-shadow: 0 0 60px var(--gold);
+            animation: critPulse 0.5s ease infinite;
+        }
+
+        @keyframes critPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Result Message */
+        .result-message {
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            margin-top: 1rem;
+            min-height: 2rem;
+        }
+
+        .result-message.success { 
+            color: var(--green);
+            text-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+        }
+
+        .result-message.failure { 
+            color: var(--red);
+            text-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
+        }
+
+        .result-message.crit { 
+            color: var(--gold);
+            text-shadow: 0 0 30px rgba(245, 158, 11, 0.8);
+            animation: textGlow 1s ease infinite;
+        }
+
+        @keyframes textGlow {
+            0%, 100% { text-shadow: 0 0 30px rgba(245, 158, 11, 0.8); }
+            50% { text-shadow: 0 0 50px rgba(245, 158, 11, 1); }
+        }
+
+        /* Final Screens */
+        .final-screen {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            opacity: 0;
+        }
+
+        .final-screen.active {
+            display: flex;
+            animation: fadeIn 1s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        .final-screen.stabilized {
+            background: radial-gradient(ellipse at center, rgba(34, 197, 94, 0.2) 0%, var(--bg-dark) 70%);
+        }
+
+        .final-screen.dead {
+            background: radial-gradient(ellipse at center, rgba(220, 38, 38, 0.3) 0%, var(--bg-dark) 70%);
+        }
+
+        .final-content {
+            text-align: center;
+            transform: scale(0.9);
+            animation: finalReveal 0.8s ease-out 0.5s forwards;
+        }
+
+        @keyframes finalReveal {
+            to { transform: scale(1); }
+        }
+
+        .final-icon {
+            font-size: 6rem;
+            margin-bottom: 1rem;
+        }
+
+        .final-title {
+            font-family: 'Cinzel', serif;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .stabilized .final-title { 
+            color: var(--green);
+            text-shadow: 0 0 30px rgba(34, 197, 94, 0.5);
+        }
+
+        .dead .final-title { 
+            color: var(--red);
+            text-shadow: 0 0 30px rgba(220, 38, 38, 0.5);
+        }
+
+        .final-subtitle {
+            font-size: 1.2rem;
+            color: var(--text);
+        }
+
+        /* Particles */
+        .death-particles {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .death-particle {
+            position: absolute;
+            background: var(--red);
+            border-radius: 50%;
+            opacity: 0.6;
+        }
+
+        /* Screen Shake */
+        .screen-shake {
+            animation: screenShake 0.5s ease-out;
+        }
+
+        @keyframes screenShake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+            20%, 40%, 60%, 80% { transform: translateX(10px); }
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .death-save-title {
+                font-size: 1.8rem;
+            }
+            .save-tracker {
+                gap: 2rem;
+            }
+            .death-dice {
+                width: 100px;
+                height: 100px;
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="controls">
+        <button class="control-btn" onclick="startDeathSave()">💀 Start Death Save</button>
+        <button class="control-btn success" onclick="startDeathSave(true)">✨ Start (Will Crit Success)</button>
+        <button class="control-btn" onclick="resetDemo()">🔄 Reset</button>
+    </div>
+
+    <div class="death-save-container" id="deathSaveContainer">
+        <div class="vignette"></div>
+        <div class="heartbeat-overlay" id="heartbeat"></div>
+        <div class="blood-drips" id="bloodDrips"></div>
+        <div class="death-particles" id="particles"></div>
+        
+        <div class="death-save-content" id="content">
+            <div class="character-dying pulse" id="character">🧙</div>
+            
+            <h1 class="death-save-title">DEATH SAVE</h1>
+            <p class="character-name-death">Lyra Nightwhisper is dying...</p>
+            
+            <div class="save-tracker">
+                <div class="save-column">
+                    <div class="save-label success">Successes</div>
+                    <div class="save-pips" id="successPips">
+                        <div class="save-pip success-pip"></div>
+                        <div class="save-pip success-pip"></div>
+                        <div class="save-pip success-pip"></div>
+                    </div>
+                </div>
+                <div class="save-column">
+                    <div class="save-label failure">Failures</div>
+                    <div class="save-pips" id="failurePips">
+                        <div class="save-pip failure-pip"></div>
+                        <div class="save-pip failure-pip"></div>
+                        <div class="save-pip failure-pip"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="dice-area">
+                <p class="roll-prompt">Click the die to roll...</p>
+                <div class="death-dice" id="deathDice" onclick="rollDeathSave()">
+                    <span id="diceValue">?</span>
+                </div>
+                <p class="result-message" id="resultMessage"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Final Screens -->
+    <div class="final-screen stabilized" id="stabilizedScreen">
+        <div class="final-content">
+            <div class="final-icon">💚</div>
+            <h1 class="final-title">STABILIZED</h1>
+            <p class="final-subtitle">Lyra clings to life with 0 HP</p>
+        </div>
+    </div>
+
+    <div class="final-screen dead" id="deadScreen">
+        <div class="final-content">
+            <div class="final-icon">💀</div>
+            <h1 class="final-title">FALLEN</h1>
+            <p class="final-subtitle">Lyra Nightwhisper has died...</p>
+        </div>
+    </div>
+
+    <script>
+        let successes = 0;
+        let failures = 0;
+        let isRolling = false;
+        let forceCritSuccess = false;
+        let heartbeatInterval;
+
+        function startDeathSave(critSuccess = false) {
+            forceCritSuccess = critSuccess;
+            successes = 0;
+            failures = 0;
+            
+            document.getElementById('deathSaveContainer').classList.add('active');
+            document.getElementById('stabilizedScreen').classList.remove('active');
+            document.getElementById('deadScreen').classList.remove('active');
+            
+            // Reset pips
+            document.querySelectorAll('.save-pip').forEach(pip => {
+                pip.classList.remove('filled', 'animating');
+            });
+            
+            // Reset dice
+            const dice = document.getElementById('deathDice');
+            dice.className = 'death-dice';
+            document.getElementById('diceValue').textContent = '?';
+            document.getElementById('resultMessage').textContent = '';
+            document.getElementById('resultMessage').className = 'result-message';
+            
+            // Create blood drips
+            createBloodDrips();
+            
+            // Start heartbeat
+            startHeartbeat();
+            
+            // Ambient particles
+            startDeathParticles();
+        }
+
+        function createBloodDrips() {
+            const container = document.getElementById('bloodDrips');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < 8; i++) {
+                const drip = document.createElement('div');
+                drip.className = 'blood-drip';
+                drip.style.left = `${10 + Math.random() * 80}%`;
+                drip.style.animationDelay = `${Math.random() * 4}s`;
+                container.appendChild(drip);
+            }
+        }
+
+        function startHeartbeat() {
+            const heartbeat = document.getElementById('heartbeat');
+            let beatSpeed = 1500;
+            
+            const beat = () => {
+                heartbeat.classList.remove('beat');
+                void heartbeat.offsetWidth; // Force reflow
+                heartbeat.classList.add('beat');
+                
+                // Speed up as more failures
+                beatSpeed = 1500 - (failures * 300);
+                beatSpeed = Math.max(beatSpeed, 500);
+                
+                heartbeatInterval = setTimeout(beat, beatSpeed);
+            };
+            
+            beat();
+        }
+
+        function startDeathParticles() {
+            const container = document.getElementById('particles');
+            container.innerHTML = '';
+            
+            setInterval(() => {
+                if (!document.getElementById('deathSaveContainer').classList.contains('active')) return;
+                
+                const particle = document.createElement('div');
+                particle.className = 'death-particle';
+                particle.style.width = `${2 + Math.random() * 4}px`;
+                particle.style.height = particle.style.width;
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.bottom = '0';
+                
+                container.appendChild(particle);
+                
+                particle.animate([
+                    { transform: 'translateY(0)', opacity: 0.6 },
+                    { transform: `translateY(-${100 + Math.random() * 200}px)`, opacity: 0 }
+                ], {
+                    duration: 3000 + Math.random() * 2000,
+                    easing: 'ease-out'
+                }).onfinish = () => particle.remove();
+            }, 200);
+        }
+
+        function rollDeathSave() {
+            if (isRolling) return;
+            isRolling = true;
+            
+            const dice = document.getElementById('deathDice');
+            const diceValue = document.getElementById('diceValue');
+            const resultMessage = document.getElementById('resultMessage');
+            
+            dice.className = 'death-dice rolling';
+            resultMessage.textContent = '';
+            resultMessage.className = 'result-message';
+            
+            // Rolling animation
+            let frame = 0;
+            const rollInterval = setInterval(() => {
+                diceValue.textContent = Math.floor(Math.random() * 20) + 1;
+                frame++;
+            }, 50);
+            
+            setTimeout(() => {
+                clearInterval(rollInterval);
+                
+                // Determine result
+                let roll;
+                if (forceCritSuccess && successes === 2) {
+                    roll = 20; // Force nat 20 for demo
+                } else {
+                    roll = Math.floor(Math.random() * 20) + 1;
+                }
+                
+                diceValue.textContent = roll;
+                dice.classList.remove('rolling');
+                
+                // Process result
+                if (roll === 20) {
+                    // Critical success - regain 1 HP!
+                    dice.classList.add('crit-result');
+                    resultMessage.textContent = 'NATURAL 20! REGAIN 1 HP!';
+                    resultMessage.classList.add('crit');
+                    createCritParticles();
+                    
+                    setTimeout(() => showStabilized(true), 2000);
+                } else if (roll === 1) {
+                    // Critical failure - 2 failures!
+                    dice.classList.add('failure-result');
+                    resultMessage.textContent = 'NATURAL 1! TWO FAILURES!';
+                    resultMessage.classList.add('failure');
+                    
+                    addFailure();
+                    setTimeout(() => addFailure(), 300);
+                    
+                    document.getElementById('content').classList.add('screen-shake');
+                    setTimeout(() => {
+                        document.getElementById('content').classList.remove('screen-shake');
+                    }, 500);
+                    
+                    if (failures >= 3) {
+                        setTimeout(() => showDead(), 1500);
+                    } else {
+                        isRolling = false;
+                    }
+                } else if (roll >= 10) {
+                    // Success
+                    dice.classList.add('success-result');
+                    resultMessage.textContent = 'SUCCESS!';
+                    resultMessage.classList.add('success');
+                    
+                    addSuccess();
+                    
+                    if (successes >= 3) {
+                        setTimeout(() => showStabilized(), 1500);
+                    } else {
+                        isRolling = false;
+                    }
+                } else {
+                    // Failure
+                    dice.classList.add('failure-result');
+                    resultMessage.textContent = 'FAILURE...';
+                    resultMessage.classList.add('failure');
+                    
+                    addFailure();
+                    
+                    document.getElementById('content').classList.add('screen-shake');
+                    setTimeout(() => {
+                        document.getElementById('content').classList.remove('screen-shake');
+                    }, 500);
+                    
+                    if (failures >= 3) {
+                        setTimeout(() => showDead(), 1500);
+                    } else {
+                        isRolling = false;
+                    }
+                }
+            }, 1500);
+        }
+
+        function addSuccess() {
+            const pips = document.querySelectorAll('#successPips .save-pip');
+            const pip = pips[successes];
+            pip.classList.add('filled', 'animating');
+            successes++;
+        }
+
+        function addFailure() {
+            const pips = document.querySelectorAll('#failurePips .save-pip');
+            const pip = pips[failures];
+            pip.classList.add('filled', 'animating');
+            failures++;
+        }
+
+        function createCritParticles() {
+            const dice = document.getElementById('deathDice');
+            const rect = dice.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.style.cssText = `
+                    position: fixed;
+                    width: 8px;
+                    height: 8px;
+                    background: #F59E0B;
+                    border-radius: 50%;
+                    left: ${centerX}px;
+                    top: ${centerY}px;
+                    pointer-events: none;
+                    z-index: 1000;
+                    box-shadow: 0 0 10px #F59E0B;
+                `;
+                document.body.appendChild(particle);
+                
+                const angle = (Math.PI * 2 * i) / 30;
+                const distance = 100 + Math.random() * 100;
+                
+                particle.animate([
+                    { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+                    { transform: `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px) scale(0)`, opacity: 0 }
+                ], {
+                    duration: 800,
+                    easing: 'cubic-bezier(0.16, 1, 0.3, 1)'
+                }).onfinish = () => particle.remove();
+            }
+        }
+
+        function showStabilized(withHP = false) {
+            clearTimeout(heartbeatInterval);
+            document.getElementById('deathSaveContainer').classList.remove('active');
+            
+            const screen = document.getElementById('stabilizedScreen');
+            if (withHP) {
+                screen.querySelector('.final-subtitle').textContent = 'Lyra regains consciousness with 1 HP!';
+            } else {
+                screen.querySelector('.final-subtitle').textContent = 'Lyra clings to life with 0 HP';
+            }
+            screen.classList.add('active');
+            
+            // Healing particles
+            createHealingParticles();
+        }
+
+        function showDead() {
+            clearTimeout(heartbeatInterval);
+            document.getElementById('deathSaveContainer').classList.remove('active');
+            document.getElementById('deadScreen').classList.add('active');
+        }
+
+        function createHealingParticles() {
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const particle = document.createElement('div');
+                    particle.style.cssText = `
+                        position: fixed;
+                        width: 6px;
+                        height: 6px;
+                        background: #22C55E;
+                        border-radius: 50%;
+                        left: ${Math.random() * window.innerWidth}px;
+                        bottom: -10px;
+                        pointer-events: none;
+                        z-index: 300;
+                        box-shadow: 0 0 10px #22C55E;
+                    `;
+                    document.body.appendChild(particle);
+                    
+                    particle.animate([
+                        { transform: 'translateY(0)', opacity: 1 },
+                        { transform: `translateY(-${window.innerHeight + 50}px)`, opacity: 0 }
+                    ], {
+                        duration: 2000 + Math.random() * 1000,
+                        easing: 'ease-out'
+                    }).onfinish = () => particle.remove();
+                }, i * 50);
+            }
+        }
+
+        function resetDemo() {
+            clearTimeout(heartbeatInterval);
+            document.getElementById('deathSaveContainer').classList.remove('active');
+            document.getElementById('stabilizedScreen').classList.remove('active');
+            document.getElementById('deadScreen').classList.remove('active');
+            successes = 0;
+            failures = 0;
+            isRolling = false;
+            forceCritSuccess = false;
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+                if (document.getElementById('deathSaveContainer').classList.contains('active')) {
+                    rollDeathSave();
+                }
+            }
+            if (e.key === 'Escape') {
+                resetDemo();
+            }
+        });
+    </script>
+</body>
+</html>

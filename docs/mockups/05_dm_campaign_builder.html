@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D Digital - DM Campaign Builder Mockup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-400: #FBBF24;
+      --primary-500: #F59E0B;
+      --primary-600: #D97706;
+      --primary-700: #B45309;
+      --secondary-500: #8B5CF6;
+      --secondary-600: #7C3AED;
+      --bg-primary: #0F0D13;
+      --bg-secondary: #1A1720;
+      --bg-tertiary: #252231;
+      --bg-hover: #2D2A3A;
+      --surface-dark: #1E1B26;
+      --surface-medium: #2A2735;
+      --text-primary: #F4F4F5;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+      --border-subtle: #27272A;
+      --border-default: #3F3F46;
+      --health-full: #22C55E;
+      --error: #EF4444;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .font-display { font-family: 'Cinzel', serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Layout */
+    .builder-layout {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Left Toolbar */
+    .toolbar {
+      width: 64px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      padding: 0.5rem;
+    }
+
+    .tool-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.25rem;
+      font-size: 1.25rem;
+      transition: all 0.15s;
+    }
+
+    .tool-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .tool-btn.active {
+      background: var(--primary-600);
+      color: white;
+    }
+
+    .tool-divider {
+      height: 1px;
+      background: var(--border-default);
+      margin: 0.5rem 0;
+    }
+
+    /* Left Panel - Tile Palette */
+    .left-panel {
+      width: 280px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .panel-header h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      color: var(--text-primary);
+      font-size: 0.875rem;
+    }
+
+    .search-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .palette-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .palette-tab {
+      flex: 1;
+      padding: 0.75rem;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: all 0.15s;
+    }
+
+    .palette-tab:hover {
+      color: var(--text-secondary);
+    }
+
+    .palette-tab.active {
+      color: var(--primary-400);
+      border-bottom: 2px solid var(--primary-500);
+    }
+
+    .palette-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+
+    .palette-category {
+      margin-bottom: 1.5rem;
+    }
+
+    .palette-category h4 {
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.75rem;
+    }
+
+    .tile-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+    }
+
+    .tile-item {
+      aspect-ratio: 1;
+      background: var(--surface-dark);
+      border: 2px solid var(--border-default);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tile-item:hover {
+      border-color: var(--primary-600);
+    }
+
+    .tile-item.selected {
+      border-color: var(--primary-500);
+      background: rgba(245, 158, 11, 0.1);
+    }
+
+    /* Main Canvas Area */
+    .canvas-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #1a1a2e;
+    }
+
+    .canvas-toolbar {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.5rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .canvas-toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .map-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+    }
+
+    .map-size {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .zoom-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .zoom-btn {
+      width: 32px;
+      height: 32px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-default);
+      border-radius: 6px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .zoom-btn:hover {
+      background: var(--bg-hover);
+    }
+
+    .zoom-level {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      min-width: 50px;
+      text-align: center;
+    }
+
+    /* Map Grid */
+    .map-canvas {
+      flex: 1;
+      overflow: auto;
+      padding: 2rem;
+    }
+
+    .map-grid {
+      display: grid;
+      grid-template-columns: repeat(20, 40px);
+      grid-template-rows: repeat(15, 40px);
+      gap: 1px;
+      background: rgba(63, 63, 70, 0.3);
+      border: 2px solid var(--border-default);
+    }
+
+    .map-tile {
+      background: rgba(30, 27, 38, 0.6);
+      position: relative;
+      cursor: crosshair;
+      transition: all 0.1s;
+    }
+
+    .map-tile:hover {
+      background: rgba(45, 42, 58, 0.8);
+    }
+
+    .map-tile.floor {
+      background: #2A2735;
+    }
+
+    .map-tile.wall {
+      background: #1E1B26;
+      border: 1px solid #3F3F46;
+    }
+
+    .map-tile.water {
+      background: linear-gradient(135deg, #0369A1, #0284C7);
+    }
+
+    .map-tile.difficult {
+      background: repeating-linear-gradient(
+        45deg,
+        #2A2735,
+        #2A2735 4px,
+        #363342 4px,
+        #363342 8px
+      );
+    }
+
+    .map-tile.door {
+      background: #92400E;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .map-tile.door::after {
+      content: '🚪';
+      font-size: 1rem;
+    }
+
+    /* Placed tokens on map */
+    .placed-token {
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.75rem;
+      cursor: move;
+      z-index: 10;
+    }
+
+    .placed-token.enemy {
+      background: #DC2626;
+      border-color: #EF4444;
+    }
+
+    .placed-token.npc {
+      background: #2563EB;
+      border-color: #3B82F6;
+    }
+
+    .placed-token.object {
+      background: #CA8A04;
+      border-color: #EAB308;
+    }
+
+    /* Right Panel - Properties */
+    .right-panel {
+      width: 320px;
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .properties-section {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .properties-section h4 {
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.75rem;
+    }
+
+    .property-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .property-row label {
+      width: 100px;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+
+    .property-row input,
+    .property-row select {
+      flex: 1;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-default);
+      border-radius: 6px;
+      padding: 0.5rem;
+      color: var(--text-primary);
+      font-size: 0.875rem;
+    }
+
+    /* Monster List */
+    .monster-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .monster-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .monster-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .monster-item.selected {
+      background: var(--bg-tertiary);
+      border-left: 3px solid var(--primary-500);
+    }
+
+    .monster-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: #DC2626;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+
+    .monster-info h5 {
+      font-size: 0.9375rem;
+      margin-bottom: 2px;
+    }
+
+    .monster-info p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .monster-cr {
+      margin-left: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      background: var(--bg-tertiary);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    /* Encounter Difficulty */
+    .difficulty-bar {
+      padding: 1rem;
+      background: var(--surface-dark);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .difficulty-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      font-size: 0.8125rem;
+    }
+
+    .difficulty-label span:last-child {
+      font-weight: bold;
+    }
+
+    .difficulty-label .easy { color: #22C55E; }
+    .difficulty-label .medium { color: #EAB308; }
+    .difficulty-label .hard { color: #F97316; }
+    .difficulty-label .deadly { color: #EF4444; }
+
+    .difficulty-track {
+      height: 8px;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .difficulty-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #22C55E, #EAB308, #F97316, #EF4444);
+      width: 100%;
+    }
+
+    .difficulty-marker {
+      position: absolute;
+      top: -4px;
+      width: 4px;
+      height: 16px;
+      background: white;
+      border-radius: 2px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .difficulty-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.25rem;
+      font-size: 0.625rem;
+      color: var(--text-muted);
+    }
+
+    /* Bottom Actions */
+    .bottom-actions {
+      padding: 1rem;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-default);
+      color: var(--text-secondary);
+    }
+
+    .btn-primary {
+      background: linear-gradient(180deg, var(--primary-500) 0%, var(--primary-600) 100%);
+      border: none;
+      color: var(--bg-primary);
+    }
+  </style>
+</head>
+<body>
+  <div class="builder-layout">
+    <!-- Left Toolbar -->
+    <div class="toolbar">
+      <button class="tool-btn" title="Select">🖱️</button>
+      <button class="tool-btn active" title="Paint">🖌️</button>
+      <button class="tool-btn" title="Erase">🧹</button>
+      <button class="tool-btn" title="Fill">🪣</button>
+      <div class="tool-divider"></div>
+      <button class="tool-btn" title="Add Monster">👹</button>
+      <button class="tool-btn" title="Add NPC">👤</button>
+      <button class="tool-btn" title="Add Object">📦</button>
+      <button class="tool-btn" title="Add Light">💡</button>
+      <div class="tool-divider"></div>
+      <button class="tool-btn" title="Add Trigger">⚡</button>
+      <button class="tool-btn" title="Add Spawn">🎯</button>
+      <div style="flex: 1;"></div>
+      <button class="tool-btn" title="Undo">↩️</button>
+      <button class="tool-btn" title="Redo">↪️</button>
+    </div>
+
+    <!-- Left Panel - Tile Palette -->
+    <div class="left-panel">
+      <div class="panel-header">
+        <h3 class="font-display">Tile Palette</h3>
+        <input type="text" class="search-input" placeholder="Search tiles...">
+      </div>
+
+      <div class="palette-tabs">
+        <button class="palette-tab active">Terrain</button>
+        <button class="palette-tab">Walls</button>
+        <button class="palette-tab">Props</button>
+        <button class="palette-tab">Lights</button>
+      </div>
+
+      <div class="palette-content">
+        <div class="palette-category">
+          <h4>Floors</h4>
+          <div class="tile-grid">
+            <div class="tile-item selected">🟫</div>
+            <div class="tile-item">⬜</div>
+            <div class="tile-item">🟩</div>
+            <div class="tile-item">🟨</div>
+          </div>
+        </div>
+
+        <div class="palette-category">
+          <h4>Walls</h4>
+          <div class="tile-grid">
+            <div class="tile-item">🧱</div>
+            <div class="tile-item">🪨</div>
+            <div class="tile-item">🪵</div>
+            <div class="tile-item">⬛</div>
+          </div>
+        </div>
+
+        <div class="palette-category">
+          <h4>Water & Hazards</h4>
+          <div class="tile-grid">
+            <div class="tile-item">🌊</div>
+            <div class="tile-item">🔥</div>
+            <div class="tile-item">☠️</div>
+            <div class="tile-item">🕳️</div>
+          </div>
+        </div>
+
+        <div class="palette-category">
+          <h4>Doors & Stairs</h4>
+          <div class="tile-grid">
+            <div class="tile-item">🚪</div>
+            <div class="tile-item">🚪</div>
+            <div class="tile-item">🪜</div>
+            <div class="tile-item">⬆️</div>
+          </div>
+        </div>
+
+        <div class="palette-category">
+          <h4>Props</h4>
+          <div class="tile-grid">
+            <div class="tile-item">🪑</div>
+            <div class="tile-item">🛏️</div>
+            <div class="tile-item">📦</div>
+            <div class="tile-item">🏺</div>
+            <div class="tile-item">🕯️</div>
+            <div class="tile-item">⚱️</div>
+            <div class="tile-item">🗄️</div>
+            <div class="tile-item">🪤</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Canvas -->
+    <div class="canvas-area">
+      <div class="canvas-toolbar">
+        <div class="canvas-toolbar-left">
+          <span class="map-name font-display">Goblin Cave - Entrance</span>
+          <span class="map-size">20 × 15 tiles</span>
+        </div>
+        <div class="zoom-controls">
+          <button class="zoom-btn">−</button>
+          <span class="zoom-level">100%</span>
+          <button class="zoom-btn">+</button>
+        </div>
+      </div>
+
+      <div class="map-canvas">
+        <div class="map-grid">
+          <!-- Row 1: All walls -->
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+
+          <!-- Row 2 -->
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile wall"></div>
+
+          <!-- Row 3 -->
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"><div class="placed-token enemy" style="top: 2px; left: 2px;">G</div></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile water"></div>
+          <div class="map-tile water"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile wall"></div>
+
+          <!-- Row 4 -->
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"><div class="placed-token enemy" style="top: 2px; left: 2px;">G</div></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile water"></div>
+          <div class="map-tile water"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile wall"></div>
+
+          <!-- Row 5 -->
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"><div class="placed-token npc" style="top: 2px; left: 2px;">🎯</div></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile door"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile water"></div>
+          <div class="map-tile water"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile wall"></div>
+
+          <!-- Row 6 -->
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile wall"></div>
+
+          <!-- Rows 7-15: Fill remaining -->
+          <!-- Row 7 -->
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"><div class="placed-token object" style="top: 2px; left: 2px;">📦</div></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile wall"></div>
+
+          <!-- Remaining rows simplified -->
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile difficult"></div>
+          <div class="map-tile difficult"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile wall"></div>
+
+          <!-- More rows... -->
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"><div class="placed-token enemy" style="top: 2px; left: 2px;">G</div></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile difficult"></div>
+          <div class="map-tile difficult"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile wall"></div>
+
+          <!-- Bottom rows with more walls -->
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile wall"></div>
+
+          <!-- Remaining -->
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile wall"></div>
+
+          <!-- Row 12 -->
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile floor"></div>
+          <div class="map-tile wall"></div>
+
+          <!-- Rows 13-15 -->
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+          <div class="map-tile wall"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel - Properties & Monsters -->
+    <div class="right-panel">
+      <div class="properties-section">
+        <h4>Map Properties</h4>
+        <div class="property-row">
+          <label>Name</label>
+          <input type="text" value="Goblin Cave - Entrance">
+        </div>
+        <div class="property-row">
+          <label>Size</label>
+          <select>
+            <option>20 × 15 (Small)</option>
+            <option>30 × 20 (Medium)</option>
+            <option>40 × 30 (Large)</option>
+          </select>
+        </div>
+        <div class="property-row">
+          <label>Lighting</label>
+          <select>
+            <option>Dim (Cave)</option>
+            <option>Bright (Day)</option>
+            <option>Dark (Night)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="panel-header">
+        <h3 class="font-display">Encounter</h3>
+      </div>
+
+      <div class="monster-list">
+        <div class="monster-item selected">
+          <div class="monster-avatar">👺</div>
+          <div class="monster-info">
+            <h5>Goblin</h5>
+            <p>3 placed</p>
+          </div>
+          <span class="monster-cr">CR ¼</span>
+        </div>
+        <div class="monster-item">
+          <div class="monster-avatar">👹</div>
+          <div class="monster-info">
+            <h5>Goblin Boss</h5>
+            <p>0 placed</p>
+          </div>
+          <span class="monster-cr">CR 1</span>
+        </div>
+        <div class="monster-item">
+          <div class="monster-avatar">🐺</div>
+          <div class="monster-info">
+            <h5>Wolf</h5>
+            <p>0 placed</p>
+          </div>
+          <span class="monster-cr">CR ¼</span>
+        </div>
+        <div class="monster-item">
+          <div class="monster-avatar">🦇</div>
+          <div class="monster-info">
+            <h5>Giant Bat</h5>
+            <p>0 placed</p>
+          </div>
+          <span class="monster-cr">CR ¼</span>
+        </div>
+      </div>
+
+      <!-- Difficulty Bar -->
+      <div class="difficulty-bar">
+        <div class="difficulty-label">
+          <span>Encounter Difficulty</span>
+          <span class="medium">Medium</span>
+        </div>
+        <div class="difficulty-track">
+          <div class="difficulty-fill"></div>
+          <div class="difficulty-marker" style="left: 45%;"></div>
+        </div>
+        <div class="difficulty-labels">
+          <span>Easy</span>
+          <span>Medium</span>
+          <span>Hard</span>
+          <span>Deadly</span>
+        </div>
+      </div>
+
+      <div class="bottom-actions">
+        <button class="btn btn-secondary">Preview</button>
+        <button class="btn btn-primary">Save Map</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
