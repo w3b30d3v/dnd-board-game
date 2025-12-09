@@ -155,11 +155,16 @@ router.post('/webhook/nanobanana', async (req: Request, res: Response) => {
     console.log('Body:', JSON.stringify(req.body, null, 2));
     console.log('Pending tasks:', Array.from(pendingImageTasks.keys()));
 
-    // NanoBanana sends resultImageUrl, not imageUrl
-    const { taskId, status, imageUrl, imageUrls, resultImageUrl, failureReason, msg } = req.body;
+    // NanoBanana webhook structure:
+    // { code: 200, msg: "...", data: { taskId: "...", info: { resultImageUrl: "..." } } }
+    const { code, msg, data } = req.body;
 
-    // NanoBanana may not send taskId in webhook - match by checking all pending tasks
-    // or extract from the message. For now, if we have pending tasks and get a result, resolve the first one
+    // Extract nested fields
+    const taskId = data?.taskId;
+    const resultImageUrl = data?.info?.resultImageUrl;
+    const failureReason = msg;
+
+    // Find the task - either by taskId or use first pending task
     let resolvedTaskId = taskId;
 
     if (!resolvedTaskId && pendingImageTasks.size > 0) {
@@ -187,15 +192,14 @@ router.post('/webhook/nanobanana', async (req: Request, res: Response) => {
     clearTimeout(pending.timeout);
     pendingImageTasks.delete(resolvedTaskId);
 
-    // Check for failure
-    if (status === 'FAILED' || status === 'failed') {
+    // Check for failure (code !== 200)
+    if (code !== 200) {
       pending.reject(new Error(failureReason || 'Image generation failed'));
     } else {
-      // Try all possible field names: resultImageUrl (NanoBanana), imageUrl, imageUrls array
-      const url = resultImageUrl || imageUrl || (imageUrls && imageUrls[0]);
-      console.log(`Extracted image URL: ${url}`);
-      if (url) {
-        pending.resolve(url);
+      // Extract image URL from nested structure
+      console.log(`Extracted image URL: ${resultImageUrl}`);
+      if (resultImageUrl) {
+        pending.resolve(resultImageUrl);
       } else {
         pending.reject(new Error('No image URL in webhook response'));
       }
