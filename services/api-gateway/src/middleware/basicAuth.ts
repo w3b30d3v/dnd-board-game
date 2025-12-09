@@ -16,8 +16,8 @@ export function basicAuth(req: Request, res: Response, next: NextFunction) {
     return next();
   }
 
-  // Skip auth for health check
-  if (req.path === '/health' || req.path === '/api/health') {
+  // Skip auth for health checks
+  if (req.path === '/health' || req.path === '/api/health' || req.path.startsWith('/health/')) {
     return next();
   }
 
