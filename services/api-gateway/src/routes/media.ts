@@ -9,7 +9,8 @@ const router = Router();
 
 // Environment configuration
 const NANOBANANA_API_KEY = process.env.NANOBANANA_API_KEY;
-const NANOBANANA_API_URL = 'https://nanobananaapi.ai/api/v1/nanobanana';
+const NANOBANANA_API_URL = 'https://api.nanobananaapi.ai/api/v1/nanobanana';
+const CALLBACK_BASE_URL = process.env.CALLBACK_BASE_URL || ''; // Required for NanoBanana webhook
 
 interface PortraitRequest {
   character: {
@@ -136,6 +137,53 @@ router.post('/generate/personality/all', auth, async (req: Request, res: Respons
       success: false,
       error: error.message || 'Personality generation failed',
     });
+  }
+});
+
+// In-memory store for pending image generations (in production, use Redis)
+const pendingImageTasks = new Map<string, {
+  resolve: (url: string) => void;
+  reject: (error: Error) => void;
+  timeout: NodeJS.Timeout;
+}>();
+
+// Webhook endpoint for NanoBanana callbacks
+router.post('/webhook/nanobanana', async (req: Request, res: Response) => {
+  try {
+    console.log('NanoBanana webhook received:', JSON.stringify(req.body, null, 2));
+
+    const { taskId, status, imageUrl, imageUrls, failureReason } = req.body;
+
+    if (!taskId) {
+      return res.status(400).json({ error: 'Missing taskId' });
+    }
+
+    const pending = pendingImageTasks.get(taskId);
+    if (!pending) {
+      console.warn(`No pending task found for taskId: ${taskId}`);
+      // Still return success - the task might have timed out
+      return res.json({ success: true, message: 'Webhook received' });
+    }
+
+    // Clear the timeout
+    clearTimeout(pending.timeout);
+    pendingImageTasks.delete(taskId);
+
+    if (status === 'FAILED' || status === 'failed') {
+      pending.reject(new Error(failureReason || 'Image generation failed'));
+    } else {
+      const url = imageUrl || (imageUrls && imageUrls[0]);
+      if (url) {
+        pending.resolve(url);
+      } else {
+        pending.reject(new Error('No image URL in webhook response'));
+      }
+    }
+
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('Webhook processing failed:', error);
+    res.status(500).json({ error: 'Webhook processing failed' });
   }
 });
 
@@ -581,8 +629,17 @@ async function generateWithNanoBanana(
 ): Promise<string> {
   const fetch = (await import('node-fetch')).default;
 
+  // NanoBanana API requires a callback URL - check if configured
+  if (!CALLBACK_BASE_URL) {
+    console.warn('CALLBACK_BASE_URL not configured - NanoBanana requires a publicly accessible webhook');
+    throw new Error('Callback URL not configured for NanoBanana API');
+  }
+
   // Use correct endpoint paths per NanoBanana API docs
   const endpoint = quality === 'high' ? '/generate-pro' : '/generate';
+
+  // Combine prompt with negative prompt instruction
+  const fullPrompt = `${promptConfig.prompt}. DO NOT include: ${promptConfig.negativePrompt}`;
 
   const response = await fetch(`${NANOBANANA_API_URL}${endpoint}`, {
     method: 'POST',
@@ -591,10 +648,11 @@ async function generateWithNanoBanana(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      prompt: promptConfig.prompt,
-      negative_prompt: promptConfig.negativePrompt,
-      aspect_ratio: '2:3', // Portrait aspect ratio for full-body characters
-      size: quality === 'high' ? '1024x1536' : '768x1152',
+      prompt: fullPrompt,
+      type: 'TEXTTOIAMGE', // Note: API has typo "IAMGE" instead of "IMAGE"
+      callBackUrl: `${CALLBACK_BASE_URL}/api/media/webhook/nanobanana`,
+      numImages: 1,
+      image_size: '2:3', // Portrait aspect ratio for full-body characters
     }),
   });
 
@@ -605,56 +663,47 @@ async function generateWithNanoBanana(
   }
 
   const data = (await response.json()) as {
-    task_id?: string;
-    taskId?: string;
-    status: string;
-    image_url?: string;
-    imageUrl?: string;
-    result?: { url?: string };
+    code: number;
+    msg: string;
+    data?: {
+      taskId?: string;
+      imageUrl?: string;
+      imageUrls?: string[];
+    };
   };
 
-  // If completed immediately (check multiple possible response formats)
-  const imageUrl = data.image_url || data.imageUrl || data.result?.url;
-  if ((data.status === 'completed' || data.status === 'success') && imageUrl) {
-    return imageUrl;
+  console.log('NanoBanana API response:', JSON.stringify(data, null, 2));
+
+  // Check for success
+  if (data.code !== 200) {
+    throw new Error(`NanoBanana API error: ${data.msg}`);
   }
 
-  // Poll for completion
-  const taskId = data.task_id || data.taskId;
+  // If image URL is returned immediately (unlikely but possible)
+  if (data.data?.imageUrl) {
+    return data.data.imageUrl;
+  }
+  if (data.data?.imageUrls && data.data.imageUrls.length > 0) {
+    return data.data.imageUrls[0];
+  }
+
+  // Get task ID for webhook callback
+  const taskId = data.data?.taskId;
   if (!taskId) {
-    throw new Error('No task ID returned from API');
+    throw new Error('No task ID returned from NanoBanana API');
   }
 
-  const maxWait = 90000; // 90 seconds for high quality images
-  const startTime = Date.now();
+  // Wait for webhook callback with Promise
+  const maxWait = 120000; // 120 seconds for image generation
 
-  while (Date.now() - startTime < maxWait) {
-    await new Promise(resolve => setTimeout(resolve, 3000));
+  return new Promise<string>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      pendingImageTasks.delete(taskId);
+      reject(new Error('Image generation timed out waiting for webhook'));
+    }, maxWait);
 
-    const statusResponse = await fetch(`${NANOBANANA_API_URL}/record-info?taskId=${taskId}`, {
-      headers: {
-        Authorization: `Bearer ${NANOBANANA_API_KEY}`,
-      },
-    });
-
-    const statusData = (await statusResponse.json()) as {
-      status: string;
-      image_url?: string;
-      imageUrl?: string;
-      result?: { url?: string };
-    };
-
-    const resultUrl = statusData.image_url || statusData.imageUrl || statusData.result?.url;
-    if ((statusData.status === 'completed' || statusData.status === 'success') && resultUrl) {
-      return resultUrl;
-    }
-
-    if (statusData.status === 'failed' || statusData.status === 'error') {
-      throw new Error('Image generation failed');
-    }
-  }
-
-  throw new Error('Image generation timed out');
+    pendingImageTasks.set(taskId, { resolve, reject, timeout });
+  });
 }
 
 function generateDiceBearFallback(character: PortraitRequest['character']): string {

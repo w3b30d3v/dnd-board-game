@@ -1,0 +1,90 @@
+version: "3.8"
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: dnd-postgres-prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-dnd_prod}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dnd-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: dnd-redis-prod
+    restart: always
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dnd-network
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+    container_name: dnd-api-prod
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-dnd_prod}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      NANOBANANA_API_KEY: ${NANOBANANA_API_KEY}
+      CALLBACK_BASE_URL: ${CALLBACK_BASE_URL}
+      ENABLE_BASIC_AUTH: ${ENABLE_BASIC_AUTH:-true}
+      SITE_USERNAME: ${SITE_USERNAME:-admin}
+      SITE_PASSWORD: ${SITE_PASSWORD}
+    ports:
+      - "4000:4000"
+    networks:
+      - dnd-network
+
+  # Web App
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: dnd-web-prod
+    restart: always
+    depends_on:
+      - api-gateway
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api-gateway:4000}
+    ports:
+      - "3000:3000"
+    networks:
+      - dnd-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  dnd-network:
+    driver: bridge

@@ -2,6 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@dnd/shared', '@dnd/ui'],
+  // Enable standalone output for Docker deployment
+  output: 'standalone',
   images: {
     remotePatterns: [
       {
@@ -11,6 +13,14 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'cdn.dndboard.game',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.nanobananaapi.ai',
+      },
+      {
+        protocol: 'https',
+        hostname: 'api.dicebear.com',
       },
     ],
   },

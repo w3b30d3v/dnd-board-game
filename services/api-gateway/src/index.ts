@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { config } from './config.js';
 import { logger } from './lib/logger.js';
+import { basicAuth } from './middleware/basicAuth.js';
 import authRoutes from './routes/auth.js';
 import characterRoutes from './routes/characters.js';
 import mediaRoutes from './routes/media.js';
@@ -11,6 +12,9 @@ const app: Express = express();
 
 // Middleware
 app.use(helmet());
+
+// Basic auth for staging/password protection (must be before routes)
+app.use(basicAuth);
 app.use(
   cors({
     origin: config.nodeEnv === 'development'
