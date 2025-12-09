@@ -13,9 +13,7 @@ const app: Express = express();
 // Middleware
 app.use(helmet());
 
-// Basic auth for staging/password protection (must be before routes)
-app.use(basicAuth);
-// CORS configuration - allow web app origins
+// CORS configuration - MUST be before basicAuth to allow preflight OPTIONS requests
 const allowedOrigins = [
   'https://web-production-85b97.up.railway.app',
   ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : []),
@@ -39,7 +37,11 @@ app.use(
     credentials: true,
   })
 );
+
 app.use(express.json());
+
+// Basic auth for staging/password protection (after CORS to allow preflight)
+app.use(basicAuth);
 
 // Health check
 app.get('/health', (_req, res) => {
