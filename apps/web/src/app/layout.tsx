@@ -19,7 +19,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: 'D&D Digital Board Game',
-  description: 'A cinematic, multiplayer, AI-powered D&D 5e digital board game platform',
+  description: 'A cinematic, multiplayer D&D 5e digital board game platform',
 };
 
 export default function RootLayout({

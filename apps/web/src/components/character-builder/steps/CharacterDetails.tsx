@@ -6,7 +6,7 @@ import { getRaceById, getClassById, getBackgroundById } from '@/data';
 import { api } from '@/lib/api';
 import type { StepProps } from '../types';
 
-// Character images from AI generation
+// Character images from portrait generation
 interface CharacterImages {
   portrait: string;
   fullBody1: string | null;
@@ -324,8 +324,8 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
   const [showValidation, setShowValidation] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingPortrait, setIsGeneratingPortrait] = useState(false);
-  // Track if current portrait is AI-generated (to hide DiceBear-specific buttons)
-  const [isAIPortrait, setIsAIPortrait] = useState(false);
+  // Track if current portrait is generated (to hide DiceBear-specific buttons)
+  const [isGeneratedPortrait, setIsGeneratedPortrait] = useState(false);
   // Store all 3 character images for the card modal
   const [characterImages, setCharacterImages] = useState<CharacterImages>({
     portrait: '',
@@ -334,16 +334,16 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
   });
   // Character card modal state
   const [showCharacterCard, setShowCharacterCard] = useState(false);
-  // AI generation limit tracking
-  const [aiLimitInfo, setAiLimitInfo] = useState<{ remaining: number; limit: number } | null>(null);
+  // Generation limit tracking
+  const [generationLimitInfo, setGenerationLimitInfo] = useState<{ remaining: number; limit: number } | null>(null);
 
   const race = getRaceById(character.race || '');
   const classData = getClassById(character.class || '');
   const background = getBackgroundById(character.background || '');
 
-  // Get the portrait URL using DiceBear API or return AI-generated URL
+  // Get the portrait URL using DiceBear API or return generated URL
   const getPortraitUrl = useCallback((seed: string, style: string): string => {
-    // If the seed is already a full URL (from AI generation), return it directly
+    // If the seed is already a full URL (from generation), return it directly
     if (seed.startsWith('http://') || seed.startsWith('https://')) {
       return seed;
     }
@@ -358,8 +358,8 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
       name || 'hero'
     );
     setPortraitSeed(newSeed);
-    // Reset AI portrait state when switching to DiceBear
-    setIsAIPortrait(false);
+    // Reset generated portrait state when switching to DiceBear
+    setIsGeneratedPortrait(false);
     setCharacterImages({ portrait: '', fullBody1: null, fullBody2: null });
   }, [character.race, character.class, name]);
 
@@ -368,8 +368,8 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
     const currentIndex = styles.indexOf(portraitStyle);
     const nextIndex = (currentIndex + 1) % styles.length;
     setPortraitStyle(styles[nextIndex]!);
-    // Reset AI portrait state when switching styles
-    setIsAIPortrait(false);
+    // Reset generated portrait state when switching styles
+    setIsGeneratedPortrait(false);
     setCharacterImages({ portrait: '', fullBody1: null, fullBody2: null });
   }, [character.race, portraitStyle]);
 
@@ -496,8 +496,8 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
     }
   }, [character.race, character.class, character.background, name, handleRandomizeAll]);
 
-  // Generate all 3 AI character images using NanoBanana API
-  const handleGenerateAIPortrait = useCallback(async () => {
+  // Generate all 3 character images using NanoBanana API
+  const handleGeneratePortrait = useCallback(async () => {
     setIsGeneratingPortrait(true);
     try {
       // Use the new endpoint that generates all 3 images at once
@@ -522,11 +522,11 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
 
       // Update limit info
       if (response.remaining !== undefined && response.limit !== undefined) {
-        setAiLimitInfo({ remaining: response.remaining, limit: response.limit });
+        setGenerationLimitInfo({ remaining: response.remaining, limit: response.limit });
       }
 
       if (response.limitReached) {
-        alert(`You have reached the limit of ${response.limit} AI-generated characters. Each character uses 3 AI images.`);
+        alert(`You have reached the limit of ${response.limit} generated characters. Each character uses 3 images.`);
         return;
       }
 
@@ -541,17 +541,17 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
           fullBody2: response.images.fullBody2 || null,
         });
 
-        // Mark as AI-generated to hide DiceBear buttons
+        // Mark as generated to hide DiceBear buttons
         if (response.source === 'nanobanana') {
-          setIsAIPortrait(true);
-          setPortraitStyle('ai-generated');
+          setIsGeneratedPortrait(true);
+          setPortraitStyle('generated');
         } else {
           // DiceBear fallback was used
-          setIsAIPortrait(false);
+          setIsGeneratedPortrait(false);
         }
       }
     } catch (error: any) {
-      console.warn('AI portrait generation failed:', error);
+      console.warn('Portrait generation failed:', error);
       if (error?.message?.includes('limit')) {
         alert(error.message);
       }
@@ -617,13 +617,13 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
             <div className="relative group">
               <button
                 type="button"
-                onClick={() => isAIPortrait && setShowCharacterCard(true)}
+                onClick={() => isGeneratedPortrait && setShowCharacterCard(true)}
                 className={`w-32 h-32 rounded-lg bg-bg-medium border-2 overflow-hidden shadow-glow transition-all ${
-                  isAIPortrait
+                  isGeneratedPortrait
                     ? 'border-primary cursor-pointer hover:border-primary/80 hover:shadow-lg hover:scale-105'
                     : 'border-primary/50'
                 }`}
-                title={isAIPortrait ? 'Click to view character card' : undefined}
+                title={isGeneratedPortrait ? 'Click to view character card' : undefined}
               >
                 <img
                   src={getPortraitUrl(portraitSeed, portraitStyle)}
@@ -636,7 +636,7 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
                   <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                   <span className="text-xs text-white mt-2">Generating...</span>
                 </div>
-              ) : isAIPortrait ? (
+              ) : isGeneratedPortrait ? (
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center pointer-events-none">
                   <span className="text-xs text-white text-center px-2">Click to view<br/>character card</span>
                 </div>
@@ -647,8 +647,8 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
               )}
             </div>
             <div className="flex gap-2 mt-3 flex-wrap justify-center">
-              {/* Only show New and Style buttons for DiceBear (non-AI) portraits */}
-              {!isAIPortrait && (
+              {/* Only show New and Style buttons for DiceBear (non-generated) portraits */}
+              {!isGeneratedPortrait && (
                 <>
                   <button
                     type="button"
@@ -670,15 +670,15 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
               )}
               <button
                 type="button"
-                onClick={handleGenerateAIPortrait}
+                onClick={handleGeneratePortrait}
                 disabled={isGeneratingPortrait}
                 className="text-xs px-3 py-1.5 rounded bg-accent/20 text-accent hover:bg-accent/30 transition-colors flex items-center gap-1 disabled:opacity-50"
-                title="Generate AI portrait"
+                title="Generate portrait"
               >
-                <span>{isGeneratingPortrait ? '⏳' : '✨'}</span> {isGeneratingPortrait ? 'Generating...' : (isAIPortrait ? 'Regenerate' : 'AI Portrait')}
+                <span>{isGeneratingPortrait ? '⏳' : '✨'}</span> {isGeneratingPortrait ? 'Generating...' : (isGeneratedPortrait ? 'Regenerate' : 'Generate Portrait')}
               </button>
-              {/* Show reset button when AI portrait is active */}
-              {isAIPortrait && (
+              {/* Show reset button when generated portrait is active */}
+              {isGeneratedPortrait && (
                 <button
                   type="button"
                   onClick={handleRegeneratePortrait}
@@ -690,15 +690,15 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
               )}
             </div>
             <p className="text-xs text-text-muted mt-2 text-center">
-              {isAIPortrait ? 'AI Generated - Click to expand' : `${portraitStyle} style`}
+              {isGeneratedPortrait ? 'Generated - Click to expand' : `${portraitStyle} style`}
             </p>
-            {/* Show AI generation limit */}
-            {aiLimitInfo && (
+            {/* Show generation limit */}
+            {generationLimitInfo && (
               <p className="text-xs text-text-muted mt-1 text-center">
-                {aiLimitInfo.remaining > 0 ? (
-                  <span>{aiLimitInfo.remaining} of {aiLimitInfo.limit} AI characters remaining</span>
+                {generationLimitInfo.remaining > 0 ? (
+                  <span>{generationLimitInfo.remaining} of {generationLimitInfo.limit} characters remaining</span>
                 ) : (
-                  <span className="text-danger">AI character limit reached</span>
+                  <span className="text-danger">Character limit reached</span>
                 )}
               </p>
             )}
@@ -782,9 +782,9 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
               disabled={isGenerating}
               className="btn-magic text-sm px-4 py-2 flex items-center gap-2 disabled:opacity-50"
               type="button"
-              title="Generate using AI for race/class-specific content"
+              title="Generate race/class-specific content"
             >
-              <span>{isGenerating ? '⏳' : '✨'}</span> {isGenerating ? 'Generating...' : 'AI Generate'}
+              <span>{isGenerating ? '⏳' : '✨'}</span> {isGenerating ? 'Generating...' : 'Generate'}
             </button>
           </div>
         </div>

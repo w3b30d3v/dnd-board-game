@@ -37,7 +37,7 @@ export default function Home() {
           </div>
 
           <p className="text-xl text-text-secondary max-w-2xl mx-auto">
-            A cinematic, multiplayer, AI-powered D&D 5e digital board game platform.
+            A cinematic, multiplayer D&D 5e digital board game platform.
             <span className="block mt-2 dnd-flavor">
               &quot;Your adventure awaits, brave hero...&quot;
             </span>
@@ -78,9 +78,9 @@ export default function Home() {
             <EnchantedCard variant="legendary" hover showCorners>
               <div className="text-center">
                 <div className="text-4xl mb-4">✨</div>
-                <h3 className="dnd-heading-section text-lg mb-2">AI-Powered Content</h3>
+                <h3 className="dnd-heading-section text-lg mb-2">Dynamic Content</h3>
                 <p className="text-text-secondary text-sm">
-                  Generate character portraits, maps, and story elements with AI.
+                  Generate character portraits, maps, and story elements automatically.
                 </p>
               </div>
             </EnchantedCard>
