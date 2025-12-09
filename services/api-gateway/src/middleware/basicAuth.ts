@@ -28,6 +28,12 @@ export function basicAuth(req: Request, res: Response, next: NextFunction) {
 
   const authHeader = req.headers.authorization;
 
+  // Skip basic auth if request has a Bearer token (JWT auth)
+  // The actual JWT validation happens in the auth middleware
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+
   if (!authHeader || !authHeader.startsWith('Basic ')) {
     res.setHeader('WWW-Authenticate', 'Basic realm="D&D Board Game (Staging)"');
     return res.status(401).json({ error: 'Authentication required' });
