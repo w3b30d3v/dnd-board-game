@@ -84,7 +84,7 @@ All specifications are in the `/docs/` directory. **Read in this order:**
 ### AI-Powered Graphics & Media (FOR IMPRESSIVE VISUALS)
 | Document | Purpose |
 |----------|---------|
-| `44_NanoBanana_API_Integration.md` | **NanoBanana API integration for AI image generation (characters, locations, monsters, items)** |
+| `44_NanoBanana_API_Integration.md` | **NanoBanana API integration for AI image generation - ✅ IMPLEMENTED** |
 | `40_DnD_Immersive_Design_System.md` | **CRITICAL: The complete D&D visual language - textures, borders, cards, animations** |
 | `41_Authentic_DnD_Visual_Elements.md` | **CRITICAL: Iconic D&D elements - stat blocks, spell cards, read-aloud boxes, death saves** |
 | `42_DnD_Ceremony_Moments.md` | **CRITICAL: Sacred D&D moments - dice physics, initiative, advantage/disadvantage, concentration** |
@@ -359,6 +359,40 @@ pnpm deploy:prod          # Deploy to production
 
 ---
 
+## AI Character Image Generation (Implemented)
+
+The platform uses **NanoBanana API** (Google Gemini-powered) for AI character portrait generation:
+
+### Features
+- **3-Image Character Cards**: Portrait (1:1), Heroic Pose (2:3), Action Pose (2:3)
+- **User Limits**: 5 characters per user (15 AI images max, ~$0.60 per user)
+- **DiceBear Fallback**: Automatic fallback if API fails or not configured
+- **Trading Card Modal**: Click character portrait to view card with image carousel
+
+### API Endpoints
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/media/generate/character-images` | POST | Generate all 3 character images |
+| `/media/generation-limit` | GET | Check user's remaining AI quota |
+| `/media/generate/portrait` | POST | Legacy single image (no limit) |
+
+### Static Preview Images
+Race, class, and background selection screens show preview images configured in:
+```
+apps/web/src/data/staticImages.ts
+```
+Currently using DiceBear placeholders. Replace URLs with AI-generated images for production.
+
+### Required Environment Variables
+```env
+NANOBANANA_API_KEY=your_api_key
+CALLBACK_BASE_URL=https://your-api-domain.com
+```
+
+See `docs/44_NanoBanana_API_Integration.md` for complete implementation details.
+
+---
+
 ## Environment Variables
 
 Create `.env` file from `.env.example`:
@@ -378,6 +412,8 @@ WS_PORT=4001
 RULES_ENGINE_URL=http://localhost:50051
 
 # AI (for media generation)
+NANOBANANA_API_KEY=your-nanobanana-key
+CALLBACK_BASE_URL=https://your-api-domain.com  # Required for webhook callbacks
 REPLICATE_API_TOKEN=your-token
 OPENAI_API_KEY=your-key
 

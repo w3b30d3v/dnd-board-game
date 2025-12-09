@@ -502,6 +502,32 @@ export function sanitizeImagePrompt(prompt: string): string {
 
 # PART 2: PROGRESSIVE CHARACTER VISUALIZATION
 
+## 2.0 Static Preview Images (Implemented)
+
+Race, class, and background selection screens display preview images to help users visualize their choices.
+
+**Implementation Location:** `apps/web/src/data/staticImages.ts`
+
+```typescript
+// Currently using DiceBear placeholders - replace with AI-generated images for production
+export const RACE_IMAGES: Record<string, string> = {
+  human: diceBearUrl('human-race-preview', 'adventurer'),
+  elf: diceBearUrl('elf-race-preview', 'lorelei'),
+  dwarf: diceBearUrl('dwarf-race-preview', 'adventurer'),
+  // ... more races
+};
+
+export const CLASS_IMAGES: Record<string, string> = { /* ... */ };
+export const BACKGROUND_IMAGES: Record<string, string> = { /* ... */ };
+```
+
+These images are displayed as circular thumbnails in the selection cards. See:
+- `RaceSelection.tsx` - Uses `getRaceImage()`
+- `ClassSelection.tsx` - Uses `getClassImage()`
+- `BackgroundSelection.tsx` - Uses `getBackgroundImage()`
+
+---
+
 ## 2.1 Concept
 
 As the user progresses through character creation, the character portrait/model becomes more detailed:
@@ -773,22 +799,43 @@ function getProgressLabel(level: number): string {
 
 ## 2.5 Generating the Final Portrait
 
-```typescript
-// When user completes character creation, generate full AI portrait
+**Note:** The actual implementation uses NanoBanana API. See `docs/44_NanoBanana_API_Integration.md` for complete details.
 
-async function generateFinalPortrait(character: Character): Promise<string> {
-  const { prompt, negativePrompt } = buildSafePortraitPrompt(character);
-  
-  const result = await aiImageService.generate({
-    prompt,
-    negativePrompt,
-    width: 512,
-    height: 768,
-    model: 'stable-diffusion-xl'
+### Current Implementation (NanoBanana API)
+
+The character builder generates **3 images per character**:
+1. **Portrait** (1:1 aspect ratio) - Head/shoulders close-up
+2. **Heroic Pose** (2:3 aspect ratio) - Full-body standing pose
+3. **Action Pose** (2:3 aspect ratio) - Dynamic combat stance
+
+These are displayed in a trading card modal with image carousel. Users are limited to 5 AI-generated characters (15 images total).
+
+```typescript
+// Actual implementation in CharacterDetails.tsx
+const handleGenerateAIPortrait = async () => {
+  const response = await api.post('/media/generate/character-images', {
+    character: {
+      race: character.race,
+      class: character.class,
+      background: character.background,
+      name: name || undefined,
+    },
+    quality: 'standard',
   });
-  
-  return result.imageUrl;
-}
+
+  if (response.success && response.images) {
+    setCharacterImages({
+      portrait: response.images.portrait,
+      fullBody1: response.images.fullBody1 || null,
+      fullBody2: response.images.fullBody2 || null,
+    });
+  }
+};
+```
+
+### Reference Implementation (Generic AI Service)
+
+For alternative AI services, here's the generic pattern:
 
 function buildSafePortraitPrompt(character: Character): { prompt: string; negativePrompt: string } {
   const { race, class: charClass, appearance, personality } = character;
