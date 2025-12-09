@@ -3,7 +3,7 @@
 
 import axios from 'axios';
 import crypto from 'crypto';
-import { sanitizeImagePrompt, isPromptSafe, buildSafeNegativePrompt } from '../utils/contentSafety';
+import { sanitizeImagePrompt, isPromptSafe, buildSafeNegativePrompt } from '../utils/contentSafety.js';
 
 const NANOBANANA_API_URL = 'https://api.nanobananaapi.ai/v1';
 

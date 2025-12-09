@@ -45,7 +45,8 @@
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
       "Bash(taskkill //F //PID 18116)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(pnpm --filter @dnd/api-gateway add:*)"
     ],
     "deny": [],
     "ask": []
