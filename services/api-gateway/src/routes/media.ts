@@ -694,7 +694,8 @@ async function generateWithNanoBanana(
   }
 
   // Wait for webhook callback with Promise
-  const maxWait = 120000; // 120 seconds for image generation
+  // Keep under Railway's 60-second timeout so fallback can return
+  const maxWait = 50000; // 50 seconds for image generation
 
   return new Promise<string>((resolve, reject) => {
     const timeout = setTimeout(() => {
