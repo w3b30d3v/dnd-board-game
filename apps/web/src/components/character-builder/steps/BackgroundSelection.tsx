@@ -27,20 +27,6 @@ export function BackgroundSelection({ character, onUpdate, onNext, onBack }: Ste
 
   const showBackgroundError = showValidation && !selectedBackground;
 
-  const getBackgroundIcon = (backgroundId: string): string => {
-    const icons: Record<string, string> = {
-      acolyte: '🙏',
-      criminal: '🗝️',
-      'folk-hero': '🦸',
-      noble: '👑',
-      sage: '📚',
-      soldier: '⚔️',
-      hermit: '🏔️',
-      entertainer: '🎭',
-    };
-    return icons[backgroundId] || '📜';
-  };
-
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">

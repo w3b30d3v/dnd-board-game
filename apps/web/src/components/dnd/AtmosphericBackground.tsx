@@ -152,7 +152,6 @@ export function AtmosphericBackground({
       {showParticles && (
         <AmbientParticles
           variant={config.particle}
-          density={intensity === 'dramatic' ? 'high' : intensity === 'subtle' ? 'low' : 'medium'}
         />
       )}
 

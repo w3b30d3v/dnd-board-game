@@ -27,24 +27,6 @@ export function ClassSelection({ character, onUpdate, onNext, onBack }: StepProp
 
   const showClassError = showValidation && !selectedClass;
 
-  const getClassIcon = (classId: string): string => {
-    const icons: Record<string, string> = {
-      barbarian: '🪓',
-      bard: '🎸',
-      cleric: '✝️',
-      druid: '🌿',
-      fighter: '⚔️',
-      monk: '👊',
-      paladin: '🛡️',
-      ranger: '🏹',
-      rogue: '🗡️',
-      sorcerer: '✨',
-      warlock: '👁️',
-      wizard: '📖',
-    };
-    return icons[classId] || '⚔️';
-  };
-
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">

@@ -13,7 +13,6 @@ import {
   ScrollIcon,
   D20Icon,
   HeartIcon,
-  ShieldIcon,
   ClassIcon,
 } from '@/components/dnd/DnDIcons';
 
@@ -48,7 +47,7 @@ const cardVariants = {
     transition: {
       delay: i * 0.1,
       duration: 0.5,
-      ease: [0.25, 0.46, 0.45, 0.94],
+      ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
     },
   }),
 };
@@ -161,7 +160,7 @@ export default function DashboardContent() {
 
       {/* Particles */}
       <Suspense fallback={null}>
-        <AmbientParticles variant="dust" density="medium" />
+        <AmbientParticles variant="dust" />
       </Suspense>
 
       {/* Vignette */}

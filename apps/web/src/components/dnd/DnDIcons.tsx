@@ -10,11 +10,8 @@ interface IconProps {
   color?: string;
 }
 
-const defaultIconProps = {
-  size: 24,
-  animate: false,
-  color: 'currentColor',
-};
+// Default icon props for reference
+// const defaultIconProps = { size: 24, animate: false, color: 'currentColor' };
 
 // Ability Score Icons
 export function StrengthIcon({ className = '', size = 24, animate = false, color = 'currentColor' }: IconProps) {
