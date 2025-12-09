@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { BACKGROUNDS, getBackgroundById } from '@/data';
+import { getBackgroundImage } from '@/data/staticImages';
 import type { StepProps } from '../types';
 
 export function BackgroundSelection({ character, onUpdate, onNext, onBack }: StepProps) {
@@ -71,8 +72,12 @@ export function BackgroundSelection({ character, onUpdate, onNext, onBack }: Ste
             `}
           >
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-600/20 flex items-center justify-center">
-                <span className="text-lg">{getBackgroundIcon(bg.id)}</span>
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-600/20 overflow-hidden border-2 border-primary/30">
+                <img
+                  src={getBackgroundImage(bg.id)}
+                  alt={bg.name}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <h3 className="font-display font-semibold text-text-primary">{bg.name}</h3>
             </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { RACES, getRaceById } from '@/data';
+import { getRaceImage } from '@/data/staticImages';
 import type { StepProps } from '../types';
 
 export function RaceSelection({ character, onUpdate, onNext }: StepProps) {
@@ -66,18 +67,12 @@ export function RaceSelection({ character, onUpdate, onNext }: StepProps) {
             `}
           >
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-600/20 flex items-center justify-center">
-                <span className="text-lg">
-                  {r.id === 'human' && '👤'}
-                  {r.id === 'elf' && '🧝'}
-                  {r.id === 'dwarf' && '⛏️'}
-                  {r.id === 'halfling' && '🍀'}
-                  {r.id === 'dragonborn' && '🐉'}
-                  {r.id === 'gnome' && '🔧'}
-                  {r.id === 'half-elf' && '🌟'}
-                  {r.id === 'half-orc' && '💪'}
-                  {r.id === 'tiefling' && '😈'}
-                </span>
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-600/20 overflow-hidden border-2 border-primary/30">
+                <img
+                  src={getRaceImage(r.id)}
+                  alt={r.name}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <h3 className="font-display font-semibold text-text-primary">{r.name}</h3>
             </div>
