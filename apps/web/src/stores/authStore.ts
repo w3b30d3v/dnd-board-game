@@ -193,6 +193,13 @@ export const useAuthStore = create<AuthState>()(
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
+        // Initialize API client with tokens after rehydration
+        if (state?.token) {
+          api.setAccessToken(state.token);
+        }
+        if (state?.refreshToken) {
+          api.setRefreshToken(state.refreshToken);
+        }
       },
     }
   )
