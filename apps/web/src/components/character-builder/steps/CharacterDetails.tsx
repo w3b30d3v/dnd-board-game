@@ -6,7 +6,14 @@ import { getRaceById, getClassById, getBackgroundById } from '@/data';
 import { api } from '@/lib/api';
 import type { StepProps } from '../types';
 
-// Character Card Modal Component
+// Character images from AI generation
+interface CharacterImages {
+  portrait: string;
+  fullBody1: string | null;
+  fullBody2: string | null;
+}
+
+// Character Card Modal Component with 3-image carousel
 interface CharacterCardModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -15,8 +22,7 @@ interface CharacterCardModalProps {
     race: string;
     class: string;
     background: string;
-    portraitUrl: string;
-    fullBodyUrl: string | null;
+    images: CharacterImages;
     personalityTrait: string;
     ideal: string;
     bond: string;
@@ -25,13 +31,31 @@ interface CharacterCardModalProps {
 }
 
 function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalProps) {
-  const [showFullBody, setShowFullBody] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   if (!isOpen) return null;
 
-  const currentImageUrl = showFullBody && character.fullBodyUrl
-    ? character.fullBodyUrl
-    : character.portraitUrl;
+  // Build array of available images
+  const imageList: { url: string; label: string }[] = [
+    { url: character.images.portrait, label: 'Portrait' },
+  ];
+  if (character.images.fullBody1) {
+    imageList.push({ url: character.images.fullBody1, label: 'Heroic Pose' });
+  }
+  if (character.images.fullBody2) {
+    imageList.push({ url: character.images.fullBody2, label: 'Action Pose' });
+  }
+
+  const currentImage = imageList[currentImageIndex] || imageList[0];
+  const hasMultipleImages = imageList.length > 1;
+
+  const goToPrevious = () => {
+    setCurrentImageIndex((prev) => (prev === 0 ? imageList.length - 1 : prev - 1));
+  };
+
+  const goToNext = () => {
+    setCurrentImageIndex((prev) => (prev === imageList.length - 1 ? 0 : prev + 1));
+  };
 
   return (
     <AnimatePresence>
@@ -48,7 +72,7 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="relative max-w-md w-full"
+            className="relative max-w-md w-full max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Character Card - Trading Card Style */}
@@ -63,24 +87,69 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
                 </p>
               </div>
 
-              {/* Image Section */}
+              {/* Image Carousel Section */}
               <div className="relative aspect-[3/4] bg-bg-dark">
-                <img
-                  src={currentImageUrl}
-                  alt={character.name || 'Character'}
-                  className="w-full h-full object-cover"
-                />
-                {/* Gradient overlay at bottom */}
-                <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#1E1B26] to-transparent" />
+                <AnimatePresence mode="wait">
+                  <motion.img
+                    key={currentImageIndex}
+                    src={currentImage.url}
+                    alt={`${character.name || 'Character'} - ${currentImage.label}`}
+                    className="w-full h-full object-cover"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.2 }}
+                  />
+                </AnimatePresence>
 
-                {/* Toggle Button - only show if full body is available */}
-                {character.fullBodyUrl && (
-                  <button
-                    onClick={() => setShowFullBody(!showFullBody)}
-                    className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-black/60 text-white text-xs font-medium hover:bg-black/80 transition-colors border border-white/20"
-                  >
-                    {showFullBody ? 'Show Portrait' : 'Show Full Body'}
-                  </button>
+                {/* Gradient overlay at bottom */}
+                <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#1E1B26] to-transparent pointer-events-none" />
+
+                {/* Navigation Arrows - only show if multiple images */}
+                {hasMultipleImages && (
+                  <>
+                    <button
+                      onClick={goToPrevious}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors border border-white/20"
+                      aria-label="Previous image"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={goToNext}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors border border-white/20"
+                      aria-label="Next image"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </>
+                )}
+
+                {/* Image Label */}
+                <div className="absolute top-3 left-3 px-3 py-1.5 rounded-lg bg-black/60 text-white text-xs font-medium border border-white/20">
+                  {currentImage.label}
+                </div>
+
+                {/* Dot Indicators */}
+                {hasMultipleImages && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                    {imageList.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentImageIndex(index)}
+                        className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                          index === currentImageIndex
+                            ? 'bg-primary'
+                            : 'bg-white/40 hover:bg-white/60'
+                        }`}
+                        aria-label={`Go to image ${index + 1}`}
+                      />
+                    ))}
+                  </div>
                 )}
               </div>
 
@@ -257,10 +326,16 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
   const [isGeneratingPortrait, setIsGeneratingPortrait] = useState(false);
   // Track if current portrait is AI-generated (to hide DiceBear-specific buttons)
   const [isAIPortrait, setIsAIPortrait] = useState(false);
-  // Store full-body URL separately for the card modal
-  const [fullBodyUrl, setFullBodyUrl] = useState<string | null>(null);
+  // Store all 3 character images for the card modal
+  const [characterImages, setCharacterImages] = useState<CharacterImages>({
+    portrait: '',
+    fullBody1: null,
+    fullBody2: null,
+  });
   // Character card modal state
   const [showCharacterCard, setShowCharacterCard] = useState(false);
+  // AI generation limit tracking
+  const [aiLimitInfo, setAiLimitInfo] = useState<{ remaining: number; limit: number } | null>(null);
 
   const race = getRaceById(character.race || '');
   const classData = getClassById(character.class || '');
@@ -285,7 +360,7 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
     setPortraitSeed(newSeed);
     // Reset AI portrait state when switching to DiceBear
     setIsAIPortrait(false);
-    setFullBodyUrl(null);
+    setCharacterImages({ portrait: '', fullBody1: null, fullBody2: null });
   }, [character.race, character.class, name]);
 
   const handleChangeStyle = useCallback(() => {
@@ -295,7 +370,7 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
     setPortraitStyle(styles[nextIndex]!);
     // Reset AI portrait state when switching styles
     setIsAIPortrait(false);
-    setFullBodyUrl(null);
+    setCharacterImages({ portrait: '', fullBody1: null, fullBody2: null });
   }, [character.race, portraitStyle]);
 
   // Random generation functions
@@ -421,57 +496,65 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
     }
   }, [character.race, character.class, character.background, name, handleRandomizeAll]);
 
-  // Generate AI portrait using NanoBanana API
+  // Generate all 3 AI character images using NanoBanana API
   const handleGenerateAIPortrait = useCallback(async () => {
     setIsGeneratingPortrait(true);
     try {
-      // Generate portrait (head/shoulders)
-      const response = await api.post<{ success: boolean; imageUrl?: string; source?: string }>('/media/generate/portrait', {
+      // Use the new endpoint that generates all 3 images at once
+      const response = await api.post<{
+        success: boolean;
+        images?: { portrait: string; fullBody1: string; fullBody2: string };
+        source?: string;
+        error?: string;
+        limitReached?: boolean;
+        generated?: number;
+        remaining?: number;
+        limit?: number;
+      }>('/media/generate/character-images', {
         character: {
           race: character.race,
           class: character.class,
           background: character.background,
           name: name || undefined,
         },
-        style: 'portrait',  // Portrait style (head/shoulders)
         quality: 'standard',
       });
 
-      if (response.success && response.imageUrl) {
-        // Update the portrait seed to use the new URL
-        setPortraitSeed(response.imageUrl);
+      // Update limit info
+      if (response.remaining !== undefined && response.limit !== undefined) {
+        setAiLimitInfo({ remaining: response.remaining, limit: response.limit });
+      }
+
+      if (response.limitReached) {
+        alert(`You have reached the limit of ${response.limit} AI-generated characters. Each character uses 3 AI images.`);
+        return;
+      }
+
+      if (response.success && response.images) {
+        // Update portrait seed to show the portrait image
+        setPortraitSeed(response.images.portrait);
+
+        // Store all 3 images for the card modal
+        setCharacterImages({
+          portrait: response.images.portrait,
+          fullBody1: response.images.fullBody1 || null,
+          fullBody2: response.images.fullBody2 || null,
+        });
 
         // Mark as AI-generated to hide DiceBear buttons
         if (response.source === 'nanobanana') {
           setIsAIPortrait(true);
           setPortraitStyle('ai-generated');
-
-          // Generate full-body image in background for the card modal
-          try {
-            const fullBodyResponse = await api.post<{ success: boolean; imageUrl?: string; source?: string }>('/media/generate/portrait', {
-              character: {
-                race: character.race,
-                class: character.class,
-                background: character.background,
-                name: name || undefined,
-              },
-              style: 'full_body',  // Full body style
-              quality: 'standard',
-            });
-            if (fullBodyResponse.success && fullBodyResponse.imageUrl && fullBodyResponse.source === 'nanobanana') {
-              setFullBodyUrl(fullBodyResponse.imageUrl);
-            }
-          } catch {
-            // Full body generation is optional, don't fail if it doesn't work
-            console.warn('Full body generation failed, portrait-only mode');
-          }
         } else {
           // DiceBear fallback was used
           setIsAIPortrait(false);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.warn('AI portrait generation failed:', error);
+      if (error?.message?.includes('limit')) {
+        alert(error.message);
+      }
       // Keep existing portrait
     } finally {
       setIsGeneratingPortrait(false);
@@ -609,6 +692,16 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
             <p className="text-xs text-text-muted mt-2 text-center">
               {isAIPortrait ? 'AI Generated - Click to expand' : `${portraitStyle} style`}
             </p>
+            {/* Show AI generation limit */}
+            {aiLimitInfo && (
+              <p className="text-xs text-text-muted mt-1 text-center">
+                {aiLimitInfo.remaining > 0 ? (
+                  <span>{aiLimitInfo.remaining} of {aiLimitInfo.limit} AI characters remaining</span>
+                ) : (
+                  <span className="text-danger">AI character limit reached</span>
+                )}
+              </p>
+            )}
           </div>
 
           {/* Character Info */}
@@ -914,8 +1007,11 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
           race: race?.name || character.race || 'Unknown',
           class: classData?.name || character.class || 'Unknown',
           background: background?.name || character.background || 'Unknown',
-          portraitUrl: getPortraitUrl(portraitSeed, portraitStyle),
-          fullBodyUrl: fullBodyUrl,
+          images: {
+            portrait: characterImages.portrait || getPortraitUrl(portraitSeed, portraitStyle),
+            fullBody1: characterImages.fullBody1,
+            fullBody2: characterImages.fullBody2,
+          },
           personalityTrait,
           ideal,
           bond,

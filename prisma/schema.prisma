@@ -32,6 +32,9 @@ model User {
   updatedAt     DateTime  @updatedAt
   lastLoginAt   DateTime?
 
+  // AI Generation limits
+  aiCharactersGenerated Int @default(0)  // Max 5 characters (15 images)
+
   // Preferences
   preferences   Json      @default("{}")
 

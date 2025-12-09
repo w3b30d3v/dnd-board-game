@@ -2,10 +2,15 @@
 // Handles AI image generation for character portraits, locations, etc.
 
 import { Router, Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
 import { auth } from '../middleware/auth.js';
 import { generatePersonalityContent, generateAllPersonalityContent } from '../services/personalityGenerator.js';
 
 const router: Router = Router();
+const prisma = new PrismaClient();
+
+// Constants
+const MAX_AI_CHARACTERS_PER_USER = 5; // 5 characters = 15 images max
 
 // Environment configuration
 const NANOBANANA_API_KEY = process.env.NANOBANANA_API_KEY;
@@ -37,7 +42,150 @@ interface PortraitRequest {
   quality?: 'standard' | 'high';
 }
 
-// Generate character portrait
+// Check user's AI generation limit
+router.get('/generation-limit', auth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { aiCharactersGenerated: true },
+    });
+
+    const generated = user?.aiCharactersGenerated || 0;
+    const remaining = Math.max(0, MAX_AI_CHARACTERS_PER_USER - generated);
+
+    return res.json({
+      success: true,
+      generated,
+      remaining,
+      limit: MAX_AI_CHARACTERS_PER_USER,
+    });
+  } catch (error: any) {
+    console.error('Failed to check generation limit:', error);
+    return res.status(500).json({ success: false, error: 'Failed to check limit' });
+  }
+});
+
+// Generate all 3 character images (1 portrait + 2 full-body poses)
+// This counts as 1 character against the user's limit
+router.post('/generate/character-images', auth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const { character, quality = 'standard' } = req.body as PortraitRequest;
+
+    if (!character || !character.race || !character.class) {
+      return res.status(400).json({
+        success: false,
+        error: 'Character race and class are required',
+      });
+    }
+
+    // Check user's generation limit
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { aiCharactersGenerated: true },
+    });
+
+    const currentCount = user?.aiCharactersGenerated || 0;
+    if (currentCount >= MAX_AI_CHARACTERS_PER_USER) {
+      return res.status(403).json({
+        success: false,
+        error: `You have reached the maximum of ${MAX_AI_CHARACTERS_PER_USER} AI-generated characters. Each character uses 3 AI images.`,
+        limitReached: true,
+        generated: currentCount,
+        limit: MAX_AI_CHARACTERS_PER_USER,
+      });
+    }
+
+    // If NanoBanana API is not configured, return fallback immediately
+    if (!NANOBANANA_API_KEY) {
+      const fallbackUrl = generateDiceBearFallback(character);
+      return res.json({
+        success: true,
+        images: {
+          portrait: fallbackUrl,
+          fullBody1: fallbackUrl,
+          fullBody2: fallbackUrl,
+        },
+        source: 'fallback',
+        generated: currentCount,
+        remaining: MAX_AI_CHARACTERS_PER_USER - currentCount,
+      });
+    }
+
+    // Generate all 3 images
+    const images: { portrait?: string; fullBody1?: string; fullBody2?: string } = {};
+    let successCount = 0;
+
+    // 1. Generate portrait (head/shoulders)
+    try {
+      const portraitPrompt = buildCharacterPrompt(character, 'portrait');
+      images.portrait = await generateWithNanoBanana(portraitPrompt, quality, 'portrait');
+      successCount++;
+      console.log('Portrait generated successfully');
+    } catch (error) {
+      console.warn('Portrait generation failed:', error);
+      images.portrait = generateDiceBearFallback(character);
+    }
+
+    // 2. Generate first full-body image (heroic pose)
+    try {
+      const fullBody1Prompt = buildCharacterPrompt(character, 'full_body');
+      images.fullBody1 = await generateWithNanoBanana(fullBody1Prompt, quality, 'full_body');
+      successCount++;
+      console.log('Full body 1 generated successfully');
+    } catch (error) {
+      console.warn('Full body 1 generation failed:', error);
+      images.fullBody1 = generateDiceBearFallback(character);
+    }
+
+    // 3. Generate second full-body image (action pose)
+    try {
+      const fullBody2Prompt = buildCharacterPrompt(character, 'action_pose');
+      images.fullBody2 = await generateWithNanoBanana(fullBody2Prompt, quality, 'action_pose');
+      successCount++;
+      console.log('Full body 2 (action) generated successfully');
+    } catch (error) {
+      console.warn('Full body 2 generation failed:', error);
+      images.fullBody2 = generateDiceBearFallback(character);
+    }
+
+    // Only increment counter if at least one AI image was successfully generated
+    if (successCount > 0) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { aiCharactersGenerated: { increment: 1 } },
+      });
+    }
+
+    const newCount = successCount > 0 ? currentCount + 1 : currentCount;
+
+    return res.json({
+      success: true,
+      images,
+      source: successCount > 0 ? 'nanobanana' : 'fallback',
+      imagesGenerated: successCount,
+      generated: newCount,
+      remaining: MAX_AI_CHARACTERS_PER_USER - newCount,
+    });
+  } catch (error: any) {
+    console.error('Character images generation failed:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Character images generation failed',
+    });
+  }
+});
+
+// Generate single character portrait (legacy endpoint, doesn't count against limit)
 router.post('/generate/portrait', auth, async (req: Request, res: Response) => {
   try {
     const { character, style = 'portrait', quality = 'standard' } = req.body as PortraitRequest;
