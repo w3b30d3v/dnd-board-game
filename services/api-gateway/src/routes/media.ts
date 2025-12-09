@@ -155,27 +155,45 @@ router.post('/webhook/nanobanana', async (req: Request, res: Response) => {
     console.log('Body:', JSON.stringify(req.body, null, 2));
     console.log('Pending tasks:', Array.from(pendingImageTasks.keys()));
 
-    const { taskId, status, imageUrl, imageUrls, failureReason } = req.body;
+    // NanoBanana sends resultImageUrl, not imageUrl
+    const { taskId, status, imageUrl, imageUrls, resultImageUrl, failureReason, msg } = req.body;
 
-    if (!taskId) {
-      return res.status(400).json({ error: 'Missing taskId' });
+    // NanoBanana may not send taskId in webhook - match by checking all pending tasks
+    // or extract from the message. For now, if we have pending tasks and get a result, resolve the first one
+    let resolvedTaskId = taskId;
+
+    if (!resolvedTaskId && pendingImageTasks.size > 0) {
+      // If no taskId but we have pending tasks and got a successful result, use the first pending task
+      const pendingKeys = Array.from(pendingImageTasks.keys());
+      if (pendingKeys.length > 0) {
+        resolvedTaskId = pendingKeys[0];
+        console.log(`No taskId in webhook, using first pending task: ${resolvedTaskId}`);
+      }
     }
 
-    const pending = pendingImageTasks.get(taskId);
+    if (!resolvedTaskId) {
+      console.warn('No taskId in webhook and no pending tasks');
+      return res.json({ success: true, message: 'Webhook received but no matching task' });
+    }
+
+    const pending = pendingImageTasks.get(resolvedTaskId);
     if (!pending) {
-      console.warn(`No pending task found for taskId: ${taskId}`);
+      console.warn(`No pending task found for taskId: ${resolvedTaskId}`);
       // Still return success - the task might have timed out
       return res.json({ success: true, message: 'Webhook received' });
     }
 
     // Clear the timeout
     clearTimeout(pending.timeout);
-    pendingImageTasks.delete(taskId);
+    pendingImageTasks.delete(resolvedTaskId);
 
+    // Check for failure
     if (status === 'FAILED' || status === 'failed') {
       pending.reject(new Error(failureReason || 'Image generation failed'));
     } else {
-      const url = imageUrl || (imageUrls && imageUrls[0]);
+      // Try all possible field names: resultImageUrl (NanoBanana), imageUrl, imageUrls array
+      const url = resultImageUrl || imageUrl || (imageUrls && imageUrls[0]);
+      console.log(`Extracted image URL: ${url}`);
       if (url) {
         pending.resolve(url);
       } else {
