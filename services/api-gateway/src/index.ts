@@ -15,6 +15,7 @@ app.use(helmet());
 
 // CORS configuration - MUST be before basicAuth to allow preflight OPTIONS requests
 const allowedOrigins = [
+  'https://web-production-f0a7.up.railway.app',
   'https://web-production-85b97.up.railway.app',
   ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : []),
 ];
