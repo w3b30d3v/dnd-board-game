@@ -46,7 +46,10 @@
       "Bash(taskkill:*)",
       "Bash(taskkill //F //PID 18116)",
       "Bash(echo:*)",
-      "Bash(pnpm --filter @dnd/api-gateway add:*)"
+      "Bash(pnpm --filter @dnd/api-gateway add:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWl5bXF6bmswMDAwaGluM2x5bWdpYjBuIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2NTI4Nzc1MiwiZXhwIjoxNzY1Mjg4NjUyfQ.TSAJQkkaHI_IaLqlVuBlBbhmzHqBhPOeBo6tDObxs0M\")",
+      "Bash(__NEW_LINE__ curl -s -X POST \"https://api-production-2f00.up.railway.app/media/generate/portrait\" )",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWl5bXF6bmswMDAwaGluM2x5bWdpYjBuIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2NTI4ODk3OCwiZXhwIjoxNzY1Mjg5ODc4fQ.i3voX5VdnAMYMZIy5vA3kBzyi42gku0ay_e2sIVQO6A\")"
     ],
     "deny": [],
     "ask": []

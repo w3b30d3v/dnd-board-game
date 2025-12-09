@@ -1,9 +1,149 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getRaceById, getClassById, getBackgroundById } from '@/data';
 import { api } from '@/lib/api';
 import type { StepProps } from '../types';
+
+// Character Card Modal Component
+interface CharacterCardModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  character: {
+    name: string;
+    race: string;
+    class: string;
+    background: string;
+    portraitUrl: string;
+    fullBodyUrl: string | null;
+    personalityTrait: string;
+    ideal: string;
+    bond: string;
+    flaw: string;
+  };
+}
+
+function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalProps) {
+  const [showFullBody, setShowFullBody] = useState(false);
+
+  if (!isOpen) return null;
+
+  const currentImageUrl = showFullBody && character.fullBodyUrl
+    ? character.fullBodyUrl
+    : character.portraitUrl;
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="relative max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Character Card - Trading Card Style */}
+            <div className="relative bg-gradient-to-b from-[#2A2735] to-[#1E1B26] rounded-xl overflow-hidden border-4 border-primary/60 shadow-2xl">
+              {/* Card Header with Name */}
+              <div className="bg-gradient-to-r from-primary/30 via-primary/50 to-primary/30 px-4 py-3 border-b border-primary/40">
+                <h2 className="text-xl font-bold text-center text-primary drop-shadow-lg font-cinzel">
+                  {character.name || 'Unnamed Hero'}
+                </h2>
+                <p className="text-xs text-center text-text-secondary mt-1">
+                  {character.race} {character.class}
+                </p>
+              </div>
+
+              {/* Image Section */}
+              <div className="relative aspect-[3/4] bg-bg-dark">
+                <img
+                  src={currentImageUrl}
+                  alt={character.name || 'Character'}
+                  className="w-full h-full object-cover"
+                />
+                {/* Gradient overlay at bottom */}
+                <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#1E1B26] to-transparent" />
+
+                {/* Toggle Button - only show if full body is available */}
+                {character.fullBodyUrl && (
+                  <button
+                    onClick={() => setShowFullBody(!showFullBody)}
+                    className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-black/60 text-white text-xs font-medium hover:bg-black/80 transition-colors border border-white/20"
+                  >
+                    {showFullBody ? 'Show Portrait' : 'Show Full Body'}
+                  </button>
+                )}
+              </div>
+
+              {/* Stats Section */}
+              <div className="p-4 space-y-3">
+                {/* Background */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-text-muted uppercase tracking-wider">Background:</span>
+                  <span className="text-sm text-primary font-medium">{character.background}</span>
+                </div>
+
+                {/* Personality Traits */}
+                {character.personalityTrait && (
+                  <div className="bg-bg-dark/50 rounded-lg p-3 border border-border/50">
+                    <h4 className="text-xs text-primary font-semibold uppercase tracking-wider mb-1">Personality</h4>
+                    <p className="text-xs text-text-secondary leading-relaxed line-clamp-2">{character.personalityTrait}</p>
+                  </div>
+                )}
+
+                {character.ideal && (
+                  <div className="bg-bg-dark/50 rounded-lg p-3 border border-border/50">
+                    <h4 className="text-xs text-secondary font-semibold uppercase tracking-wider mb-1">Ideal</h4>
+                    <p className="text-xs text-text-secondary leading-relaxed line-clamp-2">{character.ideal}</p>
+                  </div>
+                )}
+
+                {character.bond && (
+                  <div className="bg-bg-dark/50 rounded-lg p-3 border border-border/50">
+                    <h4 className="text-xs text-accent font-semibold uppercase tracking-wider mb-1">Bond</h4>
+                    <p className="text-xs text-text-secondary leading-relaxed line-clamp-2">{character.bond}</p>
+                  </div>
+                )}
+
+                {character.flaw && (
+                  <div className="bg-bg-dark/50 rounded-lg p-3 border border-danger/30">
+                    <h4 className="text-xs text-danger font-semibold uppercase tracking-wider mb-1">Flaw</h4>
+                    <p className="text-xs text-text-secondary leading-relaxed line-clamp-2">{character.flaw}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Card Footer */}
+              <div className="px-4 pb-4">
+                <button
+                  onClick={onClose}
+                  className="w-full py-2 rounded-lg bg-primary/20 text-primary font-medium hover:bg-primary/30 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+
+              {/* Decorative corner accents */}
+              <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-primary/80 rounded-tl-lg" />
+              <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-primary/80 rounded-tr-lg" />
+              <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-primary/80 rounded-bl-lg" />
+              <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-primary/80 rounded-br-lg" />
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
 
 // Generic personality traits (clean language)
 const GENERIC_PERSONALITY_TRAITS = [
@@ -115,6 +255,12 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
   const [showValidation, setShowValidation] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingPortrait, setIsGeneratingPortrait] = useState(false);
+  // Track if current portrait is AI-generated (to hide DiceBear-specific buttons)
+  const [isAIPortrait, setIsAIPortrait] = useState(false);
+  // Store full-body URL separately for the card modal
+  const [fullBodyUrl, setFullBodyUrl] = useState<string | null>(null);
+  // Character card modal state
+  const [showCharacterCard, setShowCharacterCard] = useState(false);
 
   const race = getRaceById(character.race || '');
   const classData = getClassById(character.class || '');
@@ -137,6 +283,9 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
       name || 'hero'
     );
     setPortraitSeed(newSeed);
+    // Reset AI portrait state when switching to DiceBear
+    setIsAIPortrait(false);
+    setFullBodyUrl(null);
   }, [character.race, character.class, name]);
 
   const handleChangeStyle = useCallback(() => {
@@ -144,6 +293,9 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
     const currentIndex = styles.indexOf(portraitStyle);
     const nextIndex = (currentIndex + 1) % styles.length;
     setPortraitStyle(styles[nextIndex]!);
+    // Reset AI portrait state when switching styles
+    setIsAIPortrait(false);
+    setFullBodyUrl(null);
   }, [character.race, portraitStyle]);
 
   // Random generation functions
@@ -273,6 +425,7 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
   const handleGenerateAIPortrait = useCallback(async () => {
     setIsGeneratingPortrait(true);
     try {
+      // Generate portrait (head/shoulders)
       const response = await api.post<{ success: boolean; imageUrl?: string; source?: string }>('/media/generate/portrait', {
         character: {
           race: character.race,
@@ -280,15 +433,41 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
           background: character.background,
           name: name || undefined,
         },
-        style: 'portrait',
+        style: 'portrait',  // Portrait style (head/shoulders)
         quality: 'standard',
       });
+
       if (response.success && response.imageUrl) {
         // Update the portrait seed to use the new URL
         setPortraitSeed(response.imageUrl);
-        // If it's an AI-generated URL (not DiceBear), switch to 'ai' style indicator
+
+        // Mark as AI-generated to hide DiceBear buttons
         if (response.source === 'nanobanana') {
+          setIsAIPortrait(true);
           setPortraitStyle('ai-generated');
+
+          // Generate full-body image in background for the card modal
+          try {
+            const fullBodyResponse = await api.post<{ success: boolean; imageUrl?: string; source?: string }>('/media/generate/portrait', {
+              character: {
+                race: character.race,
+                class: character.class,
+                background: character.background,
+                name: name || undefined,
+              },
+              style: 'full_body',  // Full body style
+              quality: 'standard',
+            });
+            if (fullBodyResponse.success && fullBodyResponse.imageUrl && fullBodyResponse.source === 'nanobanana') {
+              setFullBodyUrl(fullBodyResponse.imageUrl);
+            }
+          } catch {
+            // Full body generation is optional, don't fail if it doesn't work
+            console.warn('Full body generation failed, portrait-only mode');
+          }
+        } else {
+          // DiceBear fallback was used
+          setIsAIPortrait(false);
         }
       }
     } catch (error) {
@@ -353,53 +532,82 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
           {/* Portrait Section */}
           <div className="flex flex-col items-center">
             <div className="relative group">
-              <div className="w-32 h-32 rounded-lg bg-bg-medium border-2 border-primary/50 overflow-hidden shadow-glow">
+              <button
+                type="button"
+                onClick={() => isAIPortrait && setShowCharacterCard(true)}
+                className={`w-32 h-32 rounded-lg bg-bg-medium border-2 overflow-hidden shadow-glow transition-all ${
+                  isAIPortrait
+                    ? 'border-primary cursor-pointer hover:border-primary/80 hover:shadow-lg hover:scale-105'
+                    : 'border-primary/50'
+                }`}
+                title={isAIPortrait ? 'Click to view character card' : undefined}
+              >
                 <img
                   src={getPortraitUrl(portraitSeed, portraitStyle)}
                   alt="Character portrait"
                   className="w-full h-full object-cover"
                 />
-              </div>
+              </button>
               {isGeneratingPortrait ? (
-                <div className="absolute inset-0 bg-black/70 rounded-lg flex flex-col items-center justify-center">
+                <div className="absolute inset-0 bg-black/70 rounded-lg flex flex-col items-center justify-center pointer-events-none">
                   <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                   <span className="text-xs text-white mt-2">Generating...</span>
                 </div>
+              ) : isAIPortrait ? (
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center pointer-events-none">
+                  <span className="text-xs text-white text-center px-2">Click to view<br/>character card</span>
+                </div>
               ) : (
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center pointer-events-none">
                   <span className="text-xs text-white">Click below to change</span>
                 </div>
               )}
             </div>
             <div className="flex gap-2 mt-3 flex-wrap justify-center">
-              <button
-                type="button"
-                onClick={handleRegeneratePortrait}
-                className="text-xs px-3 py-1.5 rounded bg-primary/20 text-primary hover:bg-primary/30 transition-colors flex items-center gap-1"
-                title="Generate a new random portrait"
-              >
-                <span>🎲</span> New
-              </button>
-              <button
-                type="button"
-                onClick={handleChangeStyle}
-                className="text-xs px-3 py-1.5 rounded bg-secondary/20 text-secondary hover:bg-secondary/30 transition-colors flex items-center gap-1"
-                title="Change portrait style"
-              >
-                <span>🎨</span> Style
-              </button>
+              {/* Only show New and Style buttons for DiceBear (non-AI) portraits */}
+              {!isAIPortrait && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleRegeneratePortrait}
+                    className="text-xs px-3 py-1.5 rounded bg-primary/20 text-primary hover:bg-primary/30 transition-colors flex items-center gap-1"
+                    title="Generate a new random portrait"
+                  >
+                    <span>🎲</span> New
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleChangeStyle}
+                    className="text-xs px-3 py-1.5 rounded bg-secondary/20 text-secondary hover:bg-secondary/30 transition-colors flex items-center gap-1"
+                    title="Change portrait style"
+                  >
+                    <span>🎨</span> Style
+                  </button>
+                </>
+              )}
               <button
                 type="button"
                 onClick={handleGenerateAIPortrait}
                 disabled={isGeneratingPortrait}
                 className="text-xs px-3 py-1.5 rounded bg-accent/20 text-accent hover:bg-accent/30 transition-colors flex items-center gap-1 disabled:opacity-50"
-                title="Generate AI portrait (requires API key)"
+                title="Generate AI portrait"
               >
-                <span>{isGeneratingPortrait ? '⏳' : '✨'}</span> {isGeneratingPortrait ? 'Generating...' : 'AI Portrait'}
+                <span>{isGeneratingPortrait ? '⏳' : '✨'}</span> {isGeneratingPortrait ? 'Generating...' : (isAIPortrait ? 'Regenerate' : 'AI Portrait')}
               </button>
+              {/* Show reset button when AI portrait is active */}
+              {isAIPortrait && (
+                <button
+                  type="button"
+                  onClick={handleRegeneratePortrait}
+                  className="text-xs px-3 py-1.5 rounded bg-border/50 text-text-secondary hover:bg-border transition-colors flex items-center gap-1"
+                  title="Switch back to DiceBear avatar"
+                >
+                  <span>↩</span> Reset
+                </button>
+              )}
             </div>
             <p className="text-xs text-text-muted mt-2 text-center">
-              {portraitStyle === 'ai-generated' ? 'AI Generated' : `${portraitStyle} style`}
+              {isAIPortrait ? 'AI Generated - Click to expand' : `${portraitStyle} style`}
             </p>
           </div>
 
@@ -696,6 +904,24 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
           Review Character
         </button>
       </div>
+
+      {/* Character Card Modal */}
+      <CharacterCardModal
+        isOpen={showCharacterCard}
+        onClose={() => setShowCharacterCard(false)}
+        character={{
+          name: name || 'Unnamed Hero',
+          race: race?.name || character.race || 'Unknown',
+          class: classData?.name || character.class || 'Unknown',
+          background: background?.name || character.background || 'Unknown',
+          portraitUrl: getPortraitUrl(portraitSeed, portraitStyle),
+          fullBodyUrl: fullBodyUrl,
+          personalityTrait,
+          ideal,
+          bond,
+          flaw,
+        }}
+      />
     </div>
   );
 }

@@ -55,7 +55,7 @@ router.post('/generate/portrait', auth, async (req: Request, res: Response) => {
     // If NanoBanana API is configured, use it
     if (NANOBANANA_API_KEY) {
       try {
-        const imageUrl = await generateWithNanoBanana(prompt, quality);
+        const imageUrl = await generateWithNanoBanana(prompt, quality, style);
         return res.json({
           success: true,
           imageUrl,
@@ -237,10 +237,17 @@ function buildCharacterPrompt(
     'rich color palette with deep shadows',
   ].join(', ');
 
-  // Full body composition
-  const composition = style === 'action_pose'
-    ? 'dynamic action pose, mid-combat stance, weapon raised, dramatic motion blur on edges, intense expression'
-    : 'full body character design, standing heroic pose, weight on back foot ready for action, head to toe visible, facing three-quarter view';
+  // Composition based on style
+  let composition: string;
+  if (style === 'portrait') {
+    // Portrait style - head and shoulders only
+    composition = 'portrait, head and shoulders, close-up face shot, detailed facial features, expressive eyes, three-quarter view, dramatic lighting on face, shallow depth of field background';
+  } else if (style === 'action_pose') {
+    composition = 'dynamic action pose, mid-combat stance, weapon raised, dramatic motion blur on edges, intense expression';
+  } else {
+    // full_body style
+    composition = 'full body character design, standing heroic pose, weight on back foot ready for action, head to toe visible, facing three-quarter view';
+  }
 
   // Environment/Background
   const background = [
@@ -650,7 +657,8 @@ function getClassAppearance(charClass: string): string {
 
 async function generateWithNanoBanana(
   promptConfig: { prompt: string; negativePrompt: string },
-  quality: string
+  quality: string,
+  style: string = 'portrait'
 ): Promise<string> {
   const fetch = (await import('node-fetch')).default;
 
@@ -666,12 +674,17 @@ async function generateWithNanoBanana(
   // Combine prompt with negative prompt instruction
   const fullPrompt = `${promptConfig.prompt}. DO NOT include: ${promptConfig.negativePrompt}`;
 
+  // Choose aspect ratio based on style
+  // portrait: 1:1 square for head/shoulders
+  // full_body: 2:3 vertical for full character
+  const imageSize = style === 'portrait' ? '1:1' : '2:3';
+
   const requestBody = {
     prompt: fullPrompt,
     type: 'TEXTTOIAMGE', // Note: API has typo "IAMGE" instead of "IMAGE"
     callBackUrl: `${CALLBACK_BASE_URL}/media/webhook/nanobanana`,
     numImages: 1,
-    image_size: '2:3', // Portrait aspect ratio for full-body characters
+    image_size: imageSize,
   };
 
   console.log('=== Calling NanoBanana API ===');
