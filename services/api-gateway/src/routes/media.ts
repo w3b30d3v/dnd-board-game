@@ -650,7 +650,7 @@ async function generateWithNanoBanana(
     body: JSON.stringify({
       prompt: fullPrompt,
       type: 'TEXTTOIAMGE', // Note: API has typo "IAMGE" instead of "IMAGE"
-      callBackUrl: `${CALLBACK_BASE_URL}/api/media/webhook/nanobanana`,
+      callBackUrl: `${CALLBACK_BASE_URL}/media/webhook/nanobanana`,
       numImages: 1,
       image_size: '2:3', // Portrait aspect ratio for full-body characters
     }),
