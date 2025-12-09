@@ -150,7 +150,10 @@ const pendingImageTasks = new Map<string, {
 // Webhook endpoint for NanoBanana callbacks
 router.post('/webhook/nanobanana', async (req: Request, res: Response) => {
   try {
-    console.log('NanoBanana webhook received:', JSON.stringify(req.body, null, 2));
+    console.log('=== NanoBanana webhook received ===');
+    console.log('Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('Body:', JSON.stringify(req.body, null, 2));
+    console.log('Pending tasks:', Array.from(pendingImageTasks.keys()));
 
     const { taskId, status, imageUrl, imageUrls, failureReason } = req.body;
 
@@ -641,19 +644,26 @@ async function generateWithNanoBanana(
   // Combine prompt with negative prompt instruction
   const fullPrompt = `${promptConfig.prompt}. DO NOT include: ${promptConfig.negativePrompt}`;
 
+  const requestBody = {
+    prompt: fullPrompt,
+    type: 'TEXTTOIAMGE', // Note: API has typo "IAMGE" instead of "IMAGE"
+    callBackUrl: `${CALLBACK_BASE_URL}/media/webhook/nanobanana`,
+    numImages: 1,
+    image_size: '2:3', // Portrait aspect ratio for full-body characters
+  };
+
+  console.log('=== Calling NanoBanana API ===');
+  console.log('URL:', `${NANOBANANA_API_URL}${endpoint}`);
+  console.log('Callback URL:', requestBody.callBackUrl);
+  console.log('Request body (truncated prompt):', { ...requestBody, prompt: requestBody.prompt.substring(0, 100) + '...' });
+
   const response = await fetch(`${NANOBANANA_API_URL}${endpoint}`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${NANOBANANA_API_KEY}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      prompt: fullPrompt,
-      type: 'TEXTTOIAMGE', // Note: API has typo "IAMGE" instead of "IMAGE"
-      callBackUrl: `${CALLBACK_BASE_URL}/media/webhook/nanobanana`,
-      numImages: 1,
-      image_size: '2:3', // Portrait aspect ratio for full-body characters
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
