@@ -1,7 +1,7 @@
 // Personality Content Generator
 // Generates safe, lore-appropriate personality content for D&D characters
 
-import { selectFromTemplates, PERSONALITY_TEMPLATES } from '../data/personalityTemplates';
+import { selectFromTemplates, PERSONALITY_TEMPLATES } from '../data/personalityTemplates.js';
 
 // Blocked patterns for content safety
 const BLOCKED_PATTERNS = [
@@ -116,10 +116,10 @@ export async function generateAllPersonalityContent(context: {
   }
 
   return {
-    personalityTrait: results.personalityTrait,
-    ideal: results.ideal,
-    bond: results.bond,
-    flaw: results.flaw,
-    backstory: results.backstory,
+    personalityTrait: results.personalityTrait || '',
+    ideal: results.ideal || '',
+    bond: results.bond || '',
+    flaw: results.flaw || '',
+    backstory: results.backstory || '',
   };
 }

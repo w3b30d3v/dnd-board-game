@@ -140,13 +140,13 @@ export class CharacterService {
         features: [],
         traits: [],
         spellcastingAbility: derived.spellcastingAbility,
-        spellSlots: null,
+        spellSlots: undefined,
         spellsKnown: input.spellsKnown || [],
         spellsPrepared: [],
-        equipment: input.equipment || [],
+        equipment: (input.equipment || []) as any,
         currency: { cp: 0, sp: 0, gp: 0, pp: 0 },
         portraitUrl: input.portraitUrl || null,
-        appearance: input.appearance || null,
+        appearance: (input.appearance || {}) as any,
         isPublic: false,
       },
     });
@@ -187,18 +187,19 @@ export class CharacterService {
       throw new Error('Character not found or access denied');
     }
 
+    const updateData: Record<string, any> = {};
+    if (input.name) updateData.name = input.name;
+    if (input.currentHitPoints !== undefined) updateData.currentHitPoints = input.currentHitPoints;
+    if (input.tempHitPoints !== undefined) updateData.tempHitPoints = input.tempHitPoints;
+    if (input.equipment) updateData.equipment = input.equipment;
+    if (input.spellsPrepared) updateData.spellsPrepared = input.spellsPrepared;
+    if (input.currency) updateData.currency = input.currency;
+    if (input.portraitUrl) updateData.portraitUrl = input.portraitUrl;
+    if (input.appearance) updateData.appearance = input.appearance;
+
     const character = await prisma.character.update({
       where: { id },
-      data: {
-        ...(input.name && { name: input.name }),
-        ...(input.currentHitPoints !== undefined && { currentHitPoints: input.currentHitPoints }),
-        ...(input.tempHitPoints !== undefined && { tempHitPoints: input.tempHitPoints }),
-        ...(input.equipment && { equipment: input.equipment }),
-        ...(input.spellsPrepared && { spellsPrepared: input.spellsPrepared }),
-        ...(input.currency && { currency: input.currency }),
-        ...(input.portraitUrl && { portraitUrl: input.portraitUrl }),
-        ...(input.appearance && { appearance: input.appearance }),
-      },
+      data: updateData,
     });
 
     return character;

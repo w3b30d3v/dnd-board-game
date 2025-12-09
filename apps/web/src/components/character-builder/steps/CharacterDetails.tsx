@@ -215,17 +215,18 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
   }, [handleRandomPersonalityTrait, handleRandomIdeal, handleRandomBond, handleRandomFlaw, race, classData, background, getRandomItem]);
 
   // API-based personality generation (uses backend with race/class/background-specific templates)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const generateFromAPI = useCallback(async (field: string): Promise<string | null> => {
     try {
-      const response = await api.post('/media/generate/personality', {
+      const response = await api.post<{ success: boolean; content?: string }>('/media/generate/personality', {
         field,
         race: character.race,
         class: character.class,
         background: character.background,
         name: name || undefined,
       });
-      if (response.data.success) {
-        return response.data.content;
+      if (response.success) {
+        return response.content || null;
       }
     } catch (error) {
       console.warn('API generation failed, using local fallback:', error);
@@ -237,18 +238,25 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
   const handleGenerateAllFromAPI = useCallback(async () => {
     setIsGenerating(true);
     try {
-      const response = await api.post('/media/generate/personality/all', {
+      const response = await api.post<{
+        success: boolean;
+        personalityTrait?: string;
+        ideal?: string;
+        bond?: string;
+        flaw?: string;
+        backstory?: string;
+      }>('/media/generate/personality/all', {
         race: character.race,
         class: character.class,
         background: character.background,
         name: name || undefined,
       });
-      if (response.data.success) {
-        setPersonalityTrait(response.data.personalityTrait);
-        setIdeal(response.data.ideal);
-        setBond(response.data.bond);
-        setFlaw(response.data.flaw);
-        setBackstory(response.data.backstory);
+      if (response.success) {
+        setPersonalityTrait(response.personalityTrait || '');
+        setIdeal(response.ideal || '');
+        setBond(response.bond || '');
+        setFlaw(response.flaw || '');
+        setBackstory(response.backstory || '');
       } else {
         // Fallback to local generation
         handleRandomizeAll();
@@ -265,7 +273,7 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
   const handleGenerateAIPortrait = useCallback(async () => {
     setIsGeneratingPortrait(true);
     try {
-      const response = await api.post('/media/generate/portrait', {
+      const response = await api.post<{ success: boolean; imageUrl?: string; source?: string }>('/media/generate/portrait', {
         character: {
           race: character.race,
           class: character.class,
@@ -275,11 +283,11 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
         style: 'portrait',
         quality: 'standard',
       });
-      if (response.data.success && response.data.imageUrl) {
+      if (response.success && response.imageUrl) {
         // Update the portrait seed to use the new URL
-        setPortraitSeed(response.data.imageUrl);
+        setPortraitSeed(response.imageUrl);
         // If it's an AI-generated URL (not DiceBear), switch to 'ai' style indicator
-        if (response.data.source === 'nanobanana') {
+        if (response.source === 'nanobanana') {
           setPortraitStyle('ai-generated');
         }
       }
@@ -310,6 +318,7 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const canContinue = name.trim().length > 0;
   const showNameError = showValidation && !name.trim();
 
@@ -345,7 +354,6 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
           <div className="flex flex-col items-center">
             <div className="relative group">
               <div className="w-32 h-32 rounded-lg bg-bg-medium border-2 border-primary/50 overflow-hidden shadow-glow">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={getPortraitUrl(portraitSeed, portraitStyle)}
                   alt="Character portrait"

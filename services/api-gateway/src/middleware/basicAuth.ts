@@ -28,7 +28,7 @@ export function basicAuth(req: Request, res: Response, next: NextFunction) {
     return res.status(401).json({ error: 'Authentication required' });
   }
 
-  const base64Credentials = authHeader.split(' ')[1];
+  const base64Credentials = authHeader.split(' ')[1] || '';
   const credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
   const [username, password] = credentials.split(':');
 

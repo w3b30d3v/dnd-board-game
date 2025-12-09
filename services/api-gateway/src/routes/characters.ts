@@ -1,10 +1,10 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { CharacterService } from '../services/characterService.js';
-import { auth, type AuthRequest } from '../middleware/auth.js';
+import { auth } from '../middleware/auth.js';
 import { validateBody } from '../middleware/validation.js';
 
-const router = Router();
+const router: Router = Router();
 const characterService = new CharacterService();
 
 // Validation schemas
@@ -45,64 +45,64 @@ const updateCharacterSchema = z.object({
 });
 
 // GET /characters - List user's characters
-router.get('/', auth, async (req: AuthRequest, res) => {
+router.get('/', auth, async (req: Request, res: Response) => {
   try {
     const characters = await characterService.findByUser(req.user!.id);
-    res.json({ characters });
+    return res.json({ characters });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch characters' });
+    return res.status(500).json({ error: 'Failed to fetch characters' });
   }
 });
 
 // POST /characters - Create a new character
-router.post('/', auth, validateBody(createCharacterSchema), async (req: AuthRequest, res) => {
+router.post('/', auth, validateBody(createCharacterSchema), async (req: Request, res: Response) => {
   try {
     const character = await characterService.create(req.user!.id, req.body);
-    res.status(201).json(character);
+    return res.status(201).json(character);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to create character';
-    res.status(400).json({ error: message });
+    return res.status(400).json({ error: message });
   }
 });
 
 // GET /characters/:id - Get a specific character
-router.get('/:id', auth, async (req: AuthRequest, res) => {
+router.get('/:id', auth, async (req: Request<{ id: string }>, res: Response) => {
   try {
     const character = await characterService.findById(req.params.id, req.user!.id);
     if (!character) {
       return res.status(404).json({ error: 'Character not found' });
     }
-    res.json(character);
+    return res.json(character);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch character' });
+    return res.status(500).json({ error: 'Failed to fetch character' });
   }
 });
 
 // PUT /characters/:id - Update a character
-router.put('/:id', auth, validateBody(updateCharacterSchema), async (req: AuthRequest, res) => {
+router.put('/:id', auth, validateBody(updateCharacterSchema), async (req: Request<{ id: string }>, res: Response) => {
   try {
     const character = await characterService.update(req.params.id, req.user!.id, req.body);
-    res.json(character);
+    return res.json(character);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update character';
     if (message.includes('not found')) {
       return res.status(404).json({ error: message });
     }
-    res.status(400).json({ error: message });
+    return res.status(400).json({ error: message });
   }
 });
 
 // DELETE /characters/:id - Delete a character
-router.delete('/:id', auth, async (req: AuthRequest, res) => {
+router.delete('/:id', auth, async (req: Request<{ id: string }>, res: Response) => {
   try {
     await characterService.delete(req.params.id, req.user!.id);
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to delete character';
     if (message.includes('not found')) {
       return res.status(404).json({ error: message });
     }
-    res.status(400).json({ error: message });
+    return res.status(400).json({ error: message });
   }
 });
 

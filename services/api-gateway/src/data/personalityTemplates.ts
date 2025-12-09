@@ -411,46 +411,50 @@ export function selectFromTemplates(
   field: keyof typeof PERSONALITY_TEMPLATES,
   context: { race?: string; charClass?: string; background?: string; name?: string }
 ): string {
-  const { race, charClass, background, name } = context;
+  const { race, charClass, background } = context;
   const templates = PERSONALITY_TEMPLATES[field];
 
   if (!templates) return '';
 
   // Handle backstory templates specially
   if (field === 'backstory') {
-    return generateBackstoryFromTemplate(templates.templates[0], { ...context, charClass });
+    const backstoryTemplates = templates as typeof PERSONALITY_TEMPLATES.backstory;
+    const firstTemplate = backstoryTemplates.templates[0];
+    if (!firstTemplate) return '';
+    return generateBackstoryFromTemplate(firstTemplate, { ...context, charClass });
   }
 
   // Collect all applicable options
   const options: string[] = [];
 
-  // Add generic options
-  if ('generic' in templates && Array.isArray(templates.generic)) {
-    options.push(...templates.generic);
+  // Add generic options - use type assertion to handle the union type
+  const templatesWithGeneric = templates as { generic?: string[] };
+  if (templatesWithGeneric.generic && Array.isArray(templatesWithGeneric.generic)) {
+    options.push(...templatesWithGeneric.generic);
   }
 
   // Add race-specific options
-  if (race && 'byRace' in templates) {
-    const raceKey = race.toLowerCase() as keyof typeof templates.byRace;
-    const raceOptions = templates.byRace[raceKey];
+  const templatesWithRace = templates as { byRace?: Record<string, string[]> };
+  if (race && templatesWithRace.byRace) {
+    const raceOptions = templatesWithRace.byRace[race.toLowerCase()];
     if (Array.isArray(raceOptions)) {
       options.push(...raceOptions);
     }
   }
 
   // Add class-specific options
-  if (charClass && 'byClass' in templates) {
-    const classKey = charClass.toLowerCase() as keyof typeof templates.byClass;
-    const classOptions = templates.byClass[classKey];
+  const templatesWithClass = templates as { byClass?: Record<string, string[]> };
+  if (charClass && templatesWithClass.byClass) {
+    const classOptions = templatesWithClass.byClass[charClass.toLowerCase()];
     if (Array.isArray(classOptions)) {
       options.push(...classOptions);
     }
   }
 
   // Add background-specific options
-  if (background && 'byBackground' in templates) {
-    const bgKey = background.toLowerCase() as keyof typeof templates.byBackground;
-    const bgOptions = templates.byBackground[bgKey];
+  const templatesWithBg = templates as { byBackground?: Record<string, string[]> };
+  if (background && templatesWithBg.byBackground) {
+    const bgOptions = templatesWithBg.byBackground[background.toLowerCase()];
     if (Array.isArray(bgOptions)) {
       options.push(...bgOptions);
     }
@@ -459,7 +463,8 @@ export function selectFromTemplates(
   if (options.length === 0) return '';
 
   // Random selection
-  return options[Math.floor(Math.random() * options.length)];
+  const selected = options[Math.floor(Math.random() * options.length)];
+  return selected || '';
 }
 
 function generateBackstoryFromTemplate(
@@ -474,7 +479,7 @@ function generateBackstoryFromTemplate(
   result = result.replace(/{class}/g, charClass);
 
   for (const [key, values] of Object.entries(template.variables)) {
-    const randomValue = values[Math.floor(Math.random() * values.length)];
+    const randomValue = values[Math.floor(Math.random() * values.length)] || '';
     result = result.replace(new RegExp(`{${key}}`, 'g'), randomValue);
   }
 

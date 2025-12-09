@@ -5,7 +5,7 @@ import { Router, Request, Response } from 'express';
 import { auth } from '../middleware/auth.js';
 import { generatePersonalityContent, generateAllPersonalityContent } from '../services/personalityGenerator.js';
 
-const router = Router();
+const router: Router = Router();
 
 // Environment configuration
 const NANOBANANA_API_KEY = process.env.NANOBANANA_API_KEY;
@@ -75,7 +75,7 @@ router.post('/generate/portrait', auth, async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Portrait generation failed:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: error.message || 'Portrait generation failed',
     });
@@ -102,13 +102,13 @@ router.post('/generate/personality', auth, async (req: Request, res: Response) =
       name,
     });
 
-    res.json({
+    return res.json({
       success: true,
       content,
     });
   } catch (error: any) {
     console.error('Personality generation failed:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: error.message || 'Personality generation failed',
     });
@@ -127,13 +127,13 @@ router.post('/generate/personality/all', auth, async (req: Request, res: Respons
       name,
     });
 
-    res.json({
+    return res.json({
       success: true,
       ...content,
     });
   } catch (error: any) {
     console.error('Personality generation failed:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: error.message || 'Personality generation failed',
     });
@@ -180,10 +180,10 @@ router.post('/webhook/nanobanana', async (req: Request, res: Response) => {
       }
     }
 
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (error: any) {
     console.error('Webhook processing failed:', error);
-    res.status(500).json({ error: 'Webhook processing failed' });
+    return res.status(500).json({ error: 'Webhook processing failed' });
   }
 });
 
@@ -683,7 +683,7 @@ async function generateWithNanoBanana(
   if (data.data?.imageUrl) {
     return data.data.imageUrl;
   }
-  if (data.data?.imageUrls && data.data.imageUrls.length > 0) {
+  if (data.data?.imageUrls && data.data.imageUrls.length > 0 && data.data.imageUrls[0]) {
     return data.data.imageUrls[0];
   }
 

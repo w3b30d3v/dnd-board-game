@@ -92,7 +92,6 @@ export function ReviewCharacter({ character, onBack, onComplete }: ReviewCharact
           {/* Character Portrait */}
           {character.portraitUrl && (
             <div className="w-24 h-24 md:w-32 md:h-32 rounded-lg bg-bg-medium border-2 border-primary/50 overflow-hidden shadow-glow flex-shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={character.portraitUrl}
                 alt={`${character.name} portrait`}

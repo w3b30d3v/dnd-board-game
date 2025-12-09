@@ -30,6 +30,7 @@ export function RaceSelection({ character, onUpdate, onNext }: StepProps) {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const canContinue = selectedRace && (!hasSubraces || selectedSubrace);
   const showRaceError = showValidation && !selectedRace;
   const showSubraceError = showValidation && selectedRace && hasSubraces && !selectedSubrace;
