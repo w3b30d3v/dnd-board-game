@@ -6,15 +6,17 @@
   "author": "Your Team <team@example.com>",
   "license": "UNLICENSED",
   "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=8.0.0"
+    "node": ">=20.0.0"
   },
   "packageManager": "pnpm@8.15.0",
   "scripts": {
+    "postinstall": "prisma generate --schema=prisma/schema.prisma || true",
     "dev": "turbo run dev",
     "dev:web": "turbo run dev --filter=@dnd/web",
     "dev:api": "turbo run dev --filter=@dnd/api-gateway",
     "build": "turbo run build",
+    "start": "node --import tsx services/api-gateway/src/index.ts",
+    "start:api": "node --import tsx services/api-gateway/src/index.ts",
     "build:web": "turbo run build --filter=@dnd/web",
     "build:services": "turbo run build --filter=./services/*",
     "test": "turbo run test",
@@ -62,6 +64,7 @@
     ]
   },
   "dependencies": {
-    "@prisma/client": "5.22.0"
+    "@prisma/client": "5.22.0",
+    "tsx": "^4.7.0"
   }
 }
