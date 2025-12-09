@@ -15,19 +15,27 @@ app.use(helmet());
 
 // Basic auth for staging/password protection (must be before routes)
 app.use(basicAuth);
+// CORS configuration - allow web app origins
+const allowedOrigins = [
+  'https://web-production-85b97.up.railway.app',
+  ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : []),
+];
+
 app.use(
   cors({
-    origin: config.nodeEnv === 'development'
-      ? (origin, callback) => {
-          // Allow requests with no origin (like mobile apps or curl)
-          if (!origin) return callback(null, true);
-          // Allow any localhost port in development
-          if (origin.match(/^http:\/\/localhost:\d+$/)) {
-            return callback(null, true);
-          }
-          callback(new Error('Not allowed by CORS'));
-        }
-      : [],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+      // Allow any localhost port in development
+      if (origin.match(/^http:\/\/localhost:\d+$/)) {
+        return callback(null, true);
+      }
+      // Allow configured origins
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   })
 );
