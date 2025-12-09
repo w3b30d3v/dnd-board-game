@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import { config } from './config.js';
 import { logger } from './lib/logger.js';
 import { basicAuth } from './middleware/basicAuth.js';
+import { prisma } from './lib/prisma.js';
 import authRoutes from './routes/auth.js';
 import characterRoutes from './routes/characters.js';
 import mediaRoutes from './routes/media.js';
@@ -47,6 +48,24 @@ app.use(basicAuth);
 // Health check
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Database health check
+app.get('/health/db', async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: 'ok', database: 'connected', timestamp: new Date().toISOString() });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error({ err: error }, 'Database health check failed');
+    res.status(503).json({
+      status: 'error',
+      database: 'disconnected',
+      error: message,
+      hint: 'Check DATABASE_URL environment variable and PostgreSQL service',
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // API info
