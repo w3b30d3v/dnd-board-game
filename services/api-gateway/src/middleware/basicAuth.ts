@@ -12,12 +12,17 @@ export function basicAuth(req: Request, res: Response, next: NextFunction) {
   }
 
   // Skip auth for webhook endpoints (NanoBanana needs to call these)
-  if (req.path.startsWith('/api/media/webhook')) {
+  if (req.path.startsWith('/api/media/webhook') || req.path.startsWith('/media/webhook')) {
     return next();
   }
 
   // Skip auth for health check
   if (req.path === '/health' || req.path === '/api/health') {
+    return next();
+  }
+
+  // Skip auth for public auth endpoints (register, login, refresh)
+  if (req.path.startsWith('/auth/')) {
     return next();
   }
 
