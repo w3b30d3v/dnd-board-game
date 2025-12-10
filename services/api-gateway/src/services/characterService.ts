@@ -221,4 +221,51 @@ export class CharacterService {
 
     return true;
   }
+
+  async updateStatus(id: string, userId: string, status: string) {
+    // First verify ownership
+    const existing = await prisma.character.findFirst({
+      where: { id, userId },
+    });
+
+    if (!existing) {
+      throw new Error('Character not found or access denied');
+    }
+
+    const character = await prisma.character.update({
+      where: { id },
+      data: { status },
+    });
+
+    return character;
+  }
+
+  async updateImages(
+    id: string,
+    userId: string,
+    portraitUrl: string,
+    fullBodyUrls: string[],
+    imageSource: string
+  ) {
+    // First verify ownership
+    const existing = await prisma.character.findFirst({
+      where: { id, userId },
+    });
+
+    if (!existing) {
+      throw new Error('Character not found or access denied');
+    }
+
+    const character = await prisma.character.update({
+      where: { id },
+      data: {
+        portraitUrl,
+        fullBodyUrls,
+        imageSource,
+        status: 'complete',
+      },
+    });
+
+    return character;
+  }
 }

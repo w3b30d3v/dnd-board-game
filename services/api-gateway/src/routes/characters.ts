@@ -1,11 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { CharacterService } from '../services/characterService.js';
+import { ImageGenerationService } from '../services/imageGenerationService.js';
 import { auth } from '../middleware/auth.js';
 import { validateBody } from '../middleware/validation.js';
 
 const router: Router = Router();
 const characterService = new CharacterService();
+const imageService = new ImageGenerationService();
 
 // Validation schemas
 const createCharacterSchema = z.object({
@@ -103,6 +105,75 @@ router.delete('/:id', auth, async (req: Request<{ id: string }>, res: Response) 
       return res.status(404).json({ error: message });
     }
     return res.status(400).json({ error: message });
+  }
+});
+
+// POST /characters/:id/generate-images - Generate images for an existing character
+router.post('/:id/generate-images', auth, async (req: Request<{ id: string }>, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const characterId = req.params.id;
+
+    // Get the character
+    const character = await characterService.findById(characterId, userId);
+    if (!character) {
+      return res.status(404).json({ error: 'Character not found' });
+    }
+
+    // Check if character already has images (status = 'complete')
+    if (character.status === 'complete' && character.portraitUrl) {
+      return res.json({
+        success: true,
+        character,
+        message: 'Character already has generated images',
+      });
+    }
+
+    // Check if already generating
+    if (character.status === 'generating') {
+      return res.status(409).json({
+        error: 'Image generation already in progress',
+        status: 'generating',
+      });
+    }
+
+    // Update status to 'generating'
+    await characterService.updateStatus(characterId, userId, 'generating');
+
+    // Generate images using the image generation service
+    const result = await imageService.generateForCharacter(userId, character);
+
+    // Update character with images and set status to 'complete'
+    const updatedCharacter = await characterService.updateImages(
+      characterId,
+      userId,
+      result.images.portrait,
+      result.images.fullBodyUrls,
+      result.source
+    );
+
+    return res.json({
+      success: true,
+      character: updatedCharacter,
+      source: result.source,
+      imagesGenerated: result.imagesGenerated,
+      remaining: result.remaining,
+      limit: result.limit,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to generate images';
+
+    // Revert status on error
+    try {
+      await characterService.updateStatus(req.params.id, req.user!.id, 'draft');
+    } catch {
+      // Ignore revert errors
+    }
+
+    if (message.includes('limit')) {
+      return res.status(403).json({ error: message, limitReached: true });
+    }
+    return res.status(500).json({ error: message });
   }
 });
 

@@ -59,7 +59,8 @@ export function CharacterWizard() {
   };
 
   const createCharacter = async (characterData: CharacterData): Promise<void> => {
-    const response = await fetch('http://localhost:4000/characters', {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    const response = await fetch(`${apiUrl}/characters`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -90,8 +91,12 @@ export function CharacterWizard() {
       throw new Error(error.error || 'Failed to create character');
     }
 
-    // Navigate to dashboard on success
-    router.push('/dashboard?created=true');
+    // Get the created character ID from response
+    const result = await response.json();
+    const characterId = result.character?.id || result.id;
+
+    // Navigate to dashboard with characterId to trigger image generation
+    router.push(`/dashboard?characterId=${characterId}&generateImages=true`);
   };
 
   // Filter steps based on conditions (e.g., skip spell selection for non-casters)

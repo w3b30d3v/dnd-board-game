@@ -1,221 +1,10 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useCallback } from 'react';
 import { getRaceById, getClassById, getBackgroundById } from '@/data';
 import { api } from '@/lib/api';
 import type { StepProps } from '../types';
 
-// Character images from portrait generation
-interface CharacterImages {
-  portrait: string;
-  fullBody1: string | null;
-  fullBody2: string | null;
-}
-
-// Image generation states
-type ImageGenerationState = 'idle' | 'generating' | 'success' | 'fallback';
-
-// Character Card Modal Component with 3-image carousel
-interface CharacterCardModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  character: {
-    name: string;
-    race: string;
-    class: string;
-    background: string;
-    images: CharacterImages;
-    personalityTrait: string;
-    ideal: string;
-    bond: string;
-    flaw: string;
-  };
-}
-
-function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalProps) {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
-  if (!isOpen) return null;
-
-  // Build array of available images
-  const imageList: { url: string; label: string }[] = [
-    { url: character.images.portrait, label: 'Portrait' },
-  ];
-  if (character.images.fullBody1) {
-    imageList.push({ url: character.images.fullBody1, label: 'Heroic Pose' });
-  }
-  if (character.images.fullBody2) {
-    imageList.push({ url: character.images.fullBody2, label: 'Action Pose' });
-  }
-
-  const currentImage = imageList[currentImageIndex] || imageList[0];
-  const hasMultipleImages = imageList.length > 1;
-
-  const goToPrevious = () => {
-    setCurrentImageIndex((prev) => (prev === 0 ? imageList.length - 1 : prev - 1));
-  };
-
-  const goToNext = () => {
-    setCurrentImageIndex((prev) => (prev === imageList.length - 1 ? 0 : prev + 1));
-  };
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="relative max-w-md w-full max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Character Card - Trading Card Style */}
-            <div className="relative bg-gradient-to-b from-[#2A2735] to-[#1E1B26] rounded-xl overflow-hidden border-4 border-primary/60 shadow-2xl">
-              {/* Card Header with Name */}
-              <div className="bg-gradient-to-r from-primary/30 via-primary/50 to-primary/30 px-4 py-3 border-b border-primary/40">
-                <h2 className="text-xl font-bold text-center text-primary drop-shadow-lg font-cinzel">
-                  {character.name || 'Unnamed Hero'}
-                </h2>
-                <p className="text-xs text-center text-text-secondary mt-1">
-                  {character.race} {character.class}
-                </p>
-              </div>
-
-              {/* Image Carousel Section */}
-              <div className="relative aspect-[3/4] bg-bg-dark">
-                <AnimatePresence mode="wait">
-                  <motion.img
-                    key={currentImageIndex}
-                    src={currentImage.url}
-                    alt={`${character.name || 'Character'} - ${currentImage.label}`}
-                    className="w-full h-full object-cover"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.2 }}
-                  />
-                </AnimatePresence>
-
-                {/* Gradient overlay at bottom */}
-                <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#1E1B26] to-transparent pointer-events-none" />
-
-                {/* Navigation Arrows - only show if multiple images */}
-                {hasMultipleImages && (
-                  <>
-                    <button
-                      onClick={goToPrevious}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors border border-white/20"
-                      aria-label="Previous image"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={goToNext}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors border border-white/20"
-                      aria-label="Next image"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  </>
-                )}
-
-                {/* Image Label */}
-                <div className="absolute top-3 left-3 px-3 py-1.5 rounded-lg bg-black/60 text-white text-xs font-medium border border-white/20">
-                  {currentImage.label}
-                </div>
-
-                {/* Dot Indicators */}
-                {hasMultipleImages && (
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                    {imageList.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentImageIndex(index)}
-                        className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                          index === currentImageIndex
-                            ? 'bg-primary'
-                            : 'bg-white/40 hover:bg-white/60'
-                        }`}
-                        aria-label={`Go to image ${index + 1}`}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Stats Section */}
-              <div className="p-4 space-y-3">
-                {/* Background */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-text-muted uppercase tracking-wider">Background:</span>
-                  <span className="text-sm text-primary font-medium">{character.background}</span>
-                </div>
-
-                {/* Personality Traits */}
-                {character.personalityTrait && (
-                  <div className="bg-bg-dark/50 rounded-lg p-3 border border-border/50">
-                    <h4 className="text-xs text-primary font-semibold uppercase tracking-wider mb-1">Personality</h4>
-                    <p className="text-xs text-text-secondary leading-relaxed line-clamp-2">{character.personalityTrait}</p>
-                  </div>
-                )}
-
-                {character.ideal && (
-                  <div className="bg-bg-dark/50 rounded-lg p-3 border border-border/50">
-                    <h4 className="text-xs text-secondary font-semibold uppercase tracking-wider mb-1">Ideal</h4>
-                    <p className="text-xs text-text-secondary leading-relaxed line-clamp-2">{character.ideal}</p>
-                  </div>
-                )}
-
-                {character.bond && (
-                  <div className="bg-bg-dark/50 rounded-lg p-3 border border-border/50">
-                    <h4 className="text-xs text-accent font-semibold uppercase tracking-wider mb-1">Bond</h4>
-                    <p className="text-xs text-text-secondary leading-relaxed line-clamp-2">{character.bond}</p>
-                  </div>
-                )}
-
-                {character.flaw && (
-                  <div className="bg-bg-dark/50 rounded-lg p-3 border border-danger/30">
-                    <h4 className="text-xs text-danger font-semibold uppercase tracking-wider mb-1">Flaw</h4>
-                    <p className="text-xs text-text-secondary leading-relaxed line-clamp-2">{character.flaw}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Card Footer */}
-              <div className="px-4 pb-4">
-                <button
-                  onClick={onClose}
-                  className="w-full py-2 rounded-lg bg-primary/20 text-primary font-medium hover:bg-primary/30 transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-
-              {/* Decorative corner accents */}
-              <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-primary/80 rounded-tl-lg" />
-              <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-primary/80 rounded-tr-lg" />
-              <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-primary/80 rounded-bl-lg" />
-              <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-primary/80 rounded-br-lg" />
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
 
 // Generic personality traits (clean language)
 const GENERIC_PERSONALITY_TRAITS = [
@@ -295,24 +84,6 @@ const generateBackstory = (
   return backstoryTemplates[Math.floor(Math.random() * backstoryTemplates.length)];
 };
 
-// Generate a unique portrait seed based on character attributes
-const generatePortraitSeed = (race: string, className: string, name: string): string => {
-  return `${race}-${className}-${name}-${Date.now()}`;
-};
-
-// Portrait styles mapped by race for variety
-const PORTRAIT_STYLES: Record<string, string[]> = {
-  human: ['adventurer', 'avataaars', 'lorelei', 'notionists'],
-  elf: ['lorelei', 'adventurer', 'avataaars', 'micah'],
-  dwarf: ['adventurer', 'avataaars', 'bottts', 'notionists'],
-  halfling: ['fun-emoji', 'lorelei', 'avataaars', 'adventurer'],
-  dragonborn: ['bottts', 'shapes', 'adventurer', 'avataaars'],
-  gnome: ['fun-emoji', 'lorelei', 'avataaars', 'micah'],
-  'half-elf': ['lorelei', 'adventurer', 'avataaars', 'notionists'],
-  'half-orc': ['adventurer', 'avataaars', 'bottts', 'notionists'],
-  tiefling: ['bottts', 'shapes', 'adventurer', 'avataaars'],
-};
-
 export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepProps) {
   const [name, setName] = useState(character.name || '');
   const [personalityTrait, setPersonalityTrait] = useState('');
@@ -320,59 +91,12 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
   const [bond, setBond] = useState('');
   const [flaw, setFlaw] = useState('');
   const [backstory, setBackstory] = useState('');
-  const [portraitSeed, setPortraitSeed] = useState<string>('');
-  const [portraitStyle, setPortraitStyle] = useState<string>('adventurer');
   const [showValidation, setShowValidation] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-
-  // Image generation state: 'idle' (initial), 'generating', 'success' (NanoBanana worked), 'fallback' (DiceBear)
-  const [imageGenState, setImageGenState] = useState<ImageGenerationState>('idle');
-  const hasAttemptedGeneration = useRef(false);
-
-  // Store all 3 character images for the card modal
-  const [characterImages, setCharacterImages] = useState<CharacterImages>({
-    portrait: '',
-    fullBody1: null,
-    fullBody2: null,
-  });
-  // Character card modal state
-  const [showCharacterCard, setShowCharacterCard] = useState(false);
-  // Generation limit tracking
-  const [generationLimitInfo, setGenerationLimitInfo] = useState<{ remaining: number; limit: number } | null>(null);
-  // Error message for limit reached
-  const [limitReachedError, setLimitReachedError] = useState<string | null>(null);
 
   const race = getRaceById(character.race || '');
   const classData = getClassById(character.class || '');
   const background = getBackgroundById(character.background || '');
-
-  // Get the portrait URL using DiceBear API or return generated URL
-  const getPortraitUrl = useCallback((seed: string, style: string): string => {
-    // If the seed is already a full URL (from generation), return it directly
-    if (seed.startsWith('http://') || seed.startsWith('https://')) {
-      return seed;
-    }
-    // DiceBear is a free avatar generation API
-    return `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=1e1b26&size=200`;
-  }, []);
-
-  // For fallback (DiceBear) mode - change the placeholder portrait
-  const handleRegeneratePortrait = useCallback(() => {
-    const newSeed = generatePortraitSeed(
-      character.race || 'human',
-      character.class || 'fighter',
-      name || 'hero'
-    );
-    setPortraitSeed(newSeed);
-  }, [character.race, character.class, name]);
-
-  // For fallback (DiceBear) mode - change the style
-  const handleChangeStyle = useCallback(() => {
-    const styles = PORTRAIT_STYLES[character.race || 'human'] || PORTRAIT_STYLES.human;
-    const currentIndex = styles.indexOf(portraitStyle);
-    const nextIndex = (currentIndex + 1) % styles.length;
-    setPortraitStyle(styles[nextIndex]!);
-  }, [character.race, portraitStyle]);
 
   // Random generation functions
   const getRandomItem = useCallback(<T,>(arr: T[]): T => {
@@ -479,99 +203,10 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
     }
   }, [character.race, character.class, character.background, name, handleRandomizeAll]);
 
-  // Generate all 3 character images using NanoBanana API (called once on mount)
-  const generateCharacterImages = useCallback(async () => {
-    // Only generate once
-    if (hasAttemptedGeneration.current) return;
-    hasAttemptedGeneration.current = true;
-
-    setImageGenState('generating');
-    setLimitReachedError(null);
-
-    try {
-      // Use the endpoint that generates all 3 images at once
-      const response = await api.post<{
-        success: boolean;
-        images?: { portrait: string; fullBody1: string; fullBody2: string };
-        source?: string;
-        error?: string;
-        limitReached?: boolean;
-        generated?: number;
-        remaining?: number;
-        limit?: number;
-      }>('/media/generate/character-images', {
-        character: {
-          race: character.race,
-          class: character.class,
-          background: character.background,
-          name: name || undefined,
-        },
-        quality: 'standard',
-      });
-
-      // Update limit info
-      if (response.remaining !== undefined && response.limit !== undefined) {
-        setGenerationLimitInfo({ remaining: response.remaining, limit: response.limit });
-      }
-
-      if (response.limitReached) {
-        setLimitReachedError(`Character limit reached (${response.limit} max). Using placeholder image.`);
-        // Fall back to DiceBear
-        const fallbackSeed = generatePortraitSeed(character.race || 'human', character.class || 'fighter', name || 'hero');
-        setPortraitSeed(fallbackSeed);
-        setImageGenState('fallback');
-        return;
-      }
-
-      if (response.success && response.images) {
-        // Update portrait seed to show the portrait image
-        setPortraitSeed(response.images.portrait);
-
-        // Store all 3 images for the card modal
-        setCharacterImages({
-          portrait: response.images.portrait,
-          fullBody1: response.images.fullBody1 || null,
-          fullBody2: response.images.fullBody2 || null,
-        });
-
-        // Mark state based on source
-        if (response.source === 'nanobanana') {
-          setImageGenState('success');
-          setPortraitStyle('generated');
-        } else {
-          // DiceBear fallback was used by the API
-          setImageGenState('fallback');
-        }
-      } else {
-        // API returned success: false - fall back to DiceBear
-        const fallbackSeed = generatePortraitSeed(character.race || 'human', character.class || 'fighter', name || 'hero');
-        setPortraitSeed(fallbackSeed);
-        setImageGenState('fallback');
-      }
-    } catch (error: any) {
-      console.warn('Portrait generation failed:', error);
-      if (error?.message?.includes('limit')) {
-        setLimitReachedError(error.message);
-      }
-      // Fall back to DiceBear
-      const fallbackSeed = generatePortraitSeed(character.race || 'human', character.class || 'fighter', name || 'hero');
-      setPortraitSeed(fallbackSeed);
-      setImageGenState('fallback');
-    }
-  }, [character.race, character.class, character.background, name]);
-
-  // Auto-generate images when component mounts
-  useEffect(() => {
-    if (!hasAttemptedGeneration.current && imageGenState === 'idle') {
-      generateCharacterImages();
-    }
-  }, [generateCharacterImages, imageGenState]);
-
   const handleContinue = () => {
     if (name.trim()) {
       onUpdate({
         name: name.trim(),
-        portraitUrl: getPortraitUrl(portraitSeed, portraitStyle),
         appearance: {
           personalityTrait,
           ideal,
@@ -585,9 +220,6 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
       setShowValidation(true);
     }
   };
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const canContinue = name.trim().length > 0;
   const showNameError = showValidation && !name.trim();
 
   // Name suggestions based on race
@@ -615,108 +247,18 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
         </p>
       </div>
 
-      {/* Character Summary with Portrait */}
+      {/* Character Summary */}
       <div className="p-4 rounded-lg bg-bg-dark border border-border">
         <div className="flex flex-col md:flex-row gap-6">
-          {/* Portrait Section */}
+          {/* Portrait Placeholder - AI art generated after acceptance */}
           <div className="flex flex-col items-center">
-            <div className="relative group">
-              <button
-                type="button"
-                onClick={() => imageGenState === 'success' && setShowCharacterCard(true)}
-                className={`w-32 h-32 rounded-lg bg-bg-medium border-2 overflow-hidden shadow-glow transition-all ${
-                  imageGenState === 'success'
-                    ? 'border-primary cursor-pointer hover:border-primary/80 hover:shadow-lg hover:scale-105'
-                    : 'border-primary/50'
-                }`}
-                title={imageGenState === 'success' ? 'Click to view character card' : undefined}
-                disabled={imageGenState === 'generating' || imageGenState === 'idle'}
-              >
-                {/* Show placeholder or generated image */}
-                {imageGenState === 'idle' || imageGenState === 'generating' ? (
-                  <div className="w-full h-full bg-bg-dark flex items-center justify-center">
-                    <div className="w-12 h-12 border-3 border-primary border-t-transparent rounded-full animate-spin" />
-                  </div>
-                ) : (
-                  <img
-                    src={getPortraitUrl(portraitSeed, portraitStyle)}
-                    alt="Character portrait"
-                    className="w-full h-full object-cover"
-                  />
-                )}
-              </button>
-
-              {/* Generating overlay */}
-              {(imageGenState === 'idle' || imageGenState === 'generating') && (
-                <div className="absolute inset-0 bg-black/70 rounded-lg flex flex-col items-center justify-center pointer-events-none">
-                  <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span className="text-sm text-white mt-3 font-medium">Generating...</span>
-                  <span className="text-xs text-text-muted mt-1">Creating your character art</span>
-                </div>
-              )}
-
-              {/* Success state - hover to view card */}
-              {imageGenState === 'success' && (
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center pointer-events-none">
-                  <span className="text-xs text-white text-center px-2">Click to view<br/>character card</span>
-                </div>
-              )}
-
-              {/* Fallback state - hover hint */}
-              {imageGenState === 'fallback' && (
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center pointer-events-none">
-                  <span className="text-xs text-white">Change style below</span>
-                </div>
-              )}
+            <div className="w-32 h-32 rounded-lg bg-gradient-to-br from-primary/10 to-secondary/10 border-2 border-dashed border-primary/40 flex flex-col items-center justify-center">
+              <span className="text-4xl mb-2">🎨</span>
+              <span className="text-xs text-text-muted text-center px-2">AI Portrait</span>
             </div>
-
-            {/* Buttons - only show for fallback (DiceBear) mode */}
-            {imageGenState === 'fallback' && (
-              <div className="flex gap-2 mt-3 flex-wrap justify-center">
-                <button
-                  type="button"
-                  onClick={handleRegeneratePortrait}
-                  className="text-xs px-3 py-1.5 rounded bg-primary/20 text-primary hover:bg-primary/30 transition-colors flex items-center gap-1"
-                  title="Generate a new random portrait"
-                >
-                  <span>🎲</span> New
-                </button>
-                <button
-                  type="button"
-                  onClick={handleChangeStyle}
-                  className="text-xs px-3 py-1.5 rounded bg-secondary/20 text-secondary hover:bg-secondary/30 transition-colors flex items-center gap-1"
-                  title="Change portrait style"
-                >
-                  <span>🎨</span> Style
-                </button>
-              </div>
-            )}
-
-            {/* Status text */}
-            <p className="text-xs text-text-muted mt-2 text-center">
-              {imageGenState === 'generating' && 'Generating character art...'}
-              {imageGenState === 'idle' && 'Preparing...'}
-              {imageGenState === 'success' && 'Generated - Click to view card'}
-              {imageGenState === 'fallback' && `Placeholder - ${portraitStyle} style`}
+            <p className="text-xs text-primary/70 mt-2 text-center max-w-[140px]">
+              Generated after you accept your character
             </p>
-
-            {/* Show limit reached error */}
-            {limitReachedError && (
-              <p className="text-xs text-danger mt-1 text-center">
-                {limitReachedError}
-              </p>
-            )}
-
-            {/* Show generation limit for success state */}
-            {imageGenState === 'success' && generationLimitInfo && (
-              <p className="text-xs text-text-muted mt-1 text-center">
-                {generationLimitInfo.remaining > 0 ? (
-                  <span>{generationLimitInfo.remaining} of {generationLimitInfo.limit} characters remaining</span>
-                ) : (
-                  <span className="text-warning">Last character generated</span>
-                )}
-              </p>
-            )}
           </div>
 
           {/* Character Info */}
@@ -957,27 +499,6 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
           Review Character
         </button>
       </div>
-
-      {/* Character Card Modal */}
-      <CharacterCardModal
-        isOpen={showCharacterCard}
-        onClose={() => setShowCharacterCard(false)}
-        character={{
-          name: name || 'Unnamed Hero',
-          race: race?.name || character.race || 'Unknown',
-          class: classData?.name || character.class || 'Unknown',
-          background: background?.name || character.background || 'Unknown',
-          images: {
-            portrait: characterImages.portrait || getPortraitUrl(portraitSeed, portraitStyle),
-            fullBody1: characterImages.fullBody1,
-            fullBody2: characterImages.fullBody2,
-          },
-          personalityTrait,
-          ideal,
-          bond,
-          flaw,
-        }}
-      />
     </div>
   );
 }

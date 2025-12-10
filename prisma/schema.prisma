@@ -122,6 +122,9 @@ model Character {
   imageSource   String?          // 'nanobanana', 'dicebear', or null
   appearance    Json?
 
+  // Character Status
+  status        String    @default("draft") // draft, generating, complete
+
   // Metadata
   isPublic      Boolean   @default(false)
   createdAt     DateTime  @default(now())

@@ -25,6 +25,18 @@ interface Character {
   maxHitPoints: number;
   currentHitPoints: number;
   createdAt: string;
+  status: 'draft' | 'generating' | 'complete';
+  portraitUrl?: string;
+  fullBodyUrls?: string[];
+  imageSource?: string;
+  background?: string;
+  appearance?: {
+    personalityTrait?: string;
+    ideal?: string;
+    bond?: string;
+    flaw?: string;
+    backstory?: string;
+  };
 }
 
 // Dynamic imports for heavy components
@@ -62,6 +74,204 @@ const characterCardVariants = {
   },
 };
 
+// Character Card Modal Component
+interface CharacterCardModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  character: Character | null;
+}
+
+function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalProps) {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  if (!isOpen || !character) return null;
+
+  // Build array of available images
+  const imageList: { url: string; label: string }[] = [];
+  if (character.portraitUrl) {
+    imageList.push({ url: character.portraitUrl, label: 'Portrait' });
+  }
+  if (character.fullBodyUrls && character.fullBodyUrls.length > 0) {
+    character.fullBodyUrls.forEach((url, index) => {
+      if (url) {
+        const labels = ['Heroic Pose', 'Action Pose'];
+        imageList.push({ url, label: labels[index] || `Full Body ${index + 1}` });
+      }
+    });
+  }
+
+  if (imageList.length === 0) return null;
+
+  const currentImage = imageList[currentImageIndex] || imageList[0];
+  const hasMultipleImages = imageList.length > 1;
+
+  const goToPrevious = () => {
+    setCurrentImageIndex((prev) => (prev === 0 ? imageList.length - 1 : prev - 1));
+  };
+
+  const goToNext = () => {
+    setCurrentImageIndex((prev) => (prev === imageList.length - 1 ? 0 : prev + 1));
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="relative max-w-md w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Character Card - Trading Card Style */}
+            <div className="relative bg-gradient-to-b from-[#2A2735] to-[#1E1B26] rounded-xl overflow-hidden border-4 border-primary/60 shadow-2xl">
+              {/* Card Header with Name */}
+              <div className="bg-gradient-to-r from-primary/30 via-primary/50 to-primary/30 px-4 py-3 border-b border-primary/40">
+                <h2 className="text-xl font-bold text-center text-primary drop-shadow-lg font-cinzel">
+                  {character.name || 'Unnamed Hero'}
+                </h2>
+                <p className="text-xs text-center text-text-secondary mt-1 capitalize">
+                  Level {character.level} {character.race} {character.class}
+                </p>
+              </div>
+
+              {/* Image Carousel Section */}
+              <div className="relative aspect-[3/4] bg-bg-dark">
+                <AnimatePresence mode="wait">
+                  <motion.img
+                    key={currentImageIndex}
+                    src={currentImage?.url}
+                    alt={`${character.name || 'Character'} - ${currentImage?.label}`}
+                    className="w-full h-full object-cover"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.2 }}
+                  />
+                </AnimatePresence>
+
+                {/* Gradient overlay at bottom */}
+                <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#1E1B26] to-transparent pointer-events-none" />
+
+                {/* Navigation Arrows */}
+                {hasMultipleImages && (
+                  <>
+                    <button
+                      onClick={goToPrevious}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors border border-white/20"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={goToNext}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors border border-white/20"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </>
+                )}
+
+                {/* Image Label */}
+                <div className="absolute top-3 left-3 px-3 py-1.5 rounded-lg bg-black/60 text-white text-xs font-medium border border-white/20">
+                  {currentImage?.label}
+                </div>
+
+                {/* AI Source Badge */}
+                {character.imageSource === 'nanobanana' && (
+                  <div className="absolute top-3 right-3 px-2 py-1 rounded bg-primary/80 text-white text-xs font-medium">
+                    AI Generated
+                  </div>
+                )}
+
+                {/* Dot Indicators */}
+                {hasMultipleImages && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                    {imageList.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentImageIndex(index)}
+                        className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                          index === currentImageIndex ? 'bg-primary' : 'bg-white/40 hover:bg-white/60'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Stats Section */}
+              <div className="p-4 space-y-3">
+                {character.background && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-text-muted uppercase tracking-wider">Background:</span>
+                    <span className="text-sm text-primary font-medium capitalize">{character.background}</span>
+                  </div>
+                )}
+
+                {character.appearance?.personalityTrait && (
+                  <div className="bg-bg-dark/50 rounded-lg p-3 border border-border/50">
+                    <h4 className="text-xs text-primary font-semibold uppercase tracking-wider mb-1">Personality</h4>
+                    <p className="text-xs text-text-secondary leading-relaxed line-clamp-2">{character.appearance.personalityTrait}</p>
+                  </div>
+                )}
+
+                {character.appearance?.ideal && (
+                  <div className="bg-bg-dark/50 rounded-lg p-3 border border-border/50">
+                    <h4 className="text-xs text-secondary font-semibold uppercase tracking-wider mb-1">Ideal</h4>
+                    <p className="text-xs text-text-secondary leading-relaxed line-clamp-2">{character.appearance.ideal}</p>
+                  </div>
+                )}
+
+                {character.appearance?.bond && (
+                  <div className="bg-bg-dark/50 rounded-lg p-3 border border-border/50">
+                    <h4 className="text-xs text-accent font-semibold uppercase tracking-wider mb-1">Bond</h4>
+                    <p className="text-xs text-text-secondary leading-relaxed line-clamp-2">{character.appearance.bond}</p>
+                  </div>
+                )}
+
+                {character.appearance?.flaw && (
+                  <div className="bg-bg-dark/50 rounded-lg p-3 border border-danger/30">
+                    <h4 className="text-xs text-danger font-semibold uppercase tracking-wider mb-1">Flaw</h4>
+                    <p className="text-xs text-text-secondary leading-relaxed line-clamp-2">{character.appearance.flaw}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Card Footer */}
+              <div className="px-4 pb-4">
+                <button
+                  onClick={onClose}
+                  className="w-full py-2 rounded-lg bg-primary/20 text-primary font-medium hover:bg-primary/30 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+
+              {/* Decorative corner accents */}
+              <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-primary/80 rounded-tl-lg" />
+              <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-primary/80 rounded-tr-lg" />
+              <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-primary/80 rounded-bl-lg" />
+              <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-primary/80 rounded-br-lg" />
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export default function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -70,8 +280,62 @@ export default function DashboardContent() {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loadingCharacters, setLoadingCharacters] = useState(true);
   const [showCreatedMessage, setShowCreatedMessage] = useState(false);
+  const [generatingCharacterId, setGeneratingCharacterId] = useState<string | null>(null);
+  const [showCharacterCard, setShowCharacterCard] = useState<string | null>(null);
 
-  // Check if we just created a character
+  // Handle image generation for newly created character
+  useEffect(() => {
+    const characterId = searchParams?.get('characterId');
+    const shouldGenerateImages = searchParams?.get('generateImages') === 'true';
+
+    if (characterId && shouldGenerateImages && token) {
+      // Clear URL params
+      router.replace('/dashboard', { scroll: false });
+
+      // Set generating state
+      setGeneratingCharacterId(characterId);
+      setShowCreatedMessage(true);
+
+      // Trigger image generation
+      const generateImages = async () => {
+        try {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+          const response = await fetch(`${apiUrl}/characters/${characterId}/generate-images`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            // Update the character in state with new images
+            setCharacters(prev => prev.map(char =>
+              char.id === characterId
+                ? {
+                    ...char,
+                    status: 'complete',
+                    portraitUrl: result.character?.portraitUrl,
+                    fullBodyUrls: result.character?.fullBodyUrls,
+                    imageSource: result.source,
+                  }
+                : char
+            ));
+          }
+        } catch (error) {
+          console.error('Failed to generate images:', error);
+        } finally {
+          setGeneratingCharacterId(null);
+          setTimeout(() => setShowCreatedMessage(false), 3000);
+        }
+      };
+
+      generateImages();
+    }
+  }, [searchParams, token, router]);
+
+  // Check if we just created a character (legacy support)
   useEffect(() => {
     if (searchParams?.get('created') === 'true') {
       setShowCreatedMessage(true);
@@ -86,7 +350,8 @@ export default function DashboardContent() {
       if (!token) return;
 
       try {
-        const response = await fetch('http://localhost:4000/characters', {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+        const response = await fetch(`${apiUrl}/characters`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -240,13 +505,27 @@ export default function DashboardContent() {
                 exit={{ opacity: 0, y: -20, scale: 0.95 }}
                 className="col-span-full mb-4 p-4 rounded-lg bg-success/10 border border-success/30 text-success flex items-center gap-3"
               >
-                <motion.div
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 0.5, repeat: 3 }}
-                >
-                  ✨
-                </motion.div>
-                Character created successfully! Your hero is ready for adventure.
+                {generatingCharacterId ? (
+                  <>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                    >
+                      🎨
+                    </motion.div>
+                    Character created! Generating AI artwork... This may take a moment.
+                  </>
+                ) : (
+                  <>
+                    <motion.div
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ duration: 0.5, repeat: 3 }}
+                    >
+                      ✨
+                    </motion.div>
+                    Character created successfully! Your hero is ready for adventure.
+                  </>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -379,51 +658,105 @@ export default function DashboardContent() {
                   </Link>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {characters.map((char, index) => (
-                    <motion.div
-                      key={char.id}
-                      variants={characterCardVariants}
-                      initial="idle"
-                      whileHover="hover"
-                      custom={index}
-                      style={{ perspective: 1000 }}
-                    >
-                      <EnchantedCard hover className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            {/* Class Icon */}
-                            <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                              <ClassIcon characterClass={char.class} size={24} color="#F59E0B" />
+                  {characters.map((char, index) => {
+                    const isGenerating = generatingCharacterId === char.id || char.status === 'generating';
+                    const hasImages = char.status === 'complete' && char.portraitUrl;
+
+                    return (
+                      <motion.div
+                        key={char.id}
+                        variants={characterCardVariants}
+                        initial="idle"
+                        whileHover="hover"
+                        custom={index}
+                        style={{ perspective: 1000 }}
+                      >
+                        <EnchantedCard hover className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                              {/* Character Portrait or Class Icon */}
+                              <div className="relative">
+                                {hasImages && char.portraitUrl ? (
+                                  <button
+                                    onClick={() => setShowCharacterCard(char.id)}
+                                    className="w-12 h-12 rounded-lg overflow-hidden border-2 border-primary/50 hover:border-primary transition-colors cursor-pointer"
+                                    title="View character card"
+                                  >
+                                    <img
+                                      src={char.portraitUrl}
+                                      alt={char.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </button>
+                                ) : (
+                                  <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/30">
+                                    {isGenerating ? (
+                                      <motion.div
+                                        animate={{ rotate: 360 }}
+                                        transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                                        className="text-xl"
+                                      >
+                                        🎨
+                                      </motion.div>
+                                    ) : (
+                                      <ClassIcon characterClass={char.class} size={24} color="#F59E0B" />
+                                    )}
+                                  </div>
+                                )}
+                                {/* Status badge */}
+                                {isGenerating && (
+                                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-warning flex items-center justify-center">
+                                    <motion.div
+                                      animate={{ scale: [1, 1.3, 1] }}
+                                      transition={{ duration: 1, repeat: Infinity }}
+                                      className="w-2 h-2 rounded-full bg-white"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                <h3 className="font-display font-semibold text-lg text-text-primary">
+                                  {char.name}
+                                </h3>
+                                <p className="text-sm text-text-secondary">
+                                  Level {char.level} {char.race} {char.class}
+                                </p>
+                                {isGenerating && (
+                                  <p className="text-xs text-warning mt-1">Generating images...</p>
+                                )}
+                              </div>
                             </div>
-                            <div>
-                              <h3 className="font-display font-semibold text-lg text-text-primary">
-                                {char.name}
-                              </h3>
-                              <p className="text-sm text-text-secondary">
-                                Level {char.level} {char.race} {char.class}
-                              </p>
+                            <div className="text-right flex items-center gap-2">
+                              <HeartIcon size={16} color="#EF4444" />
+                              <span className="text-lg font-bold text-danger">
+                                {char.currentHitPoints}/{char.maxHitPoints}
+                              </span>
                             </div>
                           </div>
-                          <div className="text-right flex items-center gap-2">
-                            <HeartIcon size={16} color="#EF4444" />
-                            <span className="text-lg font-bold text-danger">
-                              {char.currentHitPoints}/{char.maxHitPoints}
-                            </span>
+                          <div className="mt-3 flex gap-2">
+                            {hasImages && (
+                              <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => setShowCharacterCard(char.id)}
+                                className="btn-adventure text-xs px-3 py-1 flex-1"
+                              >
+                                View Card
+                              </motion.button>
+                            )}
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              className="btn-stone text-xs px-3 py-1 flex-1"
+                              disabled
+                            >
+                              View Sheet
+                            </motion.button>
                           </div>
-                        </div>
-                        <div className="mt-3 flex gap-2">
-                          <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className="btn-stone text-xs px-3 py-1 flex-1"
-                            disabled
-                          >
-                            View Sheet
-                          </motion.button>
-                        </div>
-                      </EnchantedCard>
-                    </motion.div>
-                  ))}
+                        </EnchantedCard>
+                      </motion.div>
+                    );
+                  })}
                 </div>
               </motion.div>
             )}
@@ -485,6 +818,13 @@ export default function DashboardContent() {
           </motion.div>
         </main>
       </div>
+
+      {/* Character Card Modal */}
+      <CharacterCardModal
+        isOpen={!!showCharacterCard}
+        onClose={() => setShowCharacterCard(null)}
+        character={characters.find(c => c.id === showCharacterCard) || null}
+      />
     </div>
   );
 }
