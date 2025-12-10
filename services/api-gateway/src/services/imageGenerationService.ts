@@ -355,6 +355,3 @@ export class ImageGenerationService {
     });
   }
 }
-
-// Export for webhook handler
-export { pendingImageTasks };
