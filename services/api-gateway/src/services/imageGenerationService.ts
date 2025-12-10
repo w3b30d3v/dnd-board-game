@@ -45,6 +45,11 @@ export const pendingImageTasks = new Map<string, {
 
 export class ImageGenerationService {
   async generateForCharacter(userId: string, character: CharacterData): Promise<GenerationResult> {
+    console.log('=== ImageGenerationService.generateForCharacter ===');
+    console.log('Character:', JSON.stringify(character, null, 2));
+    console.log('NANOBANANA_API_KEY set:', !!NANOBANANA_API_KEY);
+    console.log('CALLBACK_BASE_URL:', CALLBACK_BASE_URL);
+
     // Check user's generation limit
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -52,6 +57,7 @@ export class ImageGenerationService {
     });
 
     const currentCount = user?.aiCharactersGenerated || 0;
+    console.log('User current AI character count:', currentCount);
 
     if (currentCount >= MAX_AI_CHARACTERS_PER_USER) {
       throw new Error(`You have reached the maximum of ${MAX_AI_CHARACTERS_PER_USER} AI-generated characters.`);
@@ -59,6 +65,7 @@ export class ImageGenerationService {
 
     // If NanoBanana API is not configured, return fallback immediately
     if (!NANOBANANA_API_KEY) {
+      console.log('NANOBANANA_API_KEY not set, using DiceBear fallback');
       const fallbackUrl = this.generateDiceBearFallback(character);
       return {
         images: {
@@ -247,6 +254,11 @@ export class ImageGenerationService {
   ): Promise<string> {
     const fetch = (await import('node-fetch')).default;
 
+    console.log('=== generateWithNanoBanana ===');
+    console.log('Style:', style);
+    console.log('Quality:', quality);
+    console.log('CALLBACK_BASE_URL:', CALLBACK_BASE_URL);
+
     if (!CALLBACK_BASE_URL) {
       throw new Error('Callback URL not configured for NanoBanana API');
     }
@@ -263,6 +275,10 @@ export class ImageGenerationService {
       image_size: imageSize,
     };
 
+    console.log('NanoBanana API URL:', `${NANOBANANA_API_URL}${endpoint}`);
+    console.log('Callback URL:', requestBody.callBackUrl);
+    console.log('Request prompt (first 200 chars):', fullPrompt.substring(0, 200) + '...');
+
     const response = await fetch(`${NANOBANANA_API_URL}${endpoint}`, {
       method: 'POST',
       headers: {
@@ -272,8 +288,12 @@ export class ImageGenerationService {
       body: JSON.stringify(requestBody),
     });
 
+    console.log('NanoBanana response status:', response.status);
+
     if (!response.ok) {
-      throw new Error(`NanoBanana API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('NanoBanana API error response:', errorText);
+      throw new Error(`NanoBanana API error: ${response.status} - ${errorText}`);
     }
 
     const data = (await response.json()) as {
@@ -286,15 +306,19 @@ export class ImageGenerationService {
       };
     };
 
+    console.log('NanoBanana response:', JSON.stringify(data, null, 2));
+
     if (data.code !== 200) {
       throw new Error(`NanoBanana API error: ${data.msg}`);
     }
 
     // If image URL is returned immediately
     if (data.data?.imageUrl) {
+      console.log('Got immediate image URL:', data.data.imageUrl);
       return data.data.imageUrl;
     }
     if (data.data?.imageUrls && data.data.imageUrls.length > 0 && data.data.imageUrls[0]) {
+      console.log('Got immediate image URLs:', data.data.imageUrls);
       return data.data.imageUrls[0];
     }
 
@@ -304,14 +328,20 @@ export class ImageGenerationService {
       throw new Error('No task ID returned from NanoBanana API');
     }
 
+    console.log('Waiting for webhook callback for taskId:', taskId);
+    console.log('Current pending tasks:', Array.from(pendingImageTasks.keys()));
+
     const maxWait = 50000;
     return new Promise<string>((resolve, reject) => {
       const timeout = setTimeout(() => {
+        console.log('TIMEOUT: No webhook received for taskId:', taskId);
         pendingImageTasks.delete(taskId);
         reject(new Error('Image generation timed out waiting for webhook'));
       }, maxWait);
 
       pendingImageTasks.set(taskId, { resolve, reject, timeout });
+      console.log('Added taskId to pendingImageTasks:', taskId);
+      console.log('Total pending tasks now:', pendingImageTasks.size);
     });
   }
 }
