@@ -249,35 +249,19 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
 
       {/* Character Summary */}
       <div className="p-4 rounded-lg bg-bg-dark border border-border">
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Portrait Placeholder - AI art generated after acceptance */}
-          <div className="flex flex-col items-center">
-            <div className="w-32 h-32 rounded-lg bg-gradient-to-br from-primary/10 to-secondary/10 border-2 border-dashed border-primary/40 flex flex-col items-center justify-center">
-              <span className="text-4xl mb-2">🎨</span>
-              <span className="text-xs text-text-muted text-center px-2">AI Portrait</span>
-            </div>
-            <p className="text-xs text-primary/70 mt-2 text-center max-w-[140px]">
-              Generated after you accept your character
-            </p>
+        <h3 className="text-sm font-semibold text-text-primary mb-3">Character Summary</h3>
+        <div className="grid grid-cols-3 gap-4 text-sm">
+          <div>
+            <span className="text-text-muted">Race: </span>
+            <span className="text-primary font-medium">{race?.name}</span>
           </div>
-
-          {/* Character Info */}
-          <div className="flex-1">
-            <h3 className="text-sm font-semibold text-text-primary mb-3">Character Summary</h3>
-            <div className="grid grid-cols-1 gap-2 text-sm">
-              <div>
-                <span className="text-text-muted">Race: </span>
-                <span className="text-primary font-medium">{race?.name}</span>
-              </div>
-              <div>
-                <span className="text-text-muted">Class: </span>
-                <span className="text-primary font-medium">{classData?.name}</span>
-              </div>
-              <div>
-                <span className="text-text-muted">Background: </span>
-                <span className="text-primary font-medium">{background?.name}</span>
-              </div>
-            </div>
+          <div>
+            <span className="text-text-muted">Class: </span>
+            <span className="text-primary font-medium">{classData?.name}</span>
+          </div>
+          <div>
+            <span className="text-text-muted">Background: </span>
+            <span className="text-primary font-medium">{background?.name}</span>
           </div>
         </div>
       </div>

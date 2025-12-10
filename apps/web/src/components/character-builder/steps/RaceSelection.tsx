@@ -2,8 +2,20 @@
 
 import { useState } from 'react';
 import { RACES, getRaceById } from '@/data';
-import { getRaceImage } from '@/data/staticImages';
 import type { StepProps } from '../types';
+
+// Race icons - visually represent each race
+const RACE_ICONS: Record<string, string> = {
+  human: '👤',
+  elf: '🧝',
+  dwarf: '🧔',
+  halfling: '🧑‍🌾',
+  dragonborn: '🐲',
+  gnome: '🧙',
+  'half-elf': '🧝‍♀️',
+  'half-orc': '👹',
+  tiefling: '😈',
+};
 
 export function RaceSelection({ character, onUpdate, onNext }: StepProps) {
   const [selectedRace, setSelectedRace] = useState(character.race || '');
@@ -67,12 +79,8 @@ export function RaceSelection({ character, onUpdate, onNext }: StepProps) {
             `}
           >
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-600/20 overflow-hidden border-2 border-primary/30">
-                <img
-                  src={getRaceImage(r.id)}
-                  alt={r.name}
-                  className="w-full h-full object-cover"
-                />
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-600/20 flex items-center justify-center border-2 border-primary/30 text-2xl">
+                {RACE_ICONS[r.id] || '👤'}
               </div>
               <h3 className="font-display font-semibold text-text-primary">{r.name}</h3>
             </div>

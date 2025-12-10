@@ -100,10 +100,10 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
     });
   }
 
-  if (imageList.length === 0) return null;
-
-  const currentImage = imageList[currentImageIndex] || imageList[0];
+  const hasImages = imageList.length > 0;
+  const currentImage = hasImages ? (imageList[currentImageIndex] || imageList[0]) : null;
   const hasMultipleImages = imageList.length > 1;
+  const isGenerating = character.status === 'generating';
 
   const goToPrevious = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? imageList.length - 1 : prev - 1));
@@ -145,70 +145,97 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
 
               {/* Image Carousel Section */}
               <div className="relative aspect-[3/4] bg-bg-dark">
-                <AnimatePresence mode="wait">
-                  <motion.img
-                    key={currentImageIndex}
-                    src={currentImage?.url}
-                    alt={`${character.name || 'Character'} - ${currentImage?.label}`}
-                    className="w-full h-full object-cover"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.2 }}
-                  />
-                </AnimatePresence>
+                {hasImages && currentImage ? (
+                  <>
+                    <AnimatePresence mode="wait">
+                      <motion.img
+                        key={currentImageIndex}
+                        src={currentImage.url}
+                        alt={`${character.name || 'Character'} - ${currentImage.label}`}
+                        className="w-full h-full object-cover"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.2 }}
+                      />
+                    </AnimatePresence>
+
+                    {/* Image Label */}
+                    <div className="absolute top-3 left-3 px-3 py-1.5 rounded-lg bg-black/60 text-white text-xs font-medium border border-white/20">
+                      {currentImage.label}
+                    </div>
+
+                    {/* AI Source Badge */}
+                    {character.imageSource === 'nanobanana' && (
+                      <div className="absolute top-3 right-3 px-2 py-1 rounded bg-primary/80 text-white text-xs font-medium">
+                        AI Generated
+                      </div>
+                    )}
+
+                    {/* Navigation Arrows */}
+                    {hasMultipleImages && (
+                      <>
+                        <button
+                          onClick={goToPrevious}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors border border-white/20"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={goToNext}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors border border-white/20"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                      </>
+                    )}
+
+                    {/* Dot Indicators */}
+                    {hasMultipleImages && (
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                        {imageList.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setCurrentImageIndex(index)}
+                            className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                              index === currentImageIndex ? 'bg-primary' : 'bg-white/40 hover:bg-white/60'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  // No images placeholder
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10">
+                    {isGenerating ? (
+                      <>
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                          className="text-6xl mb-4"
+                        >
+                          🎨
+                        </motion.div>
+                        <p className="text-text-muted text-sm">Generating AI artwork...</p>
+                        <p className="text-text-muted text-xs mt-1">This may take a moment</p>
+                      </>
+                    ) : (
+                      <>
+                        <ClassIcon characterClass={character.class} size={80} color="#F59E0B" />
+                        <p className="text-text-muted text-sm mt-4">No portrait yet</p>
+                        <p className="text-text-muted text-xs mt-1">Images will be generated after creation</p>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {/* Gradient overlay at bottom */}
                 <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#1E1B26] to-transparent pointer-events-none" />
-
-                {/* Navigation Arrows */}
-                {hasMultipleImages && (
-                  <>
-                    <button
-                      onClick={goToPrevious}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors border border-white/20"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={goToNext}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors border border-white/20"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  </>
-                )}
-
-                {/* Image Label */}
-                <div className="absolute top-3 left-3 px-3 py-1.5 rounded-lg bg-black/60 text-white text-xs font-medium border border-white/20">
-                  {currentImage?.label}
-                </div>
-
-                {/* AI Source Badge */}
-                {character.imageSource === 'nanobanana' && (
-                  <div className="absolute top-3 right-3 px-2 py-1 rounded bg-primary/80 text-white text-xs font-medium">
-                    AI Generated
-                  </div>
-                )}
-
-                {/* Dot Indicators */}
-                {hasMultipleImages && (
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                    {imageList.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentImageIndex(index)}
-                        className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                          index === currentImageIndex ? 'bg-primary' : 'bg-white/40 hover:bg-white/60'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Stats Section */}
@@ -734,16 +761,14 @@ export default function DashboardContent() {
                             </div>
                           </div>
                           <div className="mt-3 flex gap-2">
-                            {hasImages && (
-                              <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => setShowCharacterCard(char.id)}
-                                className="btn-adventure text-xs px-3 py-1 flex-1"
-                              >
-                                View Card
-                              </motion.button>
-                            )}
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => setShowCharacterCard(char.id)}
+                              className="btn-adventure text-xs px-3 py-1 flex-1"
+                            >
+                              View Card
+                            </motion.button>
                             <motion.button
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}

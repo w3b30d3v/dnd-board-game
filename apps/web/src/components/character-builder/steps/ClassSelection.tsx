@@ -2,8 +2,23 @@
 
 import { useState } from 'react';
 import { CLASSES, getClassById } from '@/data';
-import { getClassImage } from '@/data/staticImages';
 import type { StepProps } from '../types';
+
+// Class icons - visually represent each class
+const CLASS_ICONS: Record<string, string> = {
+  barbarian: '⚔️',
+  bard: '🎵',
+  cleric: '✝️',
+  druid: '🌿',
+  fighter: '🛡️',
+  monk: '👊',
+  paladin: '⚜️',
+  ranger: '🏹',
+  rogue: '🗡️',
+  sorcerer: '🔮',
+  warlock: '👁️',
+  wizard: '📖',
+};
 
 export function ClassSelection({ character, onUpdate, onNext, onBack }: StepProps) {
   const [selectedClass, setSelectedClass] = useState(character.class || '');
@@ -58,12 +73,8 @@ export function ClassSelection({ character, onUpdate, onNext, onBack }: StepProp
             `}
           >
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-600/20 overflow-hidden border-2 border-primary/30">
-                <img
-                  src={getClassImage(c.id)}
-                  alt={c.name}
-                  className="w-full h-full object-cover"
-                />
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-600/20 flex items-center justify-center border-2 border-primary/30 text-2xl">
+                {CLASS_ICONS[c.id] || '⚔️'}
               </div>
               <div>
                 <h3 className="font-display font-semibold text-text-primary">{c.name}</h3>
