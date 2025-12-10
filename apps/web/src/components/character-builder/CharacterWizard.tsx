@@ -8,9 +8,11 @@ import { ClassSelection } from './steps/ClassSelection';
 import { AbilityScores } from './steps/AbilityScores';
 import { BackgroundSelection } from './steps/BackgroundSelection';
 import { SkillSelection } from './steps/SkillSelection';
+import { SpellSelection } from './steps/SpellSelection';
 import { CharacterDetails } from './steps/CharacterDetails';
 import { ReviewCharacter } from './steps/ReviewCharacter';
 import { useAuthStore } from '@/stores/authStore';
+import { isCaster } from '@/data/classes';
 import type { CharacterCreationState, CharacterData } from './types';
 
 interface Step {
@@ -33,6 +35,14 @@ const STEPS: Step[] = [
   { id: 'abilities', label: 'Abilities', icon: '💪', component: AbilityScores },
   { id: 'background', label: 'Background', icon: '📜', component: BackgroundSelection },
   { id: 'skills', label: 'Skills', icon: '🎯', component: SkillSelection },
+  {
+    id: 'spells',
+    label: 'Spells',
+    icon: '🔮',
+    component: SpellSelection,
+    isConditional: true,
+    condition: (character) => character.class ? isCaster(character.class) : false,
+  },
   { id: 'details', label: 'Details', icon: '✨', component: CharacterDetails },
   // ReviewCharacter is handled specially - cast to satisfy type but rendered differently
   { id: 'review', label: 'Review', icon: '📋', component: ReviewCharacter as unknown as Step['component'] },
@@ -68,9 +78,10 @@ export function CharacterWizard() {
         wisdom: characterData.wisdom,
         charisma: characterData.charisma,
         skills: characterData.skills || [],
-        equipment: [],
-        spellsKnown: [],
+        equipment: characterData.equipment || [],
+        spellsKnown: characterData.spellsKnown || [],
         appearance: characterData.appearance,
+        portraitUrl: characterData.portraitUrl,
       }),
     });
 
