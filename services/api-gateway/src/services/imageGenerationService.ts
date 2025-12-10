@@ -35,8 +35,9 @@ interface GenerationResult {
   limit: number;
 }
 
-// In-memory store for pending image generations
-const pendingImageTasks = new Map<string, {
+// In-memory store for pending image generations - SHARED across all services
+// This map is exported and used by the webhook handler in media.ts
+export const pendingImageTasks = new Map<string, {
   resolve: (url: string) => void;
   reject: (error: Error) => void;
   timeout: NodeJS.Timeout;

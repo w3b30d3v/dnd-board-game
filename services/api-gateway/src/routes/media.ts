@@ -6,6 +6,7 @@ import { PrismaClient } from '@prisma/client';
 import { auth } from '../middleware/auth.js';
 import { generatePersonalityContent, generateAllPersonalityContent } from '../services/personalityGenerator.js';
 import { config } from '../config.js';
+import { pendingImageTasks as sharedPendingTasks } from '../services/imageGenerationService.js';
 
 const router: Router = Router();
 const prisma = new PrismaClient();
@@ -287,12 +288,9 @@ router.post('/generate/personality/all', auth, async (req: Request, res: Respons
   }
 });
 
-// In-memory store for pending image generations (in production, use Redis)
-const pendingImageTasks = new Map<string, {
-  resolve: (url: string) => void;
-  reject: (error: Error) => void;
-  timeout: NodeJS.Timeout;
-}>();
+// Use the shared pending tasks map from imageGenerationService
+// This ensures webhook callbacks can resolve tasks started by the imageGenerationService
+const pendingImageTasks = sharedPendingTasks;
 
 // Webhook endpoint for NanoBanana callbacks
 router.post('/webhook/nanobanana', async (req: Request, res: Response) => {
