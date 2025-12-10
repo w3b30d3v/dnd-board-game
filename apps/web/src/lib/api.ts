@@ -21,10 +21,17 @@ class ApiClient {
 
   setAccessToken(token: string | null) {
     this.accessToken = token;
+    if (typeof window !== 'undefined') {
+      console.log('[API] Access token set:', token ? token.substring(0, 20) + '...' : 'null');
+    }
   }
 
   setRefreshToken(token: string | null) {
     this.refreshToken = token;
+  }
+
+  getAccessToken(): string | null {
+    return this.accessToken;
   }
 
   setRefreshCallback(callback: RefreshCallback | null) {
@@ -93,6 +100,11 @@ class ApiClient {
 
     if (this.accessToken) {
       headers['Authorization'] = `Bearer ${this.accessToken}`;
+    }
+
+    // Debug logging for auth issues
+    if (typeof window !== 'undefined' && endpoint.includes('/media/')) {
+      console.log('[API] Request to:', endpoint, 'Token present:', !!this.accessToken);
     }
 
     // Merge any additional headers from options
