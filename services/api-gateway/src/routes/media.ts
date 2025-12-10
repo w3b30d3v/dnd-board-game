@@ -292,6 +292,41 @@ router.post('/generate/personality/all', auth, async (req: Request, res: Respons
 // This ensures webhook callbacks can resolve tasks started by the imageGenerationService
 const pendingImageTasks = sharedPendingTasks;
 
+// Test webhook endpoint - can be used to verify webhook URL is accessible
+router.get('/webhook/test', async (req: Request, res: Response) => {
+  console.log('=== Webhook test endpoint accessed ===');
+  console.log('Timestamp:', new Date().toISOString());
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Query:', req.query);
+  console.log('Pending tasks count:', pendingImageTasks.size);
+
+  return res.json({
+    success: true,
+    message: 'Webhook endpoint is accessible',
+    timestamp: new Date().toISOString(),
+    pendingTasksCount: pendingImageTasks.size,
+    callbackBaseUrl: CALLBACK_BASE_URL,
+    nanoBananaConfigured: !!NANOBANANA_API_KEY,
+  });
+});
+
+// Debug endpoint to check configuration
+router.get('/debug/config', auth, async (req: Request, res: Response) => {
+  return res.json({
+    success: true,
+    config: {
+      nanoBananaApiKeySet: !!NANOBANANA_API_KEY,
+      nanoBananaApiKeyLength: NANOBANANA_API_KEY?.length || 0,
+      callbackBaseUrl: CALLBACK_BASE_URL,
+      maxCharactersPerUser: MAX_AI_CHARACTERS_PER_USER,
+      maxFullBodyImagesPerCharacter: MAX_FULLBODY_IMAGES_PER_CHARACTER,
+      pendingTasksCount: pendingImageTasks.size,
+      pendingTaskIds: Array.from(pendingImageTasks.keys()),
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Webhook endpoint for NanoBanana callbacks
 router.post('/webhook/nanobanana', async (req: Request, res: Response) => {
   try {
