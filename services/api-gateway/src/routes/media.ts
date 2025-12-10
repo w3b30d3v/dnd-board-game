@@ -45,7 +45,7 @@ interface PortraitRequest {
 // Check user's AI generation limit
 router.get('/generation-limit', auth, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.userId;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
@@ -74,7 +74,7 @@ router.get('/generation-limit', auth, async (req: Request, res: Response) => {
 // This counts as 1 character against the user's limit
 router.post('/generate/character-images', auth, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.userId;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
