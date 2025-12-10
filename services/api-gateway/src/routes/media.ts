@@ -388,13 +388,28 @@ function buildCharacterPrompt(
   // Composition based on style
   let composition: string;
   if (style === 'portrait') {
-    // Portrait style - head and shoulders only
-    composition = 'portrait, head and shoulders, close-up face shot, detailed facial features, expressive eyes, three-quarter view, dramatic lighting on face, shallow depth of field background';
+    // Portrait style - ONLY head and shoulders, NO full body
+    composition = [
+      'PORTRAIT ONLY',
+      'head and shoulders composition',
+      'close-up face shot from chest up',
+      'NO full body',
+      'NO legs visible',
+      'NO feet visible',
+      'cropped at chest level',
+      'detailed facial features',
+      'expressive eyes with catch lights',
+      'three-quarter face angle',
+      'dramatic Rembrandt lighting on face',
+      'shallow depth of field blurred background',
+      'face fills 60% of frame',
+      'professional headshot composition',
+    ].join(', ');
   } else if (style === 'action_pose') {
-    composition = 'dynamic action pose, mid-combat stance, weapon raised, dramatic motion blur on edges, intense expression';
+    composition = 'dynamic action pose, full body visible head to toe, mid-combat stance, weapon raised or in use, dramatic motion blur on edges, intense determined expression, captured mid-movement';
   } else {
-    // full_body style
-    composition = 'full body character design, standing heroic pose, weight on back foot ready for action, head to toe visible, facing three-quarter view';
+    // full_body style - heroic standing pose
+    composition = 'full body character design, complete figure visible from head to toe, standing heroic pose, weight on back foot ready for action, facing three-quarter view, confident stance';
   }
 
   // Environment/Background
@@ -451,8 +466,8 @@ function buildCharacterPrompt(
 
   const prompt = promptParts.join(', ');
 
-  // Comprehensive negative prompt
-  const negativePrompt = [
+  // Comprehensive negative prompt - add style-specific exclusions
+  const baseNegativePrompts = [
     // Anatomy issues
     'bad anatomy', 'wrong anatomy', 'extra limbs', 'missing limbs', 'floating limbs',
     'disconnected limbs', 'malformed hands', 'extra fingers', 'missing fingers',
@@ -485,7 +500,18 @@ function buildCharacterPrompt(
     // Composition issues
     'bad composition', 'amateur', 'beginner art', 'sketch', 'unfinished',
     'simple background', 'white background', 'plain background',
-  ].join(', ');
+  ];
+
+  // For portrait style, explicitly exclude full body
+  if (style === 'portrait') {
+    baseNegativePrompts.push(
+      'full body', 'full figure', 'legs visible', 'feet visible',
+      'waist down', 'standing pose', 'walking', 'running',
+      'distant view', 'wide shot', 'far away'
+    );
+  }
+
+  const negativePrompt = baseNegativePrompts.join(', ');
 
   return { prompt, negativePrompt };
 }

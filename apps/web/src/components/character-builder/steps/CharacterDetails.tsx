@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getRaceById, getClassById, getBackgroundById } from '@/data';
 import { api } from '@/lib/api';
@@ -12,6 +12,9 @@ interface CharacterImages {
   fullBody1: string | null;
   fullBody2: string | null;
 }
+
+// Image generation states
+type ImageGenerationState = 'idle' | 'generating' | 'success' | 'fallback';
 
 // Character Card Modal Component with 3-image carousel
 interface CharacterCardModalProps {
@@ -317,15 +320,15 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
   const [bond, setBond] = useState('');
   const [flaw, setFlaw] = useState('');
   const [backstory, setBackstory] = useState('');
-  const [portraitSeed, setPortraitSeed] = useState(() =>
-    character.portraitUrl || generatePortraitSeed(character.race || 'human', character.class || 'fighter', '')
-  );
+  const [portraitSeed, setPortraitSeed] = useState<string>('');
   const [portraitStyle, setPortraitStyle] = useState<string>('adventurer');
   const [showValidation, setShowValidation] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isGeneratingPortrait, setIsGeneratingPortrait] = useState(false);
-  // Track if current portrait is generated (to hide DiceBear-specific buttons)
-  const [isGeneratedPortrait, setIsGeneratedPortrait] = useState(false);
+
+  // Image generation state: 'idle' (initial), 'generating', 'success' (NanoBanana worked), 'fallback' (DiceBear)
+  const [imageGenState, setImageGenState] = useState<ImageGenerationState>('idle');
+  const hasAttemptedGeneration = useRef(false);
+
   // Store all 3 character images for the card modal
   const [characterImages, setCharacterImages] = useState<CharacterImages>({
     portrait: '',
@@ -336,6 +339,8 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
   const [showCharacterCard, setShowCharacterCard] = useState(false);
   // Generation limit tracking
   const [generationLimitInfo, setGenerationLimitInfo] = useState<{ remaining: number; limit: number } | null>(null);
+  // Error message for limit reached
+  const [limitReachedError, setLimitReachedError] = useState<string | null>(null);
 
   const race = getRaceById(character.race || '');
   const classData = getClassById(character.class || '');
@@ -351,6 +356,7 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
     return `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=1e1b26&size=200`;
   }, []);
 
+  // For fallback (DiceBear) mode - change the placeholder portrait
   const handleRegeneratePortrait = useCallback(() => {
     const newSeed = generatePortraitSeed(
       character.race || 'human',
@@ -358,19 +364,14 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
       name || 'hero'
     );
     setPortraitSeed(newSeed);
-    // Reset generated portrait state when switching to DiceBear
-    setIsGeneratedPortrait(false);
-    setCharacterImages({ portrait: '', fullBody1: null, fullBody2: null });
   }, [character.race, character.class, name]);
 
+  // For fallback (DiceBear) mode - change the style
   const handleChangeStyle = useCallback(() => {
     const styles = PORTRAIT_STYLES[character.race || 'human'] || PORTRAIT_STYLES.human;
     const currentIndex = styles.indexOf(portraitStyle);
     const nextIndex = (currentIndex + 1) % styles.length;
     setPortraitStyle(styles[nextIndex]!);
-    // Reset generated portrait state when switching styles
-    setIsGeneratedPortrait(false);
-    setCharacterImages({ portrait: '', fullBody1: null, fullBody2: null });
   }, [character.race, portraitStyle]);
 
   // Random generation functions
@@ -496,11 +497,17 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
     }
   }, [character.race, character.class, character.background, name, handleRandomizeAll]);
 
-  // Generate all 3 character images using NanoBanana API
-  const handleGeneratePortrait = useCallback(async () => {
-    setIsGeneratingPortrait(true);
+  // Generate all 3 character images using NanoBanana API (called once on mount)
+  const generateCharacterImages = useCallback(async () => {
+    // Only generate once
+    if (hasAttemptedGeneration.current) return;
+    hasAttemptedGeneration.current = true;
+
+    setImageGenState('generating');
+    setLimitReachedError(null);
+
     try {
-      // Use the new endpoint that generates all 3 images at once
+      // Use the endpoint that generates all 3 images at once
       const response = await api.post<{
         success: boolean;
         images?: { portrait: string; fullBody1: string; fullBody2: string };
@@ -526,7 +533,11 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
       }
 
       if (response.limitReached) {
-        alert(`You have reached the limit of ${response.limit} generated characters. Each character uses 3 images.`);
+        setLimitReachedError(`Character limit reached (${response.limit} max). Using placeholder image.`);
+        // Fall back to DiceBear
+        const fallbackSeed = generatePortraitSeed(character.race || 'human', character.class || 'fighter', name || 'hero');
+        setPortraitSeed(fallbackSeed);
+        setImageGenState('fallback');
         return;
       }
 
@@ -541,25 +552,38 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
           fullBody2: response.images.fullBody2 || null,
         });
 
-        // Mark as generated to hide DiceBear buttons
+        // Mark state based on source
         if (response.source === 'nanobanana') {
-          setIsGeneratedPortrait(true);
+          setImageGenState('success');
           setPortraitStyle('generated');
         } else {
-          // DiceBear fallback was used
-          setIsGeneratedPortrait(false);
+          // DiceBear fallback was used by the API
+          setImageGenState('fallback');
         }
+      } else {
+        // API returned success: false - fall back to DiceBear
+        const fallbackSeed = generatePortraitSeed(character.race || 'human', character.class || 'fighter', name || 'hero');
+        setPortraitSeed(fallbackSeed);
+        setImageGenState('fallback');
       }
     } catch (error: any) {
       console.warn('Portrait generation failed:', error);
       if (error?.message?.includes('limit')) {
-        alert(error.message);
+        setLimitReachedError(error.message);
       }
-      // Keep existing portrait
-    } finally {
-      setIsGeneratingPortrait(false);
+      // Fall back to DiceBear
+      const fallbackSeed = generatePortraitSeed(character.race || 'human', character.class || 'fighter', name || 'hero');
+      setPortraitSeed(fallbackSeed);
+      setImageGenState('fallback');
     }
   }, [character.race, character.class, character.background, name]);
+
+  // Auto-generate images when component mounts
+  useEffect(() => {
+    if (!hasAttemptedGeneration.current && imageGenState === 'idle') {
+      generateCharacterImages();
+    }
+  }, [generateCharacterImages, imageGenState]);
 
   const handleContinue = () => {
     if (name.trim()) {
@@ -617,88 +641,97 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
             <div className="relative group">
               <button
                 type="button"
-                onClick={() => isGeneratedPortrait && setShowCharacterCard(true)}
+                onClick={() => imageGenState === 'success' && setShowCharacterCard(true)}
                 className={`w-32 h-32 rounded-lg bg-bg-medium border-2 overflow-hidden shadow-glow transition-all ${
-                  isGeneratedPortrait
+                  imageGenState === 'success'
                     ? 'border-primary cursor-pointer hover:border-primary/80 hover:shadow-lg hover:scale-105'
                     : 'border-primary/50'
                 }`}
-                title={isGeneratedPortrait ? 'Click to view character card' : undefined}
+                title={imageGenState === 'success' ? 'Click to view character card' : undefined}
+                disabled={imageGenState === 'generating' || imageGenState === 'idle'}
               >
-                <img
-                  src={getPortraitUrl(portraitSeed, portraitStyle)}
-                  alt="Character portrait"
-                  className="w-full h-full object-cover"
-                />
+                {/* Show placeholder or generated image */}
+                {imageGenState === 'idle' || imageGenState === 'generating' ? (
+                  <div className="w-full h-full bg-bg-dark flex items-center justify-center">
+                    <div className="w-12 h-12 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  <img
+                    src={getPortraitUrl(portraitSeed, portraitStyle)}
+                    alt="Character portrait"
+                    className="w-full h-full object-cover"
+                  />
+                )}
               </button>
-              {isGeneratingPortrait ? (
+
+              {/* Generating overlay */}
+              {(imageGenState === 'idle' || imageGenState === 'generating') && (
                 <div className="absolute inset-0 bg-black/70 rounded-lg flex flex-col items-center justify-center pointer-events-none">
-                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span className="text-xs text-white mt-2">Generating...</span>
+                  <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm text-white mt-3 font-medium">Generating...</span>
+                  <span className="text-xs text-text-muted mt-1">Creating your character art</span>
                 </div>
-              ) : isGeneratedPortrait ? (
+              )}
+
+              {/* Success state - hover to view card */}
+              {imageGenState === 'success' && (
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center pointer-events-none">
                   <span className="text-xs text-white text-center px-2">Click to view<br/>character card</span>
                 </div>
-              ) : (
+              )}
+
+              {/* Fallback state - hover hint */}
+              {imageGenState === 'fallback' && (
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center pointer-events-none">
-                  <span className="text-xs text-white">Click below to change</span>
+                  <span className="text-xs text-white">Change style below</span>
                 </div>
               )}
             </div>
-            <div className="flex gap-2 mt-3 flex-wrap justify-center">
-              {/* Only show New and Style buttons for DiceBear (non-generated) portraits */}
-              {!isGeneratedPortrait && (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleRegeneratePortrait}
-                    className="text-xs px-3 py-1.5 rounded bg-primary/20 text-primary hover:bg-primary/30 transition-colors flex items-center gap-1"
-                    title="Generate a new random portrait"
-                  >
-                    <span>🎲</span> New
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleChangeStyle}
-                    className="text-xs px-3 py-1.5 rounded bg-secondary/20 text-secondary hover:bg-secondary/30 transition-colors flex items-center gap-1"
-                    title="Change portrait style"
-                  >
-                    <span>🎨</span> Style
-                  </button>
-                </>
-              )}
-              <button
-                type="button"
-                onClick={handleGeneratePortrait}
-                disabled={isGeneratingPortrait}
-                className="text-xs px-3 py-1.5 rounded bg-accent/20 text-accent hover:bg-accent/30 transition-colors flex items-center gap-1 disabled:opacity-50"
-                title="Generate portrait"
-              >
-                <span>{isGeneratingPortrait ? '⏳' : '✨'}</span> {isGeneratingPortrait ? 'Generating...' : (isGeneratedPortrait ? 'Regenerate' : 'Generate Portrait')}
-              </button>
-              {/* Show reset button when generated portrait is active */}
-              {isGeneratedPortrait && (
+
+            {/* Buttons - only show for fallback (DiceBear) mode */}
+            {imageGenState === 'fallback' && (
+              <div className="flex gap-2 mt-3 flex-wrap justify-center">
                 <button
                   type="button"
                   onClick={handleRegeneratePortrait}
-                  className="text-xs px-3 py-1.5 rounded bg-border/50 text-text-secondary hover:bg-border transition-colors flex items-center gap-1"
-                  title="Switch back to DiceBear avatar"
+                  className="text-xs px-3 py-1.5 rounded bg-primary/20 text-primary hover:bg-primary/30 transition-colors flex items-center gap-1"
+                  title="Generate a new random portrait"
                 >
-                  <span>↩</span> Reset
+                  <span>🎲</span> New
                 </button>
-              )}
-            </div>
+                <button
+                  type="button"
+                  onClick={handleChangeStyle}
+                  className="text-xs px-3 py-1.5 rounded bg-secondary/20 text-secondary hover:bg-secondary/30 transition-colors flex items-center gap-1"
+                  title="Change portrait style"
+                >
+                  <span>🎨</span> Style
+                </button>
+              </div>
+            )}
+
+            {/* Status text */}
             <p className="text-xs text-text-muted mt-2 text-center">
-              {isGeneratedPortrait ? 'Generated - Click to expand' : `${portraitStyle} style`}
+              {imageGenState === 'generating' && 'Generating character art...'}
+              {imageGenState === 'idle' && 'Preparing...'}
+              {imageGenState === 'success' && 'Generated - Click to view card'}
+              {imageGenState === 'fallback' && `Placeholder - ${portraitStyle} style`}
             </p>
-            {/* Show generation limit */}
-            {generationLimitInfo && (
+
+            {/* Show limit reached error */}
+            {limitReachedError && (
+              <p className="text-xs text-danger mt-1 text-center">
+                {limitReachedError}
+              </p>
+            )}
+
+            {/* Show generation limit for success state */}
+            {imageGenState === 'success' && generationLimitInfo && (
               <p className="text-xs text-text-muted mt-1 text-center">
                 {generationLimitInfo.remaining > 0 ? (
                   <span>{generationLimitInfo.remaining} of {generationLimitInfo.limit} characters remaining</span>
                 ) : (
-                  <span className="text-danger">Character limit reached</span>
+                  <span className="text-warning">Last character generated</span>
                 )}
               </p>
             )}
