@@ -173,10 +173,11 @@ export function RaceSelection({ character, onUpdate, onNext }: StepProps) {
       )}
 
       {/* Navigation */}
-      <div className="flex justify-end pt-6">
+      <div className="flex justify-end pt-6 relative z-20">
         <button
+          type="button"
           onClick={handleContinue}
-          className="btn-adventure px-8 py-3 text-lg"
+          className="btn-adventure px-8 py-3 text-lg cursor-pointer"
         >
           Continue to Class
         </button>
