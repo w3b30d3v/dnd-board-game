@@ -21,4 +21,12 @@ export const config = {
     gridSolver: process.env.GRID_SOLVER_URL || 'localhost:50052',
     aiService: process.env.AI_SERVICE_URL || 'localhost:50053',
   },
+
+  // Character generation limits (configurable by admin via env vars)
+  characterGeneration: {
+    // Max AI-generated characters per user (each character = 1 portrait + N full body images)
+    maxCharactersPerUser: parseInt(process.env.MAX_AI_CHARACTERS_PER_USER || '5', 10),
+    // Max images per character: 1 portrait + this many full body action images
+    maxFullBodyImagesPerCharacter: parseInt(process.env.MAX_FULLBODY_IMAGES_PER_CHARACTER || '2', 10),
+  },
 } as const;

@@ -116,8 +116,10 @@ model Character {
   equipment     Json      @default("[]")
   currency      Json      @default("{\"cp\":0,\"sp\":0,\"gp\":0,\"pp\":0}")
 
-  // Appearance
-  portraitUrl   String?
+  // Appearance & Images
+  portraitUrl   String?          // Primary portrait (head/shoulders)
+  fullBodyUrls  String[]         // Full-body action pose images
+  imageSource   String?          // 'nanobanana', 'dicebear', or null
   appearance    Json?
 
   // Metadata

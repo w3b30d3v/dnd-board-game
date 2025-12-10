@@ -5,12 +5,14 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { auth } from '../middleware/auth.js';
 import { generatePersonalityContent, generateAllPersonalityContent } from '../services/personalityGenerator.js';
+import { config } from '../config.js';
 
 const router: Router = Router();
 const prisma = new PrismaClient();
 
-// Constants
-const MAX_AI_CHARACTERS_PER_USER = 5; // 5 characters = 15 images max
+// Get limits from config (admin-configurable via env vars)
+const MAX_AI_CHARACTERS_PER_USER = config.characterGeneration.maxCharactersPerUser;
+const MAX_FULLBODY_IMAGES_PER_CHARACTER = config.characterGeneration.maxFullBodyImagesPerCharacter;
 
 // Environment configuration
 const NANOBANANA_API_KEY = process.env.NANOBANANA_API_KEY;
@@ -70,7 +72,7 @@ router.get('/generation-limit', auth, async (req: Request, res: Response) => {
   }
 });
 
-// Generate all 3 character images (1 portrait + 2 full-body poses)
+// Generate character images (1 portrait + configurable full-body poses)
 // This counts as 1 character against the user's limit
 router.post('/generate/character-images', auth, async (req: Request, res: Response) => {
   try {
@@ -95,10 +97,12 @@ router.post('/generate/character-images', auth, async (req: Request, res: Respon
     });
 
     const currentCount = user?.aiCharactersGenerated || 0;
+    const totalImagesPerCharacter = 1 + MAX_FULLBODY_IMAGES_PER_CHARACTER; // 1 portrait + N full body
+
     if (currentCount >= MAX_AI_CHARACTERS_PER_USER) {
       return res.status(403).json({
         success: false,
-        error: `You have reached the maximum of ${MAX_AI_CHARACTERS_PER_USER} AI-generated characters. Each character uses 3 AI images.`,
+        error: `You have reached the maximum of ${MAX_AI_CHARACTERS_PER_USER} AI-generated characters. Each character uses ${totalImagesPerCharacter} AI images.`,
         limitReached: true,
         generated: currentCount,
         limit: MAX_AI_CHARACTERS_PER_USER,
@@ -108,24 +112,25 @@ router.post('/generate/character-images', auth, async (req: Request, res: Respon
     // If NanoBanana API is not configured, return fallback immediately
     if (!NANOBANANA_API_KEY) {
       const fallbackUrl = generateDiceBearFallback(character);
+      const fallbackImages: Record<string, string> = { portrait: fallbackUrl };
+      for (let i = 1; i <= MAX_FULLBODY_IMAGES_PER_CHARACTER; i++) {
+        fallbackImages[`fullBody${i}`] = fallbackUrl;
+      }
       return res.json({
         success: true,
-        images: {
-          portrait: fallbackUrl,
-          fullBody1: fallbackUrl,
-          fullBody2: fallbackUrl,
-        },
+        images: fallbackImages,
         source: 'fallback',
         generated: currentCount,
         remaining: MAX_AI_CHARACTERS_PER_USER - currentCount,
+        limit: MAX_AI_CHARACTERS_PER_USER,
       });
     }
 
-    // Generate all 3 images
-    const images: { portrait?: string; fullBody1?: string; fullBody2?: string } = {};
+    // Generate images: 1 portrait + N full-body images
+    const images: Record<string, string> = {};
     let successCount = 0;
 
-    // 1. Generate portrait (head/shoulders)
+    // 1. Generate portrait (head/shoulders) - always first
     try {
       const portraitPrompt = buildCharacterPrompt(character, 'portrait');
       images.portrait = await generateWithNanoBanana(portraitPrompt, quality, 'portrait');
@@ -136,26 +141,19 @@ router.post('/generate/character-images', auth, async (req: Request, res: Respon
       images.portrait = generateDiceBearFallback(character);
     }
 
-    // 2. Generate first full-body image (heroic pose)
-    try {
-      const fullBody1Prompt = buildCharacterPrompt(character, 'full_body');
-      images.fullBody1 = await generateWithNanoBanana(fullBody1Prompt, quality, 'full_body');
-      successCount++;
-      console.log('Full body 1 generated successfully');
-    } catch (error) {
-      console.warn('Full body 1 generation failed:', error);
-      images.fullBody1 = generateDiceBearFallback(character);
-    }
-
-    // 3. Generate second full-body image (action pose)
-    try {
-      const fullBody2Prompt = buildCharacterPrompt(character, 'action_pose');
-      images.fullBody2 = await generateWithNanoBanana(fullBody2Prompt, quality, 'action_pose');
-      successCount++;
-      console.log('Full body 2 (action) generated successfully');
-    } catch (error) {
-      console.warn('Full body 2 generation failed:', error);
-      images.fullBody2 = generateDiceBearFallback(character);
+    // 2. Generate full-body images based on config
+    const fullBodyStyles = ['full_body', 'action_pose'];
+    for (let i = 1; i <= MAX_FULLBODY_IMAGES_PER_CHARACTER; i++) {
+      const style = fullBodyStyles[(i - 1) % fullBodyStyles.length] || 'full_body';
+      try {
+        const prompt = buildCharacterPrompt(character, style);
+        images[`fullBody${i}`] = await generateWithNanoBanana(prompt, quality, style);
+        successCount++;
+        console.log(`Full body ${i} generated successfully`);
+      } catch (error) {
+        console.warn(`Full body ${i} generation failed:`, error);
+        images[`fullBody${i}`] = generateDiceBearFallback(character);
+      }
     }
 
     // Only increment counter if at least one AI image was successfully generated
@@ -175,6 +173,7 @@ router.post('/generate/character-images', auth, async (req: Request, res: Respon
       imagesGenerated: successCount,
       generated: newCount,
       remaining: MAX_AI_CHARACTERS_PER_USER - newCount,
+      limit: MAX_AI_CHARACTERS_PER_USER,
     });
   } catch (error: any) {
     console.error('Character images generation failed:', error);

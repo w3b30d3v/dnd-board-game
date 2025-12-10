@@ -399,24 +399,6 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
     setFlaw(getRandomItem(options));
   }, [background, getRandomItem]);
 
-  const handleRandomBackstory = useCallback(() => {
-    const currentTrait = personalityTrait || getRandomItem([...(background?.personalityTraits || []), ...GENERIC_PERSONALITY_TRAITS]);
-    const currentIdeal = ideal || getRandomItem([...(background?.ideals || []), ...GENERIC_IDEALS]);
-    const currentBond = bond || getRandomItem([...(background?.bonds || []), ...GENERIC_BONDS]);
-    const currentFlaw = flaw || getRandomItem([...(background?.flaws || []), ...GENERIC_FLAWS]);
-
-    const generated = generateBackstory(
-      race?.name || 'adventurer',
-      classData?.name || 'hero',
-      background?.name || 'traveler',
-      currentTrait,
-      currentIdeal,
-      currentBond,
-      currentFlaw
-    );
-    setBackstory(generated);
-  }, [race, classData, background, personalityTrait, ideal, bond, flaw, getRandomItem]);
-
   const handleRandomizeAll = useCallback(() => {
     handleRandomPersonalityTrait();
     handleRandomIdeal();
@@ -801,45 +783,26 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
         <div className="dnd-divider mb-6" />
         <div className="flex items-center justify-between mb-4">
           <h3 className="dnd-heading-section text-xl mb-0 border-none pb-0">Personality (Optional)</h3>
-          <div className="flex gap-2">
-            <button
-              onClick={handleRandomizeAll}
-              className="btn-stone text-sm px-4 py-2 flex items-center gap-2"
-              type="button"
-              title="Quick random generation (offline)"
-            >
-              <span>🎲</span> Quick Random
-            </button>
-            <button
-              onClick={handleGenerateAllFromAPI}
-              disabled={isGenerating}
-              className="btn-magic text-sm px-4 py-2 flex items-center gap-2 disabled:opacity-50"
-              type="button"
-              title="Generate race/class-specific content"
-            >
-              <span>{isGenerating ? '⏳' : '✨'}</span> {isGenerating ? 'Generating...' : 'Generate'}
-            </button>
-          </div>
+          <button
+            onClick={handleGenerateAllFromAPI}
+            disabled={isGenerating}
+            className="btn-magic text-sm px-4 py-2 flex items-center gap-2 disabled:opacity-50"
+            type="button"
+            title="Generate all personality fields"
+          >
+            <span>{isGenerating ? '⏳' : '✨'}</span> {isGenerating ? 'Generating...' : 'Generate All'}
+          </button>
         </div>
         <p className="text-sm text-text-muted mb-4">
-          These details help bring your character to life. Use the generate buttons for random options.
+          These details help bring your character to life. Click Generate All or select from the options below.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Personality Trait */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-semibold text-text-primary">
-                Personality Trait
-              </label>
-              <button
-                onClick={handleRandomPersonalityTrait}
-                className="text-xs px-2 py-1 rounded bg-secondary/20 text-secondary hover:bg-secondary/30 transition-colors flex items-center gap-1"
-                type="button"
-              >
-                <span>🎲</span> Generate
-              </button>
-            </div>
+            <label className="block text-sm font-semibold text-text-primary mb-2">
+              Personality Trait
+            </label>
             <select
               value={personalityTrait}
               onChange={(e) => setPersonalityTrait(e.target.value)}
@@ -868,18 +831,9 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
 
           {/* Ideal */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-semibold text-text-primary">
-                Ideal
-              </label>
-              <button
-                onClick={handleRandomIdeal}
-                className="text-xs px-2 py-1 rounded bg-secondary/20 text-secondary hover:bg-secondary/30 transition-colors flex items-center gap-1"
-                type="button"
-              >
-                <span>🎲</span> Generate
-              </button>
-            </div>
+            <label className="block text-sm font-semibold text-text-primary mb-2">
+              Ideal
+            </label>
             <select
               value={ideal}
               onChange={(e) => setIdeal(e.target.value)}
@@ -908,18 +862,9 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
 
           {/* Bond */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-semibold text-text-primary">
-                Bond
-              </label>
-              <button
-                onClick={handleRandomBond}
-                className="text-xs px-2 py-1 rounded bg-secondary/20 text-secondary hover:bg-secondary/30 transition-colors flex items-center gap-1"
-                type="button"
-              >
-                <span>🎲</span> Generate
-              </button>
-            </div>
+            <label className="block text-sm font-semibold text-text-primary mb-2">
+              Bond
+            </label>
             <select
               value={bond}
               onChange={(e) => setBond(e.target.value)}
@@ -948,18 +893,9 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
 
           {/* Flaw */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-semibold text-text-primary">
-                Flaw
-              </label>
-              <button
-                onClick={handleRandomFlaw}
-                className="text-xs px-2 py-1 rounded bg-secondary/20 text-secondary hover:bg-secondary/30 transition-colors flex items-center gap-1"
-                type="button"
-              >
-                <span>🎲</span> Generate
-              </button>
-            </div>
+            <label className="block text-sm font-semibold text-text-primary mb-2">
+              Flaw
+            </label>
             <select
               value={flaw}
               onChange={(e) => setFlaw(e.target.value)}
@@ -990,18 +926,9 @@ export function CharacterDetails({ character, onUpdate, onNext, onBack }: StepPr
 
       {/* Backstory */}
       <div className="mt-6">
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-semibold text-text-primary">
-            Backstory (Optional)
-          </label>
-          <button
-            onClick={handleRandomBackstory}
-            className="text-xs px-2 py-1 rounded bg-secondary/20 text-secondary hover:bg-secondary/30 transition-colors flex items-center gap-1"
-            type="button"
-          >
-            <span>🎲</span> Generate Backstory
-          </button>
-        </div>
+        <label className="block text-sm font-semibold text-text-primary mb-2">
+          Backstory (Optional)
+        </label>
         <textarea
           value={backstory}
           onChange={(e) => setBackstory(e.target.value)}
