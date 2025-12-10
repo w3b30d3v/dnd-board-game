@@ -83,7 +83,7 @@ const characterCardVariants = {
   },
 };
 
-// Character Trading Card Modal - Matches mockup/16_character_trading_card.html exactly
+// Character Trading Card Modal - Larger format with prominent image display
 interface CharacterCardModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -126,8 +126,13 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
   const magicBonus = Math.floor((magicMod - 10) / 2) + proficiencyBonus;
   const hp = character.maxHitPoints || 10;
 
-  // Calculate rarity (1-5 stars based on level)
-  const rarity = Math.min(5, Math.ceil(character.level / 4));
+  // Calculate rarity based on race/class uniqueness
+  const rareRaces = ['tiefling', 'dragonborn', 'aasimar', 'drow', 'genasi'];
+  const rareClasses = ['warlock', 'sorcerer', 'paladin', 'monk'];
+  let rarity = 1;
+  if (rareRaces.includes(character.race.toLowerCase())) rarity += 2;
+  if (rareClasses.includes(character.class.toLowerCase())) rarity += 1;
+  rarity = Math.min(rarity, 5);
 
   const goToPrevious = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? imageList.length - 1 : prev - 1));
@@ -144,7 +149,7 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm"
           onClick={onClose}
         >
           <motion.div
@@ -154,42 +159,41 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Trading Card Container - 2.5" x 3.5" ratio (250x350px) */}
+            {/* Trading Card Container - Larger 320x520px for better image display */}
             <div
               className="relative overflow-hidden"
               style={{
-                width: '280px',
-                height: '392px',
+                width: '320px',
+                height: '520px',
                 background: 'linear-gradient(160deg, #2a2735 0%, #1e1b26 50%, #151218 100%)',
-                borderRadius: '12px',
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5), inset 0 0 60px rgba(0, 0, 0, 0.3)',
+                borderRadius: '16px',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6), 0 0 60px rgba(245, 158, 11, 0.15), inset 0 0 60px rgba(0, 0, 0, 0.3)',
               }}
             >
               {/* Gold Frame Border */}
               <div
-                className="absolute inset-0 pointer-events-none z-10"
+                className="absolute inset-0 pointer-events-none z-10 rounded-2xl"
                 style={{
-                  border: '3px solid',
-                  borderImage: 'linear-gradient(180deg, #F59E0B 0%, #D97706 50%, #92400E 100%) 1',
-                  borderRadius: '12px',
+                  border: '4px solid transparent',
+                  borderImage: 'linear-gradient(180deg, #FCD34D 0%, #F59E0B 30%, #D97706 70%, #92400E 100%) 1',
                 }}
               />
 
               {/* Header with Name and Rarity Stars */}
-              <div className="flex flex-col items-center justify-center px-3 py-2" style={{ background: 'linear-gradient(180deg, rgba(245, 158, 11, 0.1) 0%, transparent 100%)' }}>
+              <div className="flex flex-col items-center justify-center px-4 pt-3 pb-2" style={{ background: 'linear-gradient(180deg, rgba(245, 158, 11, 0.15) 0%, transparent 100%)' }}>
                 <h2
-                  className="text-sm font-bold text-primary uppercase tracking-wide text-center truncate w-full"
-                  style={{ fontFamily: 'Cinzel, serif', textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)' }}
+                  className="text-base font-bold text-primary uppercase tracking-wider text-center truncate w-full"
+                  style={{ fontFamily: 'Cinzel, serif', textShadow: '0 2px 8px rgba(0, 0, 0, 0.7), 0 0 20px rgba(245, 158, 11, 0.3)' }}
                 >
                   {character.name || 'Unnamed Hero'}
                 </h2>
                 {/* Rarity Stars */}
-                <div className="flex gap-1 mt-1">
+                <div className="flex gap-1.5 mt-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <span
                       key={star}
-                      className={`text-xs ${star <= rarity ? 'text-primary' : 'text-zinc-700'}`}
-                      style={{ textShadow: star <= rarity ? '0 0 4px rgba(245, 158, 11, 0.5)' : 'none' }}
+                      className={`text-sm ${star <= rarity ? 'text-primary' : 'text-zinc-700'}`}
+                      style={{ textShadow: star <= rarity ? '0 0 8px rgba(245, 158, 11, 0.6)' : 'none' }}
                     >
                       ★
                     </span>
@@ -199,23 +203,24 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
 
               {/* Ornate Gold Bar */}
               <div
-                className="mx-3 mb-2 rounded"
+                className="mx-4 mb-2"
                 style={{
-                  height: '6px',
+                  height: '4px',
                   background: 'linear-gradient(90deg, transparent 0%, #92400E 10%, #F59E0B 30%, #FCD34D 50%, #F59E0B 70%, #92400E 90%, transparent 100%)',
-                  boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)',
+                  boxShadow: '0 2px 12px rgba(245, 158, 11, 0.4)',
+                  borderRadius: '2px',
                 }}
               />
 
-              {/* Image Section */}
+              {/* Image Section - Much larger for full image display */}
               <div
-                className="mx-3 relative overflow-hidden"
+                className="mx-4 relative overflow-hidden"
                 style={{
-                  height: '120px',
-                  borderRadius: '6px',
-                  border: '2px solid #F59E0B',
+                  height: '240px',
+                  borderRadius: '8px',
+                  border: '3px solid #F59E0B',
                   background: '#0f0d13',
-                  boxShadow: 'inset 0 0 20px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 10px rgba(245, 158, 11, 0.3)',
+                  boxShadow: 'inset 0 0 30px rgba(0, 0, 0, 0.6), 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 20px rgba(245, 158, 11, 0.2)',
                 }}
               >
                 {hasImages && currentImage ? (
@@ -223,34 +228,44 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
                     <img
                       src={currentImage.url}
                       alt={character.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
+                      style={{ background: 'radial-gradient(circle at center, #1a1520 0%, #0f0d13 100%)' }}
                     />
+                    {/* Image Label */}
+                    <div
+                      className="absolute top-2 left-2 px-2 py-1 rounded text-xs font-medium"
+                      style={{ background: 'rgba(0, 0, 0, 0.8)', color: '#F59E0B', border: '1px solid rgba(245, 158, 11, 0.4)' }}
+                    >
+                      {currentImage.label}
+                    </div>
                     {/* Navigation Arrows */}
                     {hasMultipleImages && (
                       <>
                         <button
                           onClick={goToPrevious}
-                          className="absolute left-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-primary text-xs hover:bg-primary/30 transition-colors"
-                          style={{ background: 'rgba(0, 0, 0, 0.7)', border: '1px solid rgba(245, 158, 11, 0.5)' }}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-primary text-lg font-bold hover:bg-primary/30 transition-colors"
+                          style={{ background: 'rgba(0, 0, 0, 0.8)', border: '2px solid rgba(245, 158, 11, 0.6)' }}
                         >
                           ‹
                         </button>
                         <button
                           onClick={goToNext}
-                          className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-primary text-xs hover:bg-primary/30 transition-colors"
-                          style={{ background: 'rgba(0, 0, 0, 0.7)', border: '1px solid rgba(245, 158, 11, 0.5)' }}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-primary text-lg font-bold hover:bg-primary/30 transition-colors"
+                          style={{ background: 'rgba(0, 0, 0, 0.8)', border: '2px solid rgba(245, 158, 11, 0.6)' }}
                         >
                           ›
                         </button>
                       </>
                     )}
                     {/* Image Counter */}
-                    <div
-                      className="absolute bottom-1 right-1 px-2 py-0.5 rounded-full text-white text-xs"
-                      style={{ background: 'rgba(0, 0, 0, 0.7)', border: '1px solid rgba(245, 158, 11, 0.3)', fontSize: '9px' }}
-                    >
-                      {currentImageIndex + 1}/{imageList.length}
-                    </div>
+                    {hasMultipleImages && (
+                      <div
+                        className="absolute bottom-2 right-2 px-2 py-1 rounded text-xs font-medium"
+                        style={{ background: 'rgba(0, 0, 0, 0.8)', color: '#FCD34D', border: '1px solid rgba(245, 158, 11, 0.4)' }}
+                      >
+                        {currentImageIndex + 1} / {imageList.length}
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center">
@@ -259,59 +274,62 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
                         <motion.div
                           animate={{ rotate: 360 }}
                           transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                          className="text-3xl"
+                          className="text-5xl"
                         >
                           🎨
                         </motion.div>
-                        <p className="text-text-muted text-xs mt-1">Generating...</p>
+                        <p className="text-text-muted text-sm mt-2">Generating artwork...</p>
                       </>
                     ) : (
-                      <ClassIcon characterClass={character.class} size={48} color="#F59E0B" />
+                      <ClassIcon characterClass={character.class} size={64} color="#F59E0B" />
                     )}
                   </div>
                 )}
               </div>
 
               {/* Character Subtitle */}
-              <p className="text-center text-xs text-zinc-400 py-1 capitalize">
-                {character.race} • {character.class} • Lv.{character.level}
+              <p
+                className="text-center text-sm text-zinc-300 py-2 capitalize"
+                style={{ fontFamily: 'Crimson Text, Georgia, serif' }}
+              >
+                {character.race} • {character.class} • Level {character.level}
               </p>
 
               {/* Big Stats Grid (PWR, DEF, MAG, HP) */}
               <div
-                className="mx-3 grid grid-cols-4 gap-1 p-1 rounded-md"
-                style={{ background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(245, 158, 11, 0.4)' }}
+                className="mx-4 grid grid-cols-4 gap-2 p-2 rounded-lg"
+                style={{ background: 'rgba(0, 0, 0, 0.3)', border: '1px solid rgba(245, 158, 11, 0.5)' }}
               >
                 {/* Power */}
-                <div className="text-center p-1 rounded" style={{ background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.6) 100%)', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-                  <div className="text-lg" style={{ color: '#FF6B6B', textShadow: '0 0 10px #FF6B6B, 0 0 16px #FF6B6B', filter: 'brightness(1.5)' }}>⚔</div>
-                  <div className="text-sm font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#FCA5A5', textShadow: '0 0 8px rgba(239, 68, 68, 0.4)' }}>{power}</div>
-                  <div className="text-[8px] uppercase tracking-wider" style={{ color: '#EF4444' }}>PWR</div>
+                <div className="text-center py-1.5 rounded" style={{ background: 'linear-gradient(180deg, rgba(239, 68, 68, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%)', border: '1px solid rgba(239, 68, 68, 0.4)' }}>
+                  <div className="text-xl" style={{ color: '#FF6B6B', textShadow: '0 0 12px #FF6B6B', filter: 'brightness(1.3)' }}>⚔</div>
+                  <div className="text-lg font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#FCA5A5', textShadow: '0 0 8px rgba(239, 68, 68, 0.5)' }}>{power}</div>
+                  <div className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: '#EF4444' }}>PWR</div>
                 </div>
                 {/* Defense */}
-                <div className="text-center p-1 rounded" style={{ background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.6) 100%)', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-                  <div className="text-lg" style={{ color: '#7DD3FC', textShadow: '0 0 10px #7DD3FC, 0 0 16px #7DD3FC', filter: 'brightness(1.5)' }}>🛡</div>
-                  <div className="text-sm font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#BAE6FD', textShadow: '0 0 8px rgba(56, 189, 248, 0.4)' }}>{defense}</div>
-                  <div className="text-[8px] uppercase tracking-wider" style={{ color: '#38BDF8' }}>DEF</div>
+                <div className="text-center py-1.5 rounded" style={{ background: 'linear-gradient(180deg, rgba(56, 189, 248, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%)', border: '1px solid rgba(56, 189, 248, 0.4)' }}>
+                  <div className="text-xl" style={{ color: '#7DD3FC', textShadow: '0 0 12px #7DD3FC', filter: 'brightness(1.3)' }}>🛡</div>
+                  <div className="text-lg font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#BAE6FD', textShadow: '0 0 8px rgba(56, 189, 248, 0.5)' }}>{defense}</div>
+                  <div className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: '#38BDF8' }}>DEF</div>
                 </div>
                 {/* Magic */}
-                <div className="text-center p-1 rounded" style={{ background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.6) 100%)', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-                  <div className="text-lg" style={{ color: '#C4B5FD', textShadow: '0 0 10px #C4B5FD, 0 0 16px #C4B5FD', filter: 'brightness(1.5)' }}>✨</div>
-                  <div className="text-sm font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#DDD6FE', textShadow: '0 0 8px rgba(167, 139, 250, 0.4)' }}>+{magicBonus}</div>
-                  <div className="text-[8px] uppercase tracking-wider" style={{ color: '#A78BFA' }}>MAG</div>
+                <div className="text-center py-1.5 rounded" style={{ background: 'linear-gradient(180deg, rgba(167, 139, 250, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%)', border: '1px solid rgba(167, 139, 250, 0.4)' }}>
+                  <div className="text-xl" style={{ color: '#C4B5FD', textShadow: '0 0 12px #C4B5FD', filter: 'brightness(1.3)' }}>✨</div>
+                  <div className="text-lg font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#DDD6FE', textShadow: '0 0 8px rgba(167, 139, 250, 0.5)' }}>+{magicBonus}</div>
+                  <div className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: '#A78BFA' }}>MAG</div>
                 </div>
                 {/* HP */}
-                <div className="text-center p-1 rounded" style={{ background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.6) 100%)', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-                  <div className="text-lg" style={{ color: '#86EFAC', textShadow: '0 0 10px #86EFAC, 0 0 16px #86EFAC', filter: 'brightness(1.5)' }}>❤</div>
-                  <div className="text-sm font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#BBF7D0', textShadow: '0 0 8px rgba(74, 222, 128, 0.4)' }}>{hp}</div>
-                  <div className="text-[8px] uppercase tracking-wider" style={{ color: '#4ADE80' }}>HP</div>
+                <div className="text-center py-1.5 rounded" style={{ background: 'linear-gradient(180deg, rgba(74, 222, 128, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%)', border: '1px solid rgba(74, 222, 128, 0.4)' }}>
+                  <div className="text-xl" style={{ color: '#86EFAC', textShadow: '0 0 12px #86EFAC', filter: 'brightness(1.3)' }}>❤</div>
+                  <div className="text-lg font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#BBF7D0', textShadow: '0 0 8px rgba(74, 222, 128, 0.5)' }}>{hp}</div>
+                  <div className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: '#4ADE80' }}>HP</div>
                 </div>
               </div>
 
               {/* Ability Scores Row */}
               <div
-                className="mx-3 mt-1 flex justify-around p-1 rounded-md"
-                style={{ background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(245, 158, 11, 0.3)' }}
+                className="mx-4 mt-2 flex justify-between p-1.5 rounded-lg"
+                style={{ background: 'rgba(0, 0, 0, 0.25)', border: '1px solid rgba(245, 158, 11, 0.4)' }}
               >
                 {[
                   { name: 'STR', value: abilities.strength },
@@ -323,40 +341,41 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
                 ].map((ability) => (
                   <div
                     key={ability.name}
-                    className="text-center px-1 py-0.5 rounded min-w-[28px]"
-                    style={{ background: 'rgba(0, 0, 0, 0.3)', border: '1px solid rgba(245, 158, 11, 0.4)' }}
+                    className="text-center px-2 py-1 rounded"
+                    style={{ background: 'rgba(0, 0, 0, 0.4)', border: '1px solid rgba(245, 158, 11, 0.5)' }}
                   >
-                    <div className="text-[7px] font-semibold text-primary">{ability.name}</div>
-                    <div className="text-[10px] font-bold" style={{ color: '#FCD34D', textShadow: '0 0 4px rgba(252, 211, 77, 0.3)' }}>{ability.value}</div>
+                    <div className="text-[8px] font-bold text-primary tracking-wide">{ability.name}</div>
+                    <div className="text-sm font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#FCD34D', textShadow: '0 0 6px rgba(252, 211, 77, 0.4)' }}>{ability.value}</div>
                   </div>
                 ))}
               </div>
 
               {/* Motto/Quote */}
-              <div className="px-4 pt-1 text-center">
+              <div className="px-5 pt-2 text-center">
                 <p
-                  className="text-xs italic text-zinc-300 truncate"
-                  style={{ fontFamily: 'Crimson Text, Georgia, serif' }}
+                  className="text-sm italic text-zinc-300 line-clamp-2"
+                  style={{ fontFamily: 'Crimson Text, Georgia, serif', lineHeight: '1.4' }}
                 >
                   {character.appearance?.personalityTrait
-                    ? `"${character.appearance.personalityTrait.substring(0, 50)}${character.appearance.personalityTrait.length > 50 ? '...' : ''}"`
-                    : '"Adventure awaits the bold."'}
+                    ? `"${character.appearance.personalityTrait.substring(0, 80)}${character.appearance.personalityTrait.length > 80 ? '...' : ''}"`
+                    : '"Fortune favors the bold adventurer."'}
                 </p>
               </div>
 
               {/* D&D Logo */}
-              <div className="absolute bottom-1 left-0 right-0 flex justify-center items-center">
-                <div className="flex items-center">
-                  <span style={{ fontFamily: 'Cinzel Decorative, serif', fontSize: '12px', fontWeight: 700, color: '#F59E0B', textShadow: '0 1px 4px rgba(0, 0, 0, 0.5)' }}>D</span>
-                  <span style={{ fontFamily: 'Cinzel Decorative, serif', fontSize: '16px', color: '#F59E0B', margin: '0 1px', textShadow: '0 0 10px rgba(245, 158, 11, 0.5), 0 1px 4px rgba(0, 0, 0, 0.5)' }}>&</span>
-                  <span style={{ fontFamily: 'Cinzel Decorative, serif', fontSize: '12px', fontWeight: 700, color: '#F59E0B', textShadow: '0 1px 4px rgba(0, 0, 0, 0.5)' }}>D</span>
+              <div className="absolute bottom-2 left-0 right-0 flex justify-center items-center">
+                <div className="flex items-center gap-0.5">
+                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', fontWeight: 700, color: '#F59E0B', textShadow: '0 2px 6px rgba(0, 0, 0, 0.6)' }}>D</span>
+                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '18px', color: '#FCD34D', textShadow: '0 0 12px rgba(245, 158, 11, 0.5), 0 2px 6px rgba(0, 0, 0, 0.6)' }}>&</span>
+                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', fontWeight: 700, color: '#F59E0B', textShadow: '0 2px 6px rgba(0, 0, 0, 0.6)' }}>D</span>
                 </div>
               </div>
 
               {/* Close button - floating */}
               <button
                 onClick={onClose}
-                className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors z-20 text-xs"
+                className="absolute top-3 right-3 w-7 h-7 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-black/90 transition-colors z-20 text-sm font-bold"
+                style={{ border: '1px solid rgba(255, 255, 255, 0.2)' }}
               >
                 ✕
               </button>
@@ -768,65 +787,57 @@ export default function DashboardContent() {
                         style={{ perspective: 1000 }}
                       >
                         <EnchantedCard hover className="p-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-3">
-                              {/* Character Portrait or Class Icon */}
-                              <div className="relative">
-                                {hasImages && char.portraitUrl ? (
-                                  <button
-                                    onClick={() => setShowCharacterCard(char.id)}
-                                    className="w-12 h-12 rounded-lg overflow-hidden border-2 border-primary/50 hover:border-primary transition-colors cursor-pointer"
-                                    title="View character card"
-                                  >
-                                    <img
-                                      src={char.portraitUrl}
-                                      alt={char.name}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </button>
-                                ) : (
-                                  <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/30">
-                                    {isGenerating ? (
-                                      <motion.div
-                                        animate={{ rotate: 360 }}
-                                        transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                                        className="text-xl"
-                                      >
-                                        🎨
-                                      </motion.div>
-                                    ) : (
-                                      <ClassIcon characterClass={char.class} size={24} color="#F59E0B" />
-                                    )}
-                                  </div>
-                                )}
-                                {/* Status badge */}
-                                {isGenerating && (
-                                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-warning flex items-center justify-center">
+                          <div className="flex items-start gap-3">
+                            {/* Character Portrait or Class Icon */}
+                            <div className="relative">
+                              {hasImages && char.portraitUrl ? (
+                                <button
+                                  onClick={() => setShowCharacterCard(char.id)}
+                                  className="w-12 h-12 rounded-lg overflow-hidden border-2 border-primary/50 hover:border-primary transition-colors cursor-pointer"
+                                  title="View character card"
+                                >
+                                  <img
+                                    src={char.portraitUrl}
+                                    alt={char.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </button>
+                              ) : (
+                                <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/30">
+                                  {isGenerating ? (
                                     <motion.div
-                                      animate={{ scale: [1, 1.3, 1] }}
-                                      transition={{ duration: 1, repeat: Infinity }}
-                                      className="w-2 h-2 rounded-full bg-white"
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                              <div>
-                                <h3 className="font-display font-semibold text-lg text-text-primary">
-                                  {char.name}
-                                </h3>
-                                <p className="text-sm text-text-secondary">
-                                  Level {char.level} {char.race} {char.class}
-                                </p>
-                                {isGenerating && (
-                                  <p className="text-xs text-warning mt-1">Generating images...</p>
-                                )}
-                              </div>
+                                      animate={{ rotate: 360 }}
+                                      transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                                      className="text-xl"
+                                    >
+                                      🎨
+                                    </motion.div>
+                                  ) : (
+                                    <ClassIcon characterClass={char.class} size={24} color="#F59E0B" />
+                                  )}
+                                </div>
+                              )}
+                              {/* Status badge */}
+                              {isGenerating && (
+                                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-warning flex items-center justify-center">
+                                  <motion.div
+                                    animate={{ scale: [1, 1.3, 1] }}
+                                    transition={{ duration: 1, repeat: Infinity }}
+                                    className="w-2 h-2 rounded-full bg-white"
+                                  />
+                                </div>
+                              )}
                             </div>
-                            <div className="text-right flex items-center gap-2">
-                              <HeartIcon size={16} color="#EF4444" />
-                              <span className="text-lg font-bold text-danger">
-                                {char.currentHitPoints}/{char.maxHitPoints}
-                              </span>
+                            <div className="flex-1">
+                              <h3 className="font-display font-semibold text-lg text-text-primary">
+                                {char.name}
+                              </h3>
+                              <p className="text-sm text-text-secondary">
+                                Level {char.level} {char.race} {char.class}
+                              </p>
+                              {isGenerating && (
+                                <p className="text-xs text-warning mt-1">Generating images...</p>
+                              )}
                             </div>
                           </div>
                           <div className="mt-3">
