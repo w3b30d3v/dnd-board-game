@@ -80,6 +80,7 @@ All specifications are in the `/docs/` directory. **Read in this order:**
 | Document | Purpose |
 |----------|---------|
 | `43_Character_Builder_Personality_Visualization.md` | **Personality auto-generation, progressive visual build-up, content safety** |
+| `45_Character_Trading_Card_Specification.md` | **Printable trading card design - 2.5" × 3.5" collectible cards** |
 
 ### AI-Powered Graphics & Media (FOR IMPRESSIVE VISUALS)
 | Document | Purpose |
@@ -119,7 +120,8 @@ All specifications are in the `/docs/` directory. **Read in this order:**
 | `mockups/12_levelup_celebration_prototype.html` | Level up sequence with particles, rewards |
 | `mockups/13_death_save_prototype.html` | Death save with tension, heartbeat |
 | `mockups/14_cutscene_dialogue_prototype.html` | Visual novel style dialogue, choices |
-| `mockups/15_victory_defeat_prototype.html` | Combat end sequences
+| `mockups/15_victory_defeat_prototype.html` | Combat end sequences |
+| `mockups/16_character_trading_card.html` | **Printable character trading card** |
 
 ### Testing & DevOps
 | Document | Purpose |
