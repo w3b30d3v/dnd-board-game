@@ -30,10 +30,16 @@ app.use(
       if (origin.match(/^http:\/\/localhost:\d+$/)) {
         return callback(null, true);
       }
+      // Allow any Railway subdomain
+      if (origin.match(/^https:\/\/.*\.up\.railway\.app$/)) {
+        return callback(null, true);
+      }
       // Allow configured origins
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
+      // Log rejected origins for debugging
+      logger.warn({ origin }, 'CORS request rejected');
       callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
