@@ -296,9 +296,12 @@ const pendingImageTasks = sharedPendingTasks;
 router.post('/webhook/nanobanana', async (req: Request, res: Response) => {
   try {
     console.log('=== NanoBanana webhook received ===');
+    console.log('Timestamp:', new Date().toISOString());
+    console.log('Raw body type:', typeof req.body);
     console.log('Headers:', JSON.stringify(req.headers, null, 2));
     console.log('Body:', JSON.stringify(req.body, null, 2));
-    console.log('Pending tasks:', Array.from(pendingImageTasks.keys()));
+    console.log('Pending tasks count:', pendingImageTasks.size);
+    console.log('Pending task IDs:', Array.from(pendingImageTasks.keys()));
 
     // NanoBanana webhook structure:
     // { code: 200, msg: "...", data: { taskId: "...", info: { resultImageUrl: "..." } } }

@@ -15,6 +15,12 @@ const NANOBANANA_API_KEY = process.env.NANOBANANA_API_KEY;
 const NANOBANANA_API_URL = 'https://api.nanobananaapi.ai/api/v1/nanobanana';
 const CALLBACK_BASE_URL = process.env.CALLBACK_BASE_URL || '';
 
+// Log configuration at module load time
+console.log('=== ImageGenerationService Module Loaded ===');
+console.log('NANOBANANA_API_KEY configured:', !!NANOBANANA_API_KEY);
+console.log('CALLBACK_BASE_URL configured:', !!CALLBACK_BASE_URL);
+console.log('CALLBACK_BASE_URL value:', CALLBACK_BASE_URL);
+
 interface CharacterData {
   id: string;
   name: string;
@@ -46,8 +52,12 @@ export const pendingImageTasks = new Map<string, {
 export class ImageGenerationService {
   async generateForCharacter(userId: string, character: CharacterData): Promise<GenerationResult> {
     console.log('=== ImageGenerationService.generateForCharacter ===');
+    console.log('Timestamp:', new Date().toISOString());
+    console.log('UserId:', userId);
+    console.log('Character ID:', character.id);
     console.log('Character:', JSON.stringify(character, null, 2));
     console.log('NANOBANANA_API_KEY set:', !!NANOBANANA_API_KEY);
+    console.log('NANOBANANA_API_KEY length:', NANOBANANA_API_KEY?.length || 0);
     console.log('CALLBACK_BASE_URL:', CALLBACK_BASE_URL);
 
     // Check user's generation limit
