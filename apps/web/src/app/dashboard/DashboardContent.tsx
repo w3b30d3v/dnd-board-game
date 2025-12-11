@@ -12,7 +12,6 @@ import {
   SwordIcon,
   ScrollIcon,
   D20Icon,
-  HeartIcon,
   ClassIcon,
 } from '@/components/dnd/DnDIcons';
 
