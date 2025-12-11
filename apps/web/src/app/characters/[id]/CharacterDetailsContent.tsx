@@ -242,16 +242,236 @@ function formatModifier(score: number): string {
 }
 
 // Tab types
-type TabType = 'stats' | 'abilities' | 'personality' | 'lore';
+type TabType = 'stats' | 'abilities' | 'personality' | 'lore' | 'trivia';
 
-// Image Carousel Component
+// Trivia and fun facts data
+const RACE_TRIVIA: Record<string, string[]> = {
+  human: [
+    'Humans are the most populous race in most D&D worlds',
+    'The average human lifespan is about 75-100 years',
+    'Humans built the largest empires in fantasy history',
+    'Human ambition has led to both the greatest achievements and worst catastrophes',
+    'Humans can interbreed with many races, creating half-elves and half-orcs',
+  ],
+  elf: [
+    'Elves can live for over 700 years',
+    'Elves don\'t sleep - they enter a 4-hour meditative trance called "Reverie"',
+    'The elven language, Elvish, is the basis for many magical incantations',
+    'High Elves created the first magical academies',
+    'Elves are immune to magical sleep effects',
+  ],
+  dwarf: [
+    'Dwarves can live 350-400 years',
+    'Dwarven ale is legendary and can knock out other races easily',
+    'Dwarves have a natural resistance to poison',
+    'The dwarven language uses runes that double as magical symbols',
+    'Dwarves remember grudges for generations - they keep "books of grudges"',
+  ],
+  halfling: [
+    'Halflings are naturally lucky - fate seems to favor them',
+    'Most halflings live in comfortable burrow-homes called "holes"',
+    'Halflings have the lowest crime rate of any race',
+    'They rarely wear shoes due to their tough, hairy feet',
+    'Halflings invented the concept of "second breakfast"',
+  ],
+  dragonborn: [
+    'Dragonborn were created by dragon gods in ancient times',
+    'Each dragonborn has a breath weapon matching their draconic ancestry',
+    'Dragonborn have no tails, unlike true dragons',
+    'Their scales can be any chromatic or metallic dragon color',
+    'Dragonborn clans are more important than family names',
+  ],
+  tiefling: [
+    'Tieflings are descendants of humans who made pacts with Asmodeus',
+    'No two tieflings look exactly alike - their infernal traits vary wildly',
+    'Tieflings are naturally resistant to fire damage',
+    'They can see perfectly in complete darkness',
+    'Despite their appearance, tieflings are not inherently evil',
+  ],
+  gnome: [
+    'Gnomes live 350-500 years',
+    'Rock Gnomes are famous inventors and tinkerers',
+    'Forest Gnomes can speak with small animals',
+    'Gnomes have an innate resistance to magic',
+    'The gnomish language sounds like rapid chittering to other races',
+  ],
+  'half-elf': [
+    'Half-elves combine human ambition with elven grace',
+    'They live about 180 years - longer than humans but shorter than elves',
+    'Half-elves are often diplomats, bridging human and elven societies',
+    'They inherit the elven immunity to magical sleep',
+    'Many half-elves feel like outsiders in both cultures',
+  ],
+  'half-orc': [
+    'Half-orcs live about 75 years',
+    'When reduced to 0 HP, they can stay at 1 HP once per day (Relentless Endurance)',
+    'Their critical hits deal extra damage (Savage Attacks)',
+    'Many half-orcs become adventurers to prove their worth',
+    'They can see in darkness up to 60 feet',
+  ],
+};
+
+const CLASS_TRIVIA: Record<string, string[]> = {
+  barbarian: [
+    'A barbarian\'s Rage makes them resistant to physical damage',
+    'At high levels, barbarians become nearly impossible to kill',
+    'The Path of the Totem Warrior lets barbarians channel animal spirits',
+    'Barbarians can\'t cast spells while raging',
+    'Their Unarmored Defense can make them tankier than armored fighters',
+  ],
+  bard: [
+    'Bards can learn spells from ANY class spell list',
+    'Bardic Inspiration dice grow from d6 to d12 as they level',
+    'The College of Lore makes bards the ultimate skill monkeys',
+    'Bards use music, poetry, or oration as their spellcasting focus',
+    'A high-level bard knows more skills than any other class',
+  ],
+  cleric: [
+    'Clerics are the most versatile healers in D&D',
+    'Different domains give clerics vastly different abilities',
+    'War Domain clerics can attack as a bonus action',
+    'Clerics can turn or destroy undead with Channel Divinity',
+    'At level 10, clerics can call upon their god for Divine Intervention',
+  ],
+  druid: [
+    'Moon Druids can Wild Shape into CR 1 beasts at level 2',
+    'Druids refuse to wear metal armor - it interferes with their magic',
+    'High-level druids stop aging and can\'t be magically aged',
+    'Druids can Wild Shape into elementals at high levels',
+    'The druidic language is secret - teaching it to non-druids is forbidden',
+  ],
+  fighter: [
+    'Fighters get more Ability Score Improvements than any other class',
+    'Action Surge lets fighters take two full turns in one round',
+    'Champion fighters score critical hits on 19-20 (later 18-20)',
+    'Battle Masters have combat maneuvers that control the battlefield',
+    'Fighters are the only class that starts with proficiency in all weapons',
+  ],
+  monk: [
+    'Monks can use Ki to Flurry of Blows for extra attacks',
+    'At level 4, monks can catch arrows and throw them back',
+    'High-level monks are immune to disease and poison',
+    'Monks can run on water and up walls',
+    'Way of the Open Hand monks can kill with a single touch (Quivering Palm)',
+  ],
+  paladin: [
+    'Divine Smite can deal massive damage to fiends and undead',
+    'Paladins generate an aura that protects nearby allies',
+    'Breaking their oath can turn a paladin into an Oathbreaker',
+    'Lay on Hands can heal OR cure diseases and poisons',
+    'Paladins are immune to disease at level 3',
+  ],
+  ranger: [
+    'Rangers can choose favored enemies they\'re especially effective against',
+    'Beast Master rangers gain an animal companion',
+    'Gloom Stalkers are invisible to creatures using darkvision',
+    'Rangers learn to cast spells at level 2',
+    'At high levels, rangers can vanish completely as a bonus action',
+  ],
+  rogue: [
+    'Sneak Attack damage grows to 10d6 at level 19',
+    'Rogues can take a bonus action to Hide, Dash, or Disengage every turn',
+    'Assassins automatically crit against surprised enemies',
+    'At level 7, rogues can halve damage from most attacks (Evasion)',
+    'Reliable Talent means rogues can\'t roll below 10 on skilled checks',
+  ],
+  sorcerer: [
+    'Sorcerers can modify spells with Metamagic',
+    'Twinned Spell lets sorcerers cast single-target spells on two targets',
+    'Wild Magic sorcerers can cause random magical effects',
+    'Sorcerers know fewer spells but can cast them more flexibly',
+    'Draconic Bloodline sorcerers grow scales that increase their AC',
+  ],
+  warlock: [
+    'Warlocks regain all spell slots on a short rest',
+    'Eldritch Blast is considered the best cantrip in the game',
+    'Pact of the Tome gives warlocks ritual casting and extra cantrips',
+    'Warlocks can speak with animals, read any language, or see in magical darkness',
+    'The Hexblade patron makes warlocks formidable melee combatants',
+  ],
+  wizard: [
+    'Wizards have the largest spell list of any class',
+    'They can copy spells from scrolls and other spellbooks',
+    'School of Divination wizards can replace dice rolls with pre-rolled ones',
+    'Wizards can make spells permanent with the Wish spell',
+    'At level 18, wizards can have a spell always prepared (Spell Mastery)',
+  ],
+};
+
+const BACKGROUND_TRIVIA: Record<string, string[]> = {
+  acolyte: [
+    'Acolytes get free healing at temples of their faith',
+    'They can perform religious ceremonies',
+    'Their shelter feature means temples will protect them',
+    'Acolytes often know ancient languages like Celestial or Infernal',
+    'Many acolytes become clerics or paladins',
+  ],
+  criminal: [
+    'Criminals have a reliable contact in every major city',
+    'The Criminal Contact feature provides underworld information',
+    'Many criminals specialize as burglars, blackmailers, or hired killers',
+    'Thieves\' Cant is a secret language known to criminals',
+    'Some criminals are actually spies working for governments',
+  ],
+  folk_hero: [
+    'Folk heroes are loved by common people everywhere',
+    'Their heroic deed defined them before adventuring',
+    'Common folk will shelter and feed them for free',
+    'Folk heroes often rose up against tyranny',
+    'They typically come from humble farming backgrounds',
+  ],
+  noble: [
+    'Nobles have Position of Privilege in high society',
+    'They often come with family drama and responsibilities',
+    'Noble families may have ancient enemies or debts',
+    'Some nobles are actually in exile from their homes',
+    'The knight variant noble comes with retainers',
+  ],
+  sage: [
+    'Sages know where to find any piece of information',
+    'They often have a specialty like alchemy or astronomy',
+    'Sages can access libraries and universities freely',
+    'Many sages adventure to find lost knowledge',
+    'The Researcher feature lets them always find lore',
+  ],
+  soldier: [
+    'Soldiers have Military Rank recognized by their army',
+    'They may have been officers, scouts, or cavalry',
+    'Other soldiers will defer to their experience',
+    'Some soldiers carry trophies from their battles',
+    'The specialty might be archer, healer, or standard bearer',
+  ],
+  outlander: [
+    'Outlanders never get lost and always find food',
+    'They grew up far from civilization',
+    'The Wanderer feature provides excellent navigation',
+    'Many outlanders are tribal members or hermits',
+    'They\'re often uncomfortable in cities',
+  ],
+  entertainer: [
+    'Entertainers can always find a venue to perform',
+    'Their performances provide free lodging',
+    'Many entertainers are actors, dancers, or musicians',
+    'The gladiator variant performs in arenas',
+    'Entertainers are often well-known and recognized',
+  ],
+};
+
+// Helper to capitalize words
+function toTitleCase(str: string): string {
+  return str.split(/[-_\s]+/).map(word =>
+    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+  ).join(' ');
+}
+
+// Image Carousel Component - Larger version
 function ImageCarousel({ images, characterName }: { images: { url: string; label: string }[]; characterName: string }) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   if (images.length === 0) {
     return (
-      <div className="w-full h-64 bg-bg-tertiary rounded-lg flex items-center justify-center border border-border/30">
-        <ClassIcon characterClass="fighter" size={64} color="#F59E0B" />
+      <div className="w-full h-80 bg-bg-tertiary rounded-lg flex items-center justify-center border border-border/30">
+        <ClassIcon characterClass="fighter" size={80} color="#F59E0B" />
       </div>
     );
   }
@@ -265,9 +485,9 @@ function ImageCarousel({ images, characterName }: { images: { url: string; label
   };
 
   return (
-    <div className="relative">
-      {/* Main Image */}
-      <div className="relative w-full h-64 rounded-lg overflow-hidden border-2 border-primary/50 bg-bg-tertiary">
+    <div className="relative h-full flex flex-col">
+      {/* Main Image - Takes most of the space */}
+      <div className="relative flex-1 min-h-0 rounded-lg overflow-hidden border-2 border-primary/50 bg-bg-tertiary shadow-lg shadow-primary/20">
         <AnimatePresence mode="wait">
           <motion.img
             key={currentIndex}
@@ -315,15 +535,15 @@ function ImageCarousel({ images, characterName }: { images: { url: string; label
 
       {/* Thumbnail Strip */}
       {images.length > 1 && (
-        <div className="flex justify-center gap-2 mt-2">
+        <div className="flex justify-center gap-3 mt-3 flex-shrink-0">
           {images.map((img, idx) => (
             <button
               key={idx}
               onClick={() => setCurrentIndex(idx)}
-              className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${
+              className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
                 idx === currentIndex
-                  ? 'border-primary scale-105 shadow-glow'
-                  : 'border-border/30 hover:border-primary/50'
+                  ? 'border-primary scale-110 shadow-glow ring-2 ring-primary/50'
+                  : 'border-border/30 hover:border-primary/50 hover:scale-105'
               }`}
             >
               <img src={img.url} alt={img.label} className="w-full h-full object-cover" />
@@ -464,235 +684,503 @@ export default function CharacterDetailsContent() {
   const classLore = CLASS_LORE[character.class.toLowerCase()] || CLASS_LORE.fighter;
   const backgroundLore = BACKGROUND_LORE[character.background?.toLowerCase() || 'soldier'] || BACKGROUND_LORE.soldier;
 
+  // Trivia lookups
+  const raceTrivia = RACE_TRIVIA[character.race.toLowerCase()] || RACE_TRIVIA.human;
+  const classTrivia = CLASS_TRIVIA[character.class.toLowerCase()] || CLASS_TRIVIA.fighter;
+  const backgroundTrivia = BACKGROUND_TRIVIA[character.background?.toLowerCase() || 'soldier'] || BACKGROUND_TRIVIA.soldier;
+
   // Tab content renderers
   const renderStatsTab = () => (
-    <div className="space-y-4">
-      {/* Combat Stats */}
+    <div className="space-y-5">
+      {/* Combat Stats - Larger */}
       <div>
-        <h3 className="text-sm font-semibold text-primary mb-2">Combat Stats</h3>
-        <div className="grid grid-cols-4 gap-2">
-          <div className="text-center p-2 rounded-lg bg-danger/10 border border-danger/30">
-            <div className="text-lg font-bold text-danger">{character.currentHitPoints}/{character.maxHitPoints}</div>
-            <div className="text-[10px] text-text-muted uppercase">HP</div>
-          </div>
-          <div className="text-center p-2 rounded-lg bg-info/10 border border-info/30">
-            <div className="text-lg font-bold text-info">{character.armorClass}</div>
-            <div className="text-[10px] text-text-muted uppercase">AC</div>
-          </div>
-          <div className="text-center p-2 rounded-lg bg-primary/10 border border-primary/30">
-            <div className="text-lg font-bold text-primary">{character.speed || 30}</div>
-            <div className="text-[10px] text-text-muted uppercase">Speed</div>
-          </div>
-          <div className="text-center p-2 rounded-lg bg-secondary/10 border border-secondary/30">
-            <div className="text-lg font-bold text-secondary">+{character.proficiencyBonus || 2}</div>
-            <div className="text-[10px] text-text-muted uppercase">Prof</div>
-          </div>
+        <h3 className="text-sm font-semibold text-primary mb-3 flex items-center gap-2">
+          <span className="text-lg">⚔️</span> Combat Statistics
+        </h3>
+        <div className="grid grid-cols-4 gap-3">
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            className="text-center p-3 rounded-lg bg-gradient-to-b from-danger/20 to-danger/5 border border-danger/40 shadow-lg shadow-danger/10"
+          >
+            <div className="text-2xl font-bold text-danger">{character.currentHitPoints}/{character.maxHitPoints}</div>
+            <div className="text-xs text-danger/80 uppercase tracking-wider mt-1">Hit Points</div>
+            <div className="text-[10px] text-text-muted mt-1">CON: {formatModifier(character.constitution)}</div>
+          </motion.div>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            className="text-center p-3 rounded-lg bg-gradient-to-b from-info/20 to-info/5 border border-info/40 shadow-lg shadow-info/10"
+          >
+            <div className="text-2xl font-bold text-info">{character.armorClass}</div>
+            <div className="text-xs text-info/80 uppercase tracking-wider mt-1">Armor Class</div>
+            <div className="text-[10px] text-text-muted mt-1">Base 10 + DEX</div>
+          </motion.div>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            className="text-center p-3 rounded-lg bg-gradient-to-b from-primary/20 to-primary/5 border border-primary/40 shadow-lg shadow-primary/10"
+          >
+            <div className="text-2xl font-bold text-primary">{character.speed || 30} ft</div>
+            <div className="text-xs text-primary/80 uppercase tracking-wider mt-1">Speed</div>
+            <div className="text-[10px] text-text-muted mt-1">{toTitleCase(character.race)} base</div>
+          </motion.div>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            className="text-center p-3 rounded-lg bg-gradient-to-b from-secondary/20 to-secondary/5 border border-secondary/40 shadow-lg shadow-secondary/10"
+          >
+            <div className="text-2xl font-bold text-secondary">+{character.proficiencyBonus || 2}</div>
+            <div className="text-xs text-secondary/80 uppercase tracking-wider mt-1">Proficiency</div>
+            <div className="text-[10px] text-text-muted mt-1">Level {character.level}</div>
+          </motion.div>
         </div>
       </div>
 
-      {/* Ability Scores */}
+      {/* Ability Scores - Larger with bars */}
       <div>
-        <h3 className="text-sm font-semibold text-primary mb-2">Ability Scores</h3>
-        <div className="grid grid-cols-6 gap-1">
+        <h3 className="text-sm font-semibold text-primary mb-3 flex items-center gap-2">
+          <span className="text-lg">📊</span> Ability Scores
+        </h3>
+        <div className="grid grid-cols-3 gap-3">
           {abilities.map((ability) => (
-            <div
+            <motion.div
               key={ability.abbr}
-              className="text-center p-2 rounded-lg bg-primary/5 border border-primary/30"
+              whileHover={{ scale: 1.02 }}
+              className="p-3 rounded-lg bg-gradient-to-r from-primary/10 to-transparent border border-primary/30"
             >
-              <div className="text-[10px] font-bold text-primary">{ability.abbr}</div>
-              <div className="text-lg font-bold text-text-primary">{ability.value}</div>
-              <div className="text-xs text-text-secondary">{formatModifier(ability.value)}</div>
-            </div>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs font-bold text-primary">{ability.abbr}</span>
+                <span className="text-lg font-bold text-text-primary">{ability.value}</span>
+              </div>
+              <div className="h-1.5 bg-bg-tertiary rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(ability.value / 20) * 100}%` }}
+                  transition={{ duration: 0.5 }}
+                  className="h-full bg-gradient-to-r from-primary to-primary/50 rounded-full"
+                />
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="text-[10px] text-text-muted">{ability.name}</span>
+                <span className="text-xs font-semibold text-primary">{formatModifier(ability.value)}</span>
+              </div>
+            </motion.div>
           ))}
         </div>
       </div>
 
-      {/* Additional Info */}
-      <div className="grid grid-cols-2 gap-2 text-sm">
-        <div className="p-2 rounded bg-bg-tertiary/50">
-          <span className="text-text-muted text-xs">Initiative:</span>
-          <span className="ml-1 font-semibold">+{character.initiative || calculateModifier(character.dexterity)}</span>
-        </div>
-        <div className="p-2 rounded bg-bg-tertiary/50">
-          <span className="text-text-muted text-xs">Experience:</span>
-          <span className="ml-1 font-semibold">0 XP</span>
+      {/* Additional Combat Info */}
+      <div>
+        <h3 className="text-sm font-semibold text-primary mb-3 flex items-center gap-2">
+          <span className="text-lg">🎯</span> Combat Modifiers
+        </h3>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="p-3 rounded-lg bg-bg-tertiary/50 border border-border/30">
+            <div className="text-lg font-bold text-text-primary">+{character.initiative || calculateModifier(character.dexterity)}</div>
+            <div className="text-xs text-text-muted">Initiative</div>
+          </div>
+          <div className="p-3 rounded-lg bg-bg-tertiary/50 border border-border/30">
+            <div className="text-lg font-bold text-text-primary">1d{character.class.toLowerCase() === 'barbarian' ? '12' : character.class.toLowerCase() === 'wizard' || character.class.toLowerCase() === 'sorcerer' ? '6' : '8'}</div>
+            <div className="text-xs text-text-muted">Hit Dice</div>
+          </div>
+          <div className="p-3 rounded-lg bg-bg-tertiary/50 border border-border/30">
+            <div className="text-lg font-bold text-text-primary">10 ft</div>
+            <div className="text-xs text-text-muted">Darkvision</div>
+          </div>
         </div>
       </div>
     </div>
   );
 
   const renderAbilitiesTab = () => (
-    <div className="space-y-4">
-      {/* Skills */}
-      {character.skills && character.skills.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold text-primary mb-2">Proficient Skills</h3>
-          <div className="flex flex-wrap gap-1">
-            {character.skills.map((skill) => (
-              <span
+    <div className="space-y-5">
+      {/* Skills - Enhanced */}
+      <div>
+        <h3 className="text-sm font-semibold text-success mb-3 flex items-center gap-2">
+          <span className="text-lg">🎭</span> Proficient Skills
+        </h3>
+        {character.skills && character.skills.length > 0 ? (
+          <div className="grid grid-cols-2 gap-2">
+            {character.skills.map((skill, idx) => (
+              <motion.div
                 key={skill}
-                className="px-2 py-0.5 rounded-full bg-success/10 border border-success/30 text-success text-xs capitalize"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                className="p-2 rounded-lg bg-success/10 border border-success/30 flex items-center gap-2"
               >
-                {skill.replace(/_/g, ' ')}
-              </span>
+                <span className="text-success text-sm">✓</span>
+                <span className="text-text-primary text-sm capitalize">{skill.replace(/_/g, ' ')}</span>
+                <span className="ml-auto text-xs text-success">+{(character.proficiencyBonus || 2) + calculateModifier(character.dexterity)}</span>
+              </motion.div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-text-muted text-sm italic">No skill proficiencies selected</p>
+        )}
+      </div>
 
-      {/* Languages */}
-      {character.languages && character.languages.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold text-primary mb-2">Languages</h3>
-          <div className="flex flex-wrap gap-1">
-            {character.languages.map((lang) => (
-              <span
-                key={lang}
-                className="px-2 py-0.5 rounded-full bg-secondary/10 border border-secondary/30 text-secondary text-xs capitalize"
-              >
-                {lang}
-              </span>
-            ))}
-          </div>
+      {/* Class Features - Enhanced */}
+      <div>
+        <h3 className="text-sm font-semibold text-primary mb-3 flex items-center gap-2">
+          <span className="text-lg">⚡</span> {toTitleCase(character.class)} Features
+        </h3>
+        <div className="space-y-2">
+          {classLore.abilities.map((ability, idx) => (
+            <motion.div
+              key={ability}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              className="p-3 rounded-lg bg-primary/10 border border-primary/30"
+            >
+              <div className="font-semibold text-primary text-sm">{ability}</div>
+              <div className="text-[10px] text-text-muted mt-1">Level {character.level} Feature</div>
+            </motion.div>
+          ))}
         </div>
-      )}
+      </div>
 
-      {/* Spells */}
+      {/* Racial Traits - Enhanced */}
+      <div>
+        <h3 className="text-sm font-semibold text-amber-400 mb-3 flex items-center gap-2">
+          <span className="text-lg">🧬</span> {toTitleCase(character.race)} Traits
+        </h3>
+        <div className="grid grid-cols-2 gap-2">
+          {raceLore.traits.map((trait, idx) => (
+            <motion.div
+              key={trait}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: idx * 0.05 }}
+              whileHover={{ scale: 1.02 }}
+              className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center"
+            >
+              <span className="text-amber-300 text-sm">{trait}</span>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {/* Languages - Enhanced */}
+      <div>
+        <h3 className="text-sm font-semibold text-secondary mb-3 flex items-center gap-2">
+          <span className="text-lg">💬</span> Languages
+        </h3>
+        <div className="flex flex-wrap gap-2">
+          {(character.languages || ['Common']).map((lang) => (
+            <span
+              key={lang}
+              className="px-3 py-1.5 rounded-full bg-secondary/10 border border-secondary/30 text-secondary text-sm capitalize"
+            >
+              {lang}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Spells - Enhanced */}
       {character.spellsKnown && character.spellsKnown.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-purple-400 mb-2">
-            Spells Known {character.spellcastingAbility && <span className="text-xs text-text-muted">({character.spellcastingAbility})</span>}
+          <h3 className="text-sm font-semibold text-purple-400 mb-3 flex items-center gap-2">
+            <span className="text-lg">✨</span> Spells Known
+            {character.spellcastingAbility && (
+              <span className="text-xs text-text-muted">({toTitleCase(character.spellcastingAbility)})</span>
+            )}
           </h3>
-          <div className="flex flex-wrap gap-1">
-            {character.spellsKnown.map((spell) => (
-              <span
+          <div className="grid grid-cols-2 gap-2">
+            {character.spellsKnown.map((spell, idx) => (
+              <motion.div
                 key={spell}
-                className="px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: idx * 0.05 }}
+                className="p-2 rounded-lg bg-purple-500/10 border border-purple-500/30"
               >
-                {spell}
-              </span>
+                <span className="text-purple-300 text-sm">{spell}</span>
+              </motion.div>
             ))}
           </div>
         </div>
       )}
-
-      {/* Class Features */}
-      <div>
-        <h3 className="text-sm font-semibold text-primary mb-2">Class Features</h3>
-        <div className="flex flex-wrap gap-1">
-          {classLore.abilities.map((ability) => (
-            <span
-              key={ability}
-              className="px-2 py-0.5 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs"
-            >
-              {ability}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Racial Traits */}
-      <div>
-        <h3 className="text-sm font-semibold text-primary mb-2">Racial Traits</h3>
-        <div className="flex flex-wrap gap-1">
-          {raceLore.traits.map((trait) => (
-            <span
-              key={trait}
-              className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs"
-            >
-              {trait}
-            </span>
-          ))}
-        </div>
-      </div>
     </div>
   );
 
   const renderPersonalityTab = () => (
-    <div className="space-y-3 text-sm">
-      {/* Physical Appearance */}
-      {character.appearance && (character.appearance.hairColor || character.appearance.eyeColor || character.appearance.skinColor) && (
-        <div>
-          <h3 className="text-xs font-semibold text-primary mb-1">Physical Traits</h3>
-          <div className="grid grid-cols-3 gap-1 text-xs">
-            {character.appearance.hairColor && (
-              <div className="p-1.5 rounded bg-bg-tertiary/50">
-                <span className="text-text-muted">Hair:</span> <span className="capitalize">{character.appearance.hairColor}</span>
-              </div>
-            )}
-            {character.appearance.eyeColor && (
-              <div className="p-1.5 rounded bg-bg-tertiary/50">
-                <span className="text-text-muted">Eyes:</span> <span className="capitalize">{character.appearance.eyeColor}</span>
-              </div>
-            )}
-            {character.appearance.skinColor && (
-              <div className="p-1.5 rounded bg-bg-tertiary/50">
-                <span className="text-text-muted">Skin:</span> <span className="capitalize">{character.appearance.skinColor}</span>
-              </div>
-            )}
+    <div className="space-y-5">
+      {/* Physical Appearance - Enhanced */}
+      <div>
+        <h3 className="text-sm font-semibold text-primary mb-3 flex items-center gap-2">
+          <span className="text-lg">👤</span> Physical Appearance
+        </h3>
+        <div className="grid grid-cols-3 gap-3">
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="p-3 rounded-lg bg-gradient-to-b from-amber-500/15 to-transparent border border-amber-500/30 text-center"
+          >
+            <div className="text-amber-400 text-lg mb-1">💇</div>
+            <div className="text-[10px] text-text-muted uppercase tracking-wider">Hair</div>
+            <div className="text-sm text-text-primary capitalize mt-1">{character.appearance?.hairColor || 'Unknown'}</div>
+          </motion.div>
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="p-3 rounded-lg bg-gradient-to-b from-info/15 to-transparent border border-info/30 text-center"
+          >
+            <div className="text-info text-lg mb-1">👁️</div>
+            <div className="text-[10px] text-text-muted uppercase tracking-wider">Eyes</div>
+            <div className="text-sm text-text-primary capitalize mt-1">{character.appearance?.eyeColor || 'Unknown'}</div>
+          </motion.div>
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="p-3 rounded-lg bg-gradient-to-b from-secondary/15 to-transparent border border-secondary/30 text-center"
+          >
+            <div className="text-secondary text-lg mb-1">🎨</div>
+            <div className="text-[10px] text-text-muted uppercase tracking-wider">Skin</div>
+            <div className="text-sm text-text-primary capitalize mt-1">{character.appearance?.skinColor || 'Unknown'}</div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Personality Trait - Enhanced */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        <h3 className="text-sm font-semibold text-primary mb-3 flex items-center gap-2">
+          <span className="text-lg">💭</span> Personality Trait
+        </h3>
+        <div className="p-4 rounded-lg bg-primary/5 border border-primary/30 relative">
+          <div className="absolute top-2 left-3 text-3xl text-primary/30">&ldquo;</div>
+          <p className="text-text-secondary text-sm italic pl-6 pr-4">
+            {character.appearance?.personalityTrait || 'A mysterious soul with hidden depths...'}
+          </p>
+          <div className="absolute bottom-2 right-3 text-3xl text-primary/30">&rdquo;</div>
+        </div>
+      </motion.div>
+
+      {/* Character Values Grid - Enhanced */}
+      <div className="grid grid-cols-2 gap-4">
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <h3 className="text-sm font-semibold text-success mb-2 flex items-center gap-2">
+            <span>⭐</span> Ideal
+          </h3>
+          <div className="p-3 rounded-lg bg-success/10 border border-success/30 h-20 overflow-y-auto">
+            <p className="text-text-secondary text-xs">
+              {character.appearance?.ideal || 'To make a difference in this world'}
+            </p>
           </div>
-        </div>
-      )}
+        </motion.div>
 
-      {character.appearance?.personalityTrait && (
-        <div>
-          <h3 className="text-xs font-semibold text-primary mb-1">Personality</h3>
-          <p className="text-text-secondary text-xs italic bg-bg-tertiary/30 p-2 rounded">&ldquo;{character.appearance.personalityTrait}&rdquo;</p>
-        </div>
-      )}
+        <motion.div
+          initial={{ opacity: 0, x: 10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <h3 className="text-sm font-semibold text-info mb-2 flex items-center gap-2">
+            <span>🔗</span> Bond
+          </h3>
+          <div className="p-3 rounded-lg bg-info/10 border border-info/30 h-20 overflow-y-auto">
+            <p className="text-text-secondary text-xs">
+              {character.appearance?.bond || 'Those who stand beside me in battle'}
+            </p>
+          </div>
+        </motion.div>
 
-      {character.appearance?.ideal && (
-        <div>
-          <h3 className="text-xs font-semibold text-primary mb-1">Ideal</h3>
-          <p className="text-text-secondary text-xs bg-bg-tertiary/30 p-2 rounded">{character.appearance.ideal}</p>
-        </div>
-      )}
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.4 }}
+          className="col-span-2"
+        >
+          <h3 className="text-sm font-semibold text-danger mb-2 flex items-center gap-2">
+            <span>💔</span> Flaw
+          </h3>
+          <div className="p-3 rounded-lg bg-danger/10 border border-danger/30">
+            <p className="text-text-secondary text-xs">
+              {character.appearance?.flaw || 'Pride that sometimes clouds judgment'}
+            </p>
+          </div>
+        </motion.div>
+      </div>
 
-      {character.appearance?.bond && (
-        <div>
-          <h3 className="text-xs font-semibold text-primary mb-1">Bond</h3>
-          <p className="text-text-secondary text-xs bg-bg-tertiary/30 p-2 rounded">{character.appearance.bond}</p>
+      {/* Backstory - Enhanced */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+      >
+        <h3 className="text-sm font-semibold text-amber-400 mb-3 flex items-center gap-2">
+          <span className="text-lg">📖</span> Backstory
+        </h3>
+        <div className="p-4 rounded-lg bg-amber-500/5 border border-amber-500/30 max-h-32 overflow-y-auto">
+          <p className="text-text-secondary text-xs leading-relaxed">
+            {character.appearance?.backstory || `${character.name} emerged from the ${character.background || 'unknown'} life, driven by destiny to become a legendary ${character.class}. Their journey has only just begun...`}
+          </p>
         </div>
-      )}
-
-      {character.appearance?.flaw && (
-        <div>
-          <h3 className="text-xs font-semibold text-primary mb-1">Flaw</h3>
-          <p className="text-text-secondary text-xs bg-bg-tertiary/30 p-2 rounded">{character.appearance.flaw}</p>
-        </div>
-      )}
-
-      {character.appearance?.backstory && (
-        <div>
-          <h3 className="text-xs font-semibold text-primary mb-1">Backstory</h3>
-          <p className="text-text-secondary text-xs bg-bg-tertiary/30 p-2 rounded max-h-24 overflow-y-auto">{character.appearance.backstory}</p>
-        </div>
-      )}
+      </motion.div>
     </div>
   );
 
   const renderLoreTab = () => (
-    <div className="space-y-4 text-sm">
-      {/* Race Lore */}
+    <div className="space-y-5">
+      {/* Race Lore - Enhanced */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        <h3 className="text-sm font-semibold text-amber-400 mb-3 flex items-center gap-2">
+          <span className="text-lg">🏛️</span>
+          <span>{toTitleCase(character.race)} Heritage</span>
+        </h3>
+        <div className="p-4 rounded-lg bg-gradient-to-br from-amber-500/10 to-transparent border border-amber-500/30">
+          <p className="text-text-secondary text-sm leading-relaxed mb-3">{raceLore.description}</p>
+          <div className="flex items-center gap-2 text-xs text-amber-400/80 bg-amber-500/10 p-2 rounded">
+            <span>🏠</span>
+            <span className="italic">{raceLore.homeland}</span>
+          </div>
+          <div className="mt-3 pt-3 border-t border-amber-500/20">
+            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">Racial Abilities</div>
+            <div className="flex flex-wrap gap-2">
+              {raceLore.traits.map((trait) => (
+                <span key={trait} className="px-2 py-1 rounded bg-amber-500/20 text-amber-300 text-xs">{trait}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Class Lore - Enhanced */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <h3 className="text-sm font-semibold text-primary mb-3 flex items-center gap-2">
+          <span className="text-lg">⚔️</span>
+          <span>The {toTitleCase(character.class)} Path</span>
+        </h3>
+        <div className="p-4 rounded-lg bg-gradient-to-br from-primary/10 to-transparent border border-primary/30">
+          <p className="text-text-secondary text-sm leading-relaxed mb-3">{classLore.description}</p>
+          <div className="flex items-center gap-2 text-xs text-primary/80 bg-primary/10 p-2 rounded">
+            <span>🎯</span>
+            <span>Combat Role: <strong>{classLore.role}</strong></span>
+          </div>
+          <div className="mt-3 pt-3 border-t border-primary/20">
+            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">Key Abilities</div>
+            <div className="flex flex-wrap gap-2">
+              {classLore.abilities.map((ability) => (
+                <span key={ability} className="px-2 py-1 rounded bg-primary/20 text-primary text-xs">{ability}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Background Lore - Enhanced */}
+      {character.background && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <h3 className="text-sm font-semibold text-secondary mb-3 flex items-center gap-2">
+            <span className="text-lg">📜</span>
+            <span>{toTitleCase(character.background)} Background</span>
+          </h3>
+          <div className="p-4 rounded-lg bg-gradient-to-br from-secondary/10 to-transparent border border-secondary/30">
+            <p className="text-text-secondary text-sm leading-relaxed mb-3">{backgroundLore.description}</p>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2 text-xs text-secondary/80 bg-secondary/10 p-2 rounded">
+                <span>✨</span>
+                <div>
+                  <div className="font-semibold text-secondary">Feature</div>
+                  <div className="text-text-muted">{backgroundLore.feature}</div>
+                </div>
+              </div>
+              <div className="flex items-start gap-2 text-xs text-secondary/80 bg-secondary/10 p-2 rounded">
+                <span>💫</span>
+                <div>
+                  <div className="font-semibold text-secondary">Ideal</div>
+                  <div className="text-text-muted">{backgroundLore.ideal}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
+
+  const renderTriviaTab = () => (
+    <div className="space-y-5">
+      {/* Race Trivia */}
       <div>
-        <h3 className="text-xs font-semibold text-amber-400 mb-1 capitalize">{character.race} Heritage</h3>
-        <p className="text-text-secondary text-xs bg-amber-500/5 border border-amber-500/20 p-2 rounded">{raceLore.description}</p>
-        <p className="text-[10px] text-text-muted mt-1 italic">{raceLore.homeland}</p>
+        <h3 className="text-sm font-semibold text-amber-400 mb-3 flex items-center gap-2">
+          <span className="text-lg">🏛️</span>
+          <span className="capitalize">{character.race} Fun Facts</span>
+        </h3>
+        <div className="space-y-2">
+          {raceTrivia.map((fact, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              className="flex items-start gap-2 p-2 rounded-lg bg-amber-500/5 border border-amber-500/20 hover:bg-amber-500/10 transition-colors"
+            >
+              <span className="text-amber-400 text-sm mt-0.5">✦</span>
+              <span className="text-text-secondary text-xs">{fact}</span>
+            </motion.div>
+          ))}
+        </div>
       </div>
 
-      {/* Class Lore */}
+      {/* Class Trivia */}
       <div>
-        <h3 className="text-xs font-semibold text-primary mb-1 capitalize">{character.class} Path</h3>
-        <p className="text-text-secondary text-xs bg-primary/5 border border-primary/20 p-2 rounded">{classLore.description}</p>
-        <p className="text-[10px] text-text-muted mt-1 italic">Role: {classLore.role}</p>
+        <h3 className="text-sm font-semibold text-primary mb-3 flex items-center gap-2">
+          <span className="text-lg">⚔️</span>
+          <span className="capitalize">{character.class} Secrets</span>
+        </h3>
+        <div className="space-y-2">
+          {classTrivia.map((fact, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 + idx * 0.1 }}
+              className="flex items-start gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors"
+            >
+              <span className="text-primary text-sm mt-0.5">✦</span>
+              <span className="text-text-secondary text-xs">{fact}</span>
+            </motion.div>
+          ))}
+        </div>
       </div>
 
-      {/* Background Lore */}
+      {/* Background Trivia */}
       {character.background && (
         <div>
-          <h3 className="text-xs font-semibold text-secondary mb-1 capitalize">{character.background.replace(/_/g, ' ')} Background</h3>
-          <p className="text-text-secondary text-xs bg-secondary/5 border border-secondary/20 p-2 rounded">{backgroundLore.description}</p>
-          <p className="text-[10px] text-text-muted mt-1 italic">{backgroundLore.feature}</p>
+          <h3 className="text-sm font-semibold text-secondary mb-3 flex items-center gap-2">
+            <span className="text-lg">📜</span>
+            <span>{toTitleCase(character.background)} Tips</span>
+          </h3>
+          <div className="space-y-2">
+            {backgroundTrivia.map((fact, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1 + idx * 0.1 }}
+                className="flex items-start gap-2 p-2 rounded-lg bg-secondary/5 border border-secondary/20 hover:bg-secondary/10 transition-colors"
+              >
+                <span className="text-secondary text-sm mt-0.5">✦</span>
+                <span className="text-text-secondary text-xs">{fact}</span>
+              </motion.div>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -700,21 +1188,77 @@ export default function CharacterDetailsContent() {
 
   return (
     <div className="h-screen overflow-hidden relative">
-      {/* Multi-layer background */}
+      {/* Multi-layer animated background */}
       <div className="dnd-page-background" />
+
+      {/* Animated gradient orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{
+            x: [0, 100, 0],
+            y: [0, -50, 0],
+            scale: [1, 1.2, 1],
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-primary/10 blur-3xl"
+        />
+        <motion.div
+          animate={{
+            x: [0, -80, 0],
+            y: [0, 60, 0],
+            scale: [1, 0.8, 1],
+          }}
+          transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut', delay: 5 }}
+          className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-secondary/10 blur-3xl"
+        />
+        <motion.div
+          animate={{
+            x: [0, 50, 0],
+            y: [0, 30, 0],
+            scale: [1, 1.1, 1],
+          }}
+          transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut', delay: 10 }}
+          className="absolute top-1/2 right-1/3 w-64 h-64 rounded-full bg-amber-500/5 blur-3xl"
+        />
+      </div>
 
       {/* Floating runes */}
       <Suspense fallback={null}>
         <FloatingRunes />
       </Suspense>
 
-      {/* Particles */}
+      {/* Particles - Magic variant for more sparkle */}
       <Suspense fallback={null}>
-        <AmbientParticles variant="dust" />
+        <AmbientParticles variant="magic" />
       </Suspense>
 
-      {/* Vignette */}
+      {/* Additional sparkle layer */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(20)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 rounded-full bg-primary/60"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
+            animate={{
+              opacity: [0, 1, 0],
+              scale: [0, 1.5, 0],
+            }}
+            transition={{
+              duration: 2 + Math.random() * 2,
+              repeat: Infinity,
+              delay: Math.random() * 3,
+              ease: 'easeInOut',
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Vignette with glow */}
       <div className="dnd-vignette" />
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-bg-primary/50 via-transparent to-primary/5" />
 
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col">
@@ -763,11 +1307,11 @@ export default function CharacterDetailsContent() {
                   {/* Character Header */}
                   <div className="text-center mb-3">
                     <h1 className="dnd-heading-epic text-2xl pb-1">{character.name}</h1>
-                    <p className="text-text-secondary text-sm capitalize">
-                      Level {character.level} {character.subrace || character.race} {character.subclass || character.class}
+                    <p className="text-text-secondary text-sm">
+                      {toTitleCase(character.subrace || character.race)} {toTitleCase(character.subclass || character.class)}
                     </p>
                     {character.background && (
-                      <p className="text-text-muted text-xs capitalize">{character.background.replace(/_/g, ' ')} Background</p>
+                      <p className="text-text-muted text-xs">{toTitleCase(character.background)} Background</p>
                     )}
                   </div>
 
@@ -805,6 +1349,9 @@ export default function CharacterDetailsContent() {
                     <TabButton active={activeTab === 'lore'} onClick={() => setActiveTab('lore')}>
                       Lore
                     </TabButton>
+                    <TabButton active={activeTab === 'trivia'} onClick={() => setActiveTab('trivia')}>
+                      Trivia
+                    </TabButton>
                   </div>
 
                   {/* Tab Content */}
@@ -821,6 +1368,7 @@ export default function CharacterDetailsContent() {
                         {activeTab === 'abilities' && renderAbilitiesTab()}
                         {activeTab === 'personality' && renderPersonalityTab()}
                         {activeTab === 'lore' && renderLoreTab()}
+                        {activeTab === 'trivia' && renderTriviaTab()}
                       </motion.div>
                     </AnimatePresence>
                   </div>
