@@ -30,20 +30,43 @@ interface Character {
   fullBodyUrls?: string[];
   imageSource?: string;
   background?: string;
-  abilityScores?: {
-    strength: number;
-    dexterity: number;
-    constitution: number;
-    intelligence: number;
-    wisdom: number;
-    charisma: number;
-  };
+  subrace?: string;
+  subclass?: string;
+  speed?: number;
+  initiative?: number;
+  proficiencyBonus?: number;
+  // Ability scores - flat fields from API
+  strength: number;
+  dexterity: number;
+  constitution: number;
+  intelligence: number;
+  wisdom: number;
+  charisma: number;
+  // Skills and proficiencies
+  skills?: string[];
+  savingThrows?: string[];
+  languages?: string[];
+  tools?: string[];
+  weapons?: string[];
+  armor?: string[];
+  // Equipment and spells
+  equipment?: unknown[];
+  spellsKnown?: string[];
+  spellsPrepared?: string[];
+  spellcastingAbility?: string;
+  // Appearance
   appearance?: {
     personalityTrait?: string;
     ideal?: string;
     bond?: string;
     flaw?: string;
     backstory?: string;
+    hairColor?: string;
+    eyeColor?: string;
+    skinColor?: string;
+    height?: string;
+    weight?: string;
+    distinguishingFeatures?: string;
   };
 }
 
@@ -113,10 +136,14 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
   const hasMultipleImages = imageList.length > 1;
   const isGenerating = character.status === 'generating';
 
-  // Calculate derived stats
-  const abilities = character.abilityScores || {
-    strength: 10, dexterity: 10, constitution: 10,
-    intelligence: 10, wisdom: 10, charisma: 10
+  // Use flat ability scores from API
+  const abilities = {
+    strength: character.strength ?? 10,
+    dexterity: character.dexterity ?? 10,
+    constitution: character.constitution ?? 10,
+    intelligence: character.intelligence ?? 10,
+    wisdom: character.wisdom ?? 10,
+    charisma: character.charisma ?? 10,
   };
   const proficiencyBonus = Math.floor((character.level - 1) / 4) + 2;
   const power = Math.max(abilities.strength, abilities.dexterity) + proficiencyBonus;
@@ -190,7 +217,7 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
             body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           }
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { margin: 0; padding: 20px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background: #0a0810; }
+          body { margin: 0; padding: 20px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background: white; }
           .card {
             width: 280px;
             background: linear-gradient(160deg, #2d2640 0%, #1f1a2e 30%, #171320 60%, #0d0a12 100%);
@@ -1008,15 +1035,24 @@ export default function DashboardContent() {
                               )}
                             </div>
                           </div>
-                          <div className="mt-3">
+                          <div className="mt-3 flex gap-2">
                             <motion.button
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
                               onClick={() => setShowCharacterCard(char.id)}
-                              className="btn-adventure text-xs px-3 py-1 w-full"
+                              className="btn-adventure text-xs px-3 py-1 flex-1"
                             >
                               View Card
                             </motion.button>
+                            <Link href={`/characters/${char.id}`} className="flex-1">
+                              <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                className="btn-stone text-xs px-3 py-1 w-full"
+                              >
+                                View Details
+                              </motion.button>
+                            </Link>
                           </div>
                         </EnchantedCard>
                       </motion.div>
