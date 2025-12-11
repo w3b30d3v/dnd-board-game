@@ -905,39 +905,6 @@ export default function CharacterDetailsContent() {
 
   const renderPersonalityTab = () => (
     <div className="space-y-5">
-      {/* Physical Appearance - Enhanced */}
-      <div>
-        <h3 className="text-sm font-semibold text-primary mb-3 flex items-center gap-2">
-          <span className="text-lg">👤</span> Physical Appearance
-        </h3>
-        <div className="grid grid-cols-3 gap-3">
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="p-3 rounded-lg bg-gradient-to-b from-amber-500/15 to-transparent border border-amber-500/30 text-center"
-          >
-            <div className="text-amber-400 text-lg mb-1">💇</div>
-            <div className="text-[10px] text-text-muted uppercase tracking-wider">Hair</div>
-            <div className="text-sm text-text-primary capitalize mt-1">{character.appearance?.hairColor || 'Unknown'}</div>
-          </motion.div>
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="p-3 rounded-lg bg-gradient-to-b from-info/15 to-transparent border border-info/30 text-center"
-          >
-            <div className="text-info text-lg mb-1">👁️</div>
-            <div className="text-[10px] text-text-muted uppercase tracking-wider">Eyes</div>
-            <div className="text-sm text-text-primary capitalize mt-1">{character.appearance?.eyeColor || 'Unknown'}</div>
-          </motion.div>
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="p-3 rounded-lg bg-gradient-to-b from-secondary/15 to-transparent border border-secondary/30 text-center"
-          >
-            <div className="text-secondary text-lg mb-1">🎨</div>
-            <div className="text-[10px] text-text-muted uppercase tracking-wider">Skin</div>
-            <div className="text-sm text-text-primary capitalize mt-1">{character.appearance?.skinColor || 'Unknown'}</div>
-          </motion.div>
-        </div>
-      </div>
-
       {/* Personality Trait - Enhanced */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -1115,68 +1082,68 @@ export default function CharacterDetailsContent() {
   );
 
   const renderTriviaTab = () => (
-    <div className="space-y-5">
-      {/* Race Trivia */}
+    <div className="space-y-4">
+      {/* Race Trivia - Limited to 3 facts */}
       <div>
-        <h3 className="text-sm font-semibold text-amber-400 mb-3 flex items-center gap-2">
-          <span className="text-lg">🏛️</span>
+        <h3 className="text-sm font-semibold text-amber-400 mb-2 flex items-center gap-2">
+          <span>🏛️</span>
           <span className="capitalize">{character.race} Fun Facts</span>
         </h3>
-        <div className="space-y-2">
-          {raceTrivia.map((fact, idx) => (
+        <div className="space-y-1.5">
+          {raceTrivia.slice(0, 3).map((fact, idx) => (
             <motion.div
               key={idx}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: idx * 0.1 }}
+              transition={{ delay: idx * 0.05 }}
               className="flex items-start gap-2 p-2 rounded-lg bg-amber-500/5 border border-amber-500/20 hover:bg-amber-500/10 transition-colors"
             >
-              <span className="text-amber-400 text-sm mt-0.5">✦</span>
+              <span className="text-amber-400 text-xs mt-0.5">✦</span>
               <span className="text-text-secondary text-xs">{fact}</span>
             </motion.div>
           ))}
         </div>
       </div>
 
-      {/* Class Trivia */}
+      {/* Class Trivia - Limited to 3 facts */}
       <div>
-        <h3 className="text-sm font-semibold text-primary mb-3 flex items-center gap-2">
-          <span className="text-lg">⚔️</span>
+        <h3 className="text-sm font-semibold text-primary mb-2 flex items-center gap-2">
+          <span>⚔️</span>
           <span className="capitalize">{character.class} Secrets</span>
         </h3>
-        <div className="space-y-2">
-          {classTrivia.map((fact, idx) => (
+        <div className="space-y-1.5">
+          {classTrivia.slice(0, 3).map((fact, idx) => (
             <motion.div
               key={idx}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 + idx * 0.1 }}
+              transition={{ delay: 0.2 + idx * 0.05 }}
               className="flex items-start gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors"
             >
-              <span className="text-primary text-sm mt-0.5">✦</span>
+              <span className="text-primary text-xs mt-0.5">✦</span>
               <span className="text-text-secondary text-xs">{fact}</span>
             </motion.div>
           ))}
         </div>
       </div>
 
-      {/* Background Trivia */}
+      {/* Background Trivia - Limited to 3 facts */}
       {character.background && (
         <div>
-          <h3 className="text-sm font-semibold text-secondary mb-3 flex items-center gap-2">
-            <span className="text-lg">📜</span>
+          <h3 className="text-sm font-semibold text-secondary mb-2 flex items-center gap-2">
+            <span>📜</span>
             <span>{toTitleCase(character.background)} Tips</span>
           </h3>
-          <div className="space-y-2">
-            {backgroundTrivia.map((fact, idx) => (
+          <div className="space-y-1.5">
+            {backgroundTrivia.slice(0, 3).map((fact, idx) => (
               <motion.div
                 key={idx}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 1 + idx * 0.1 }}
+                transition={{ delay: 0.4 + idx * 0.05 }}
                 className="flex items-start gap-2 p-2 rounded-lg bg-secondary/5 border border-secondary/20 hover:bg-secondary/10 transition-colors"
               >
-                <span className="text-secondary text-sm mt-0.5">✦</span>
+                <span className="text-secondary text-xs mt-0.5">✦</span>
                 <span className="text-text-secondary text-xs">{fact}</span>
               </motion.div>
             ))}
@@ -1191,34 +1158,51 @@ export default function CharacterDetailsContent() {
       {/* Multi-layer animated background */}
       <div className="dnd-page-background" />
 
-      {/* Animated gradient orbs */}
+      {/* Bright animated gradient orbs - More vibrant */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Large golden orb */}
         <motion.div
           animate={{
-            x: [0, 100, 0],
-            y: [0, -50, 0],
+            x: [0, 150, 0],
+            y: [0, -80, 0],
+            scale: [1, 1.4, 1],
+            opacity: [0.15, 0.25, 0.15],
+          }}
+          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full bg-primary blur-3xl"
+        />
+        {/* Purple magic orb */}
+        <motion.div
+          animate={{
+            x: [0, -120, 0],
+            y: [0, 100, 0],
+            scale: [1, 1.3, 1],
+            opacity: [0.12, 0.22, 0.12],
+          }}
+          transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+          className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] rounded-full bg-secondary blur-3xl"
+        />
+        {/* Amber warm orb */}
+        <motion.div
+          animate={{
+            x: [0, 80, 0],
+            y: [0, -60, 0],
             scale: [1, 1.2, 1],
+            opacity: [0.1, 0.2, 0.1],
           }}
-          transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-primary/10 blur-3xl"
+          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
+          className="absolute top-1/2 right-1/3 w-[350px] h-[350px] rounded-full bg-amber-500 blur-3xl"
         />
+        {/* Cyan cool orb */}
         <motion.div
           animate={{
-            x: [0, -80, 0],
-            y: [0, 60, 0],
-            scale: [1, 0.8, 1],
+            x: [0, -60, 0],
+            y: [0, 40, 0],
+            scale: [1, 1.15, 1],
+            opacity: [0.08, 0.18, 0.08],
           }}
-          transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut', delay: 5 }}
-          className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-secondary/10 blur-3xl"
-        />
-        <motion.div
-          animate={{
-            x: [0, 50, 0],
-            y: [0, 30, 0],
-            scale: [1, 1.1, 1],
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut', delay: 10 }}
-          className="absolute top-1/2 right-1/3 w-64 h-64 rounded-full bg-amber-500/5 blur-3xl"
+          transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut', delay: 6 }}
+          className="absolute top-1/3 left-1/3 w-[300px] h-[300px] rounded-full bg-cyan-500 blur-3xl"
         />
       </div>
 
@@ -1232,33 +1216,50 @@ export default function CharacterDetailsContent() {
         <AmbientParticles variant="magic" />
       </Suspense>
 
-      {/* Additional sparkle layer */}
+      {/* Bright sparkle layer - More particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
+        {[...Array(40)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-1 h-1 rounded-full bg-primary/60"
+            className={`absolute rounded-full ${i % 3 === 0 ? 'w-1.5 h-1.5 bg-primary' : i % 3 === 1 ? 'w-1 h-1 bg-amber-400' : 'w-0.5 h-0.5 bg-white'}`}
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
+              left: `${(i * 2.5) % 100}%`,
+              top: `${(i * 7) % 100}%`,
             }}
             animate={{
-              opacity: [0, 1, 0],
-              scale: [0, 1.5, 0],
+              opacity: [0, 0.8, 0],
+              scale: [0, 2, 0],
+              y: [0, -30, 0],
             }}
             transition={{
-              duration: 2 + Math.random() * 2,
+              duration: 1.5 + (i % 3),
               repeat: Infinity,
-              delay: Math.random() * 3,
+              delay: (i * 0.15) % 3,
               ease: 'easeInOut',
             }}
           />
         ))}
       </div>
 
-      {/* Vignette with glow */}
+      {/* Floating light beams */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{ opacity: [0.03, 0.08, 0.03], rotate: [0, 5, 0] }}
+          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute top-0 left-1/4 w-1 h-full bg-gradient-to-b from-primary/30 via-primary/10 to-transparent"
+          style={{ filter: 'blur(20px)' }}
+        />
+        <motion.div
+          animate={{ opacity: [0.02, 0.06, 0.02], rotate: [0, -3, 0] }}
+          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+          className="absolute top-0 right-1/3 w-1 h-full bg-gradient-to-b from-secondary/20 via-secondary/5 to-transparent"
+          style={{ filter: 'blur(25px)' }}
+        />
+      </div>
+
+      {/* Vignette with subtle golden glow at top */}
       <div className="dnd-vignette" />
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-bg-primary/50 via-transparent to-primary/5" />
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-primary/8 via-transparent to-bg-primary/60" />
 
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col">
