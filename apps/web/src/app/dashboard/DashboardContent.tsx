@@ -1048,7 +1048,7 @@ export default function DashboardContent() {
                               <motion.button
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                className="btn-stone text-xs px-3 py-1 w-full"
+                                className="btn-adventure text-xs px-3 py-1 w-full"
                               >
                                 View Details
                               </motion.button>
