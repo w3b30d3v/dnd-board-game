@@ -127,13 +127,18 @@ router.post('/generate/character-images', auth, async (req: Request, res: Respon
       });
     }
 
+    // Generate a unique character identity hash for consistency across all images
+    // This helps the AI understand these images are of the SAME character
+    const characterIdentity = generateCharacterIdentity(character);
+    console.log('Character identity for consistency:', characterIdentity.substring(0, 100) + '...');
+
     // Generate images: 1 portrait + N full-body images
     const images: Record<string, string> = {};
     let successCount = 0;
 
     // 1. Generate portrait (head/shoulders) - always first
     try {
-      const portraitPrompt = buildCharacterPrompt(character, 'portrait');
+      const portraitPrompt = buildCharacterPrompt(character, 'portrait', characterIdentity);
       images.portrait = await generateWithNanoBanana(portraitPrompt, quality, 'portrait');
       successCount++;
       console.log('Portrait generated successfully');
@@ -147,7 +152,7 @@ router.post('/generate/character-images', auth, async (req: Request, res: Respon
     for (let i = 1; i <= MAX_FULLBODY_IMAGES_PER_CHARACTER; i++) {
       const style = fullBodyStyles[(i - 1) % fullBodyStyles.length] || 'full_body';
       try {
-        const prompt = buildCharacterPrompt(character, style);
+        const prompt = buildCharacterPrompt(character, style, characterIdentity);
         images[`fullBody${i}`] = await generateWithNanoBanana(prompt, quality, style);
         successCount++;
         console.log(`Full body ${i} generated successfully`);
@@ -397,9 +402,51 @@ router.post('/webhook/nanobanana', async (req: Request, res: Response) => {
 
 // Helper functions
 
+// Generate a consistent character identity string that anchors all images to the same character
+function generateCharacterIdentity(character: PortraitRequest['character']): string {
+  const { race, class: charClass, appearance, name } = character;
+
+  // Build very specific physical characteristics that MUST be consistent across all images
+  const identityParts = [
+    `CHARACTER NAME: ${name || 'unnamed hero'}`,
+    `EXACT SAME CHARACTER in every image - identical appearance`,
+  ];
+
+  // Race-specific fixed features
+  const raceIdentity: Record<string, string> = {
+    human: 'human with weathered tanned skin, brown eyes, strong jaw, short brown hair',
+    elf: 'high elf with pale golden skin, bright amber eyes, long silver-white hair, pointed ears',
+    dwarf: 'dwarf with ruddy complexion, deep brown eyes, thick braided auburn beard, bald head',
+    halfling: 'halfling with rosy cheeks, bright green eyes, curly chestnut hair, bare hairy feet',
+    dragonborn: 'dragonborn with brass metallic scales, yellow reptilian eyes, no hair, small back-swept horns',
+    tiefling: 'tiefling with deep crimson skin, solid gold eyes without pupils, curved ram horns, long black hair',
+    gnome: 'gnome with tan skin, huge curious blue eyes, wild white hair sticking up, long pointed nose',
+    'half-elf': 'half-elf with fair skin, violet eyes, long auburn hair, subtle pointed ears',
+    'half-orc': 'half-orc with gray-green skin, amber eyes, black hair in topknot, prominent lower tusks',
+  };
+
+  identityParts.push(raceIdentity[race.toLowerCase()] || `${race} adventurer with distinctive features`);
+
+  // Add appearance details if provided (these override defaults)
+  if (appearance) {
+    if (appearance.hairColor) identityParts.push(`HAIR COLOR: exactly ${appearance.hairColor}`);
+    if (appearance.hairStyle) identityParts.push(`HAIR STYLE: ${appearance.hairStyle}`);
+    if (appearance.eyeColor) identityParts.push(`EYE COLOR: exactly ${appearance.eyeColor}`);
+    if (appearance.skinTone) identityParts.push(`SKIN TONE: ${appearance.skinTone}`);
+    if (appearance.facialHair) identityParts.push(`FACIAL HAIR: ${appearance.facialHair}`);
+    if (appearance.distinguishingMarks) identityParts.push(`DISTINGUISHING MARKS: ${appearance.distinguishingMarks}`);
+  }
+
+  // Add class for costume consistency
+  identityParts.push(`WEARING ${charClass} outfit and equipment`);
+
+  return identityParts.join(', ');
+}
+
 function buildCharacterPrompt(
   character: PortraitRequest['character'],
-  style: string
+  style: string,
+  characterIdentity?: string
 ): { prompt: string; negativePrompt: string } {
   const { race, class: charClass, appearance } = character;
 
@@ -486,8 +533,10 @@ function buildCharacterPrompt(
     'masterpiece',
   ].join(', ');
 
-  // Combine all parts
+  // Combine all parts - CHARACTER IDENTITY FIRST for consistency
   const promptParts = [
+    // Put character identity at the very beginning to anchor the generation
+    characterIdentity ? `[IMPORTANT - SAME CHARACTER: ${characterIdentity}]` : '',
     artStyle,
     composition,
     raceDetails,
@@ -497,6 +546,8 @@ function buildCharacterPrompt(
     qualityTerms,
     'fully clothed and armored',
     'appropriate medieval fantasy attire',
+    // Repeat key identity elements at end for reinforcement
+    characterIdentity ? `MUST MATCH: ${character.name || 'this character'} - same face, same features, same costume` : '',
   ].filter(Boolean);
 
   const prompt = promptParts.join(', ');
@@ -545,6 +596,13 @@ function buildCharacterPrompt(
       'distant view', 'wide shot', 'far away'
     );
   }
+
+  // Add consistency negative prompts to prevent different characters
+  baseNegativePrompts.push(
+    'different character', 'wrong character', 'different person',
+    'inconsistent appearance', 'different face', 'different hair color',
+    'different eye color', 'different skin color', 'different costume'
+  );
 
   const negativePrompt = baseNegativePrompts.join(', ');
 

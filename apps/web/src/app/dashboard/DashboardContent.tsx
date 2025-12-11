@@ -225,9 +225,10 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
           .ability-box { text-align: center; padding: 4px 4px; background: linear-gradient(180deg, rgba(245, 158, 11, 0.15), rgba(0,0,0,0.5)); border: 1px solid rgba(245, 158, 11, 0.6); border-radius: 4px; flex: 1; }
           .ability-name { font-size: 8px; font-weight: 700; color: #F59E0B; }
           .ability-value { font-family: 'Cinzel', serif; font-size: 12px; font-weight: 700; color: #FCD34D; }
-          .motto { font-family: 'Crimson Text', Georgia, serif; font-style: italic; font-size: 10px; color: #d4d4d8; text-align: center; padding: 0 8px; line-height: 1.3; margin-bottom: 8px; }
-          .logo { text-align: center; }
-          .logo img { height: 28px; width: auto; filter: drop-shadow(0 0 4px rgba(229, 57, 53, 0.5)); }
+          .motto { font-family: 'Crimson Text', Georgia, serif; font-style: italic; font-size: 10px; color: #d4d4d8; text-align: center; padding: 0 8px; line-height: 1.3; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          .logo { text-align: center; font-family: 'Cinzel Decorative', Cinzel, serif; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-shadow: 0 0 8px rgba(212, 168, 75, 0.5); padding-bottom: 4px; }
+          .logo .gold { color: #D4A84B; }
+          .logo .red { color: #E53935; text-shadow: 0 0 8px rgba(229, 57, 53, 0.5); margin: 0 3px; }
         </style>
       </head>
       <body>
@@ -253,8 +254,8 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
             <div class="ability-box"><div class="ability-name">WIS</div><div class="ability-value">${abilities.wisdom}</div></div>
             <div class="ability-box"><div class="ability-name">CHA</div><div class="ability-value">${abilities.charisma}</div></div>
           </div>
-          <div class="motto">"${character.appearance?.personalityTrait?.substring(0, 50) || 'Fortune favors the bold.'}"</div>
-          <div class="logo"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/8/8e/Dungeons_%26_Dragons_5th_Edition_logo.svg/320px-Dungeons_%26_Dragons_5th_Edition_logo.svg.png" alt="D&D" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\\'font-family:Cinzel Decorative,serif;font-size:12px;font-weight:900;color:#E53935;text-shadow:0 0 8px rgba(229,57,53,0.5)\\'>D&D</span>'" /></div>
+          <div class="motto">"${character.appearance?.personalityTrait?.substring(0, 45) || 'Fortune favors the bold.'}"</div>
+          <div class="logo"><span class="gold">DUNGEONS</span><span class="red">&</span><span class="gold">DRAGONS</span></div>
         </div>
         <script>window.onload = () => { setTimeout(() => window.print(), 500); }</script>
       </body>
@@ -485,10 +486,10 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
                 ))}
               </div>
 
-              {/* Motto/Quote */}
+              {/* Motto/Quote - single line */}
               <div className="px-4 pt-1.5 text-center">
                 <p
-                  className="text-xs italic line-clamp-2"
+                  className="text-xs italic truncate"
                   style={{
                     fontFamily: 'Crimson Text, Georgia, serif',
                     lineHeight: '1.3',
@@ -496,25 +497,26 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
                   }}
                 >
                   {character.appearance?.personalityTrait
-                    ? `"${character.appearance.personalityTrait.substring(0, 60)}${character.appearance.personalityTrait.length > 60 ? '...' : ''}"`
+                    ? `"${character.appearance.personalityTrait.substring(0, 45)}${character.appearance.personalityTrait.length > 45 ? '...' : ''}"`
                     : '"Fortune favors the bold."'}
                 </p>
               </div>
 
-              {/* D&D Logo - official red dragon logo */}
-              <div className="absolute bottom-3 left-0 right-0 flex justify-center items-center">
-                <img
-                  src="https://upload.wikimedia.org/wikipedia/en/thumb/8/8e/Dungeons_%26_Dragons_5th_Edition_logo.svg/320px-Dungeons_%26_Dragons_5th_Edition_logo.svg.png"
-                  alt="D&D"
-                  className="h-6"
-                  style={{ filter: 'drop-shadow(0 0 8px rgba(229, 57, 53, 0.6))' }}
-                  onError={(e) => {
-                    // Fallback to text if image fails
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    target.parentElement!.innerHTML = '<span style="font-family: var(--font-cinzel-decorative), Cinzel, serif; font-size: 16px; font-weight: 900; color: #E53935; text-shadow: 0 0 12px rgba(229, 57, 53, 0.6);">D&D</span>';
+              {/* D&D Logo - single line text with styled ampersand */}
+              <div className="flex justify-center items-center pt-1 pb-2">
+                <span
+                  style={{
+                    fontFamily: 'var(--font-cinzel-decorative), Cinzel Decorative, serif',
+                    fontSize: '14px',
+                    fontWeight: 900,
+                    letterSpacing: '1px',
+                    textShadow: '0 0 12px rgba(212, 168, 75, 0.6), 0 2px 4px rgba(0, 0, 0, 0.8)'
                   }}
-                />
+                >
+                  <span style={{ color: '#D4A84B' }}>DUNGEONS</span>
+                  <span style={{ color: '#E53935', margin: '0 4px', textShadow: '0 0 12px rgba(229, 57, 53, 0.6)' }}>&</span>
+                  <span style={{ color: '#D4A84B' }}>DRAGONS</span>
+                </span>
               </div>
 
               {/* Close button */}
