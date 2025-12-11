@@ -154,17 +154,30 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
         <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
         <style>
           @page { size: 2.5in 3.5in; margin: 0; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
           body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #0a0810; }
-          .card { width: 2.5in; height: 3.5in; background: linear-gradient(160deg, #2d2640 0%, #1f1a2e 30%, #171320 60%, #0d0a12 100%); border-radius: 8px; border: 2px solid #D4A84B; padding: 6px; box-sizing: border-box; font-family: system-ui; color: white; position: relative; overflow: hidden; }
+          .card {
+            width: 2.5in;
+            height: 3.5in;
+            background: linear-gradient(160deg, #2d2640 0%, #1f1a2e 30%, #171320 60%, #0d0a12 100%);
+            border-radius: 8px;
+            border: 2px solid #D4A84B;
+            padding: 6px;
+            font-family: system-ui;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+          }
           .name { font-family: 'Cinzel', serif; font-size: 10px; font-weight: 700; color: #FFD700; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0 0 8px rgba(255, 215, 0, 0.5); margin-bottom: 2px; }
           .stars { text-align: center; font-size: 8px; margin-bottom: 2px; letter-spacing: 2px; }
           .star-filled { color: #FFD700; text-shadow: 0 0 4px rgba(255, 215, 0, 0.6); }
           .star-empty { color: #3f3f46; }
-          .gold-bar { height: 1px; background: linear-gradient(90deg, transparent 5%, #92400E 20%, #D4A84B 50%, #92400E 80%, transparent 95%); margin: 2px 10px 4px; }
-          .image-container { height: 95px; border: 2px solid #D4A84B; border-radius: 4px; overflow: hidden; margin: 0 2px 3px; background: radial-gradient(ellipse at center, #1a1625 0%, #0a0810 100%); display: flex; align-items: center; justify-content: center; }
+          .gold-bar { height: 1px; background: linear-gradient(90deg, transparent 5%, #92400E 20%, #D4A84B 50%, #92400E 80%, transparent 95%); margin: 2px 10px 4px; flex-shrink: 0; }
+          .image-container { height: 95px; border: 2px solid #D4A84B; border-radius: 4px; overflow: hidden; margin: 0 2px 3px; background: radial-gradient(ellipse at center, #1a1625 0%, #0a0810 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
           .image-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
-          .subtitle { font-family: 'Crimson Text', Georgia, serif; font-size: 7px; color: #e2e2e2; text-align: center; text-transform: capitalize; margin-bottom: 3px; }
-          .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin: 0 2px 3px; }
+          .subtitle { font-family: 'Crimson Text', Georgia, serif; font-size: 7px; color: #e2e2e2; text-align: center; text-transform: capitalize; margin-bottom: 3px; flex-shrink: 0; }
+          .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin: 0 2px 3px; flex-shrink: 0; }
           .stat-box { text-align: center; padding: 3px 1px; border-radius: 4px; border: 1px solid; }
           .stat-icon { font-size: 11px; }
           .stat-value { font-family: 'Cinzel', serif; font-size: 10px; font-weight: 700; }
@@ -177,14 +190,13 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
           .mag .stat-icon { color: #A855F7; } .mag .stat-value { color: #D8B4FE; } .mag .stat-label { color: #A855F7; }
           .hp { border-color: rgba(34, 197, 94, 0.7); background: linear-gradient(180deg, rgba(34, 197, 94, 0.3), rgba(0,0,0,0.5)); }
           .hp .stat-icon { color: #22C55E; } .hp .stat-value { color: #86EFAC; } .hp .stat-label { color: #22C55E; }
-          .abilities { display: flex; justify-content: space-between; gap: 2px; margin: 0 2px 3px; }
+          .abilities { display: flex; justify-content: space-between; gap: 2px; margin: 0 2px 3px; flex-shrink: 0; }
           .ability-box { text-align: center; padding: 2px 2px; background: linear-gradient(180deg, rgba(245, 158, 11, 0.15), rgba(0,0,0,0.5)); border: 1px solid rgba(245, 158, 11, 0.6); border-radius: 3px; flex: 1; }
           .ability-name { font-size: 5px; font-weight: 700; color: #F59E0B; }
           .ability-value { font-family: 'Cinzel', serif; font-size: 8px; font-weight: 700; color: #FCD34D; }
-          .motto { font-family: 'Crimson Text', Georgia, serif; font-style: italic; font-size: 6px; color: #d4d4d8; text-align: center; padding: 0 4px; line-height: 1.2; margin-bottom: 2px; }
-          .logo { text-align: center; position: absolute; bottom: 4px; left: 0; right: 0; }
-          .logo .d { font-family: 'Cinzel Decorative', serif; font-size: 10px; font-weight: 900; color: #D4A84B; }
-          .logo .amp { font-family: 'Cinzel Decorative', serif; font-size: 11px; font-weight: 700; color: #E53935; }
+          .motto { font-family: 'Crimson Text', Georgia, serif; font-style: italic; font-size: 6px; color: #d4d4d8; text-align: center; padding: 0 4px; line-height: 1.2; flex-shrink: 0; }
+          .logo { text-align: center; margin-top: 4px; flex-shrink: 0; }
+          .logo img { height: 18px; width: auto; filter: drop-shadow(0 0 4px rgba(229, 57, 53, 0.5)); }
         </style>
       </head>
       <body>
@@ -211,7 +223,7 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
             <div class="ability-box"><div class="ability-name">CHA</div><div class="ability-value">${abilities.charisma}</div></div>
           </div>
           <div class="motto">"${character.appearance?.personalityTrait?.substring(0, 50) || 'Fortune favors the bold.'}"</div>
-          <div class="logo"><span class="d">D</span><span class="amp">&</span><span class="d">D</span></div>
+          <div class="logo"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/8/8e/Dungeons_%26_Dragons_5th_Edition_logo.svg/320px-Dungeons_%26_Dragons_5th_Edition_logo.svg.png" alt="D&D" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\\'font-family:Cinzel Decorative,serif;font-size:12px;font-weight:900;color:#E53935;text-shadow:0 0 8px rgba(229,57,53,0.5)\\'>D&D</span>'" /></div>
         </div>
         <script>window.onload = () => { setTimeout(() => window.print(), 500); }</script>
       </body>
@@ -458,13 +470,20 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
                 </p>
               </div>
 
-              {/* D&D Logo - matching mockup: gold D, bright red & */}
-              <div className="absolute bottom-2 left-0 right-0 flex justify-center items-center">
-                <div className="flex items-baseline gap-0">
-                  <span style={{ fontFamily: 'var(--font-cinzel-decorative), Cinzel, serif', fontSize: '14px', fontWeight: 900, color: '#D4A84B', textShadow: '0 0 12px rgba(212, 168, 75, 0.6), 0 2px 4px rgba(0, 0, 0, 0.9)' }}>D</span>
-                  <span style={{ fontFamily: 'var(--font-cinzel-decorative), Cinzel, serif', fontSize: '16px', fontWeight: 700, color: '#E53935', textShadow: '0 0 10px rgba(229, 57, 53, 0.5), 0 2px 4px rgba(0, 0, 0, 0.9)' }}>&amp;</span>
-                  <span style={{ fontFamily: 'var(--font-cinzel-decorative), Cinzel, serif', fontSize: '14px', fontWeight: 900, color: '#D4A84B', textShadow: '0 0 12px rgba(212, 168, 75, 0.6), 0 2px 4px rgba(0, 0, 0, 0.9)' }}>D</span>
-                </div>
+              {/* D&D Logo - official red dragon logo */}
+              <div className="absolute bottom-3 left-0 right-0 flex justify-center items-center">
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/en/thumb/8/8e/Dungeons_%26_Dragons_5th_Edition_logo.svg/320px-Dungeons_%26_Dragons_5th_Edition_logo.svg.png"
+                  alt="D&D"
+                  className="h-6"
+                  style={{ filter: 'drop-shadow(0 0 8px rgba(229, 57, 53, 0.6))' }}
+                  onError={(e) => {
+                    // Fallback to text if image fails
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.parentElement!.innerHTML = '<span style="font-family: var(--font-cinzel-decorative), Cinzel, serif; font-size: 16px; font-weight: 900; color: #E53935; text-shadow: 0 0 12px rgba(229, 57, 53, 0.6);">D&D</span>';
+                  }}
+                />
               </div>
 
               {/* Close button */}
