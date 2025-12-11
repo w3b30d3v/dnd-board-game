@@ -151,40 +151,40 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
       <html>
       <head>
         <title>${character.name} - Character Card</title>
-        <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
         <style>
           @page { size: 2.5in 3.5in; margin: 0; }
-          body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #1a1a1a; }
-          .card { width: 2.5in; height: 3.5in; background: linear-gradient(160deg, #3d3650 0%, #2a2438 40%, #1e1b26 70%, #151218 100%); border-radius: 6px; border: 2px solid #F59E0B; padding: 6px; box-sizing: border-box; font-family: system-ui; color: white; position: relative; overflow: hidden; }
-          .name { font-family: 'Cinzel', serif; font-size: 9px; font-weight: 700; color: #FFD700; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0 0 6px rgba(255, 215, 0, 0.4); margin-bottom: 2px; }
-          .stars { text-align: center; font-size: 7px; margin-bottom: 2px; letter-spacing: 1px; }
-          .star-filled { color: #FFD700; }
+          body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #0a0810; }
+          .card { width: 2.5in; height: 3.5in; background: linear-gradient(160deg, #2d2640 0%, #1f1a2e 30%, #171320 60%, #0d0a12 100%); border-radius: 8px; border: 2px solid #D4A84B; padding: 6px; box-sizing: border-box; font-family: system-ui; color: white; position: relative; overflow: hidden; }
+          .name { font-family: 'Cinzel', serif; font-size: 10px; font-weight: 700; color: #FFD700; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0 0 8px rgba(255, 215, 0, 0.5); margin-bottom: 2px; }
+          .stars { text-align: center; font-size: 8px; margin-bottom: 2px; letter-spacing: 2px; }
+          .star-filled { color: #FFD700; text-shadow: 0 0 4px rgba(255, 215, 0, 0.6); }
           .star-empty { color: #3f3f46; }
-          .gold-bar { height: 1px; background: linear-gradient(90deg, transparent 5%, #F59E0B 40%, #FFD700 50%, #F59E0B 60%, transparent 95%); margin: 2px 8px 4px; }
-          .image-container { height: 90px; border: 1px solid #F59E0B; border-radius: 3px; overflow: hidden; margin: 0 2px 3px; background: #0f0d13; display: flex; align-items: center; justify-content: center; }
+          .gold-bar { height: 1px; background: linear-gradient(90deg, transparent 5%, #92400E 20%, #D4A84B 50%, #92400E 80%, transparent 95%); margin: 2px 10px 4px; }
+          .image-container { height: 95px; border: 2px solid #D4A84B; border-radius: 4px; overflow: hidden; margin: 0 2px 3px; background: radial-gradient(ellipse at center, #1a1625 0%, #0a0810 100%); display: flex; align-items: center; justify-content: center; }
           .image-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
           .subtitle { font-family: 'Crimson Text', Georgia, serif; font-size: 7px; color: #e2e2e2; text-align: center; text-transform: capitalize; margin-bottom: 3px; }
-          .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; margin: 0 2px 3px; }
-          .stat-box { text-align: center; padding: 2px 1px; border-radius: 2px; border: 1px solid; }
-          .stat-icon { font-size: 10px; }
-          .stat-value { font-family: 'Cinzel', serif; font-size: 9px; font-weight: 700; }
-          .stat-label { font-size: 5px; text-transform: uppercase; letter-spacing: 0.3px; }
-          .pwr { border-color: rgba(255, 100, 100, 0.5); background: linear-gradient(180deg, rgba(255, 80, 80, 0.2), rgba(0,0,0,0.4)); }
-          .pwr .stat-icon { color: #FF6B6B; } .pwr .stat-value { color: #FF9999; } .pwr .stat-label { color: #FF6B6B; }
-          .def { border-color: rgba(100, 200, 255, 0.5); background: linear-gradient(180deg, rgba(80, 200, 255, 0.2), rgba(0,0,0,0.4)); }
-          .def .stat-icon { color: #7DD3FC; } .def .stat-value { color: #99DDFF; } .def .stat-label { color: #7DD3FC; }
-          .mag { border-color: rgba(180, 150, 255, 0.5); background: linear-gradient(180deg, rgba(180, 140, 255, 0.2), rgba(0,0,0,0.4)); }
-          .mag .stat-icon { color: #C4B5FD; } .mag .stat-value { color: #D4CCFF; } .mag .stat-label { color: #C4B5FD; }
-          .hp { border-color: rgba(100, 230, 150, 0.5); background: linear-gradient(180deg, rgba(80, 230, 130, 0.2), rgba(0,0,0,0.4)); }
-          .hp .stat-icon { color: #86EFAC; } .hp .stat-value { color: #99FFBB; } .hp .stat-label { color: #86EFAC; }
-          .abilities { display: flex; justify-content: space-between; gap: 1px; margin: 0 2px 3px; }
-          .ability-box { text-align: center; padding: 1px 2px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255, 215, 0, 0.4); border-radius: 1px; flex: 1; }
-          .ability-name { font-size: 5px; font-weight: 700; color: #FFD700; }
-          .ability-value { font-family: 'Cinzel', serif; font-size: 7px; font-weight: 700; color: #FFE066; }
+          .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin: 0 2px 3px; }
+          .stat-box { text-align: center; padding: 3px 1px; border-radius: 4px; border: 1px solid; }
+          .stat-icon { font-size: 11px; }
+          .stat-value { font-family: 'Cinzel', serif; font-size: 10px; font-weight: 700; }
+          .stat-label { font-size: 5px; text-transform: uppercase; letter-spacing: 0.3px; font-weight: 700; }
+          .pwr { border-color: rgba(239, 68, 68, 0.7); background: linear-gradient(180deg, rgba(239, 68, 68, 0.3), rgba(0,0,0,0.5)); }
+          .pwr .stat-icon { color: #EF4444; } .pwr .stat-value { color: #FCA5A5; } .pwr .stat-label { color: #EF4444; }
+          .def { border-color: rgba(34, 211, 238, 0.7); background: linear-gradient(180deg, rgba(34, 211, 238, 0.3), rgba(0,0,0,0.5)); }
+          .def .stat-icon { color: #22D3EE; } .def .stat-value { color: #A5F3FC; } .def .stat-label { color: #22D3EE; }
+          .mag { border-color: rgba(168, 85, 247, 0.7); background: linear-gradient(180deg, rgba(168, 85, 247, 0.3), rgba(0,0,0,0.5)); }
+          .mag .stat-icon { color: #A855F7; } .mag .stat-value { color: #D8B4FE; } .mag .stat-label { color: #A855F7; }
+          .hp { border-color: rgba(34, 197, 94, 0.7); background: linear-gradient(180deg, rgba(34, 197, 94, 0.3), rgba(0,0,0,0.5)); }
+          .hp .stat-icon { color: #22C55E; } .hp .stat-value { color: #86EFAC; } .hp .stat-label { color: #22C55E; }
+          .abilities { display: flex; justify-content: space-between; gap: 2px; margin: 0 2px 3px; }
+          .ability-box { text-align: center; padding: 2px 2px; background: linear-gradient(180deg, rgba(245, 158, 11, 0.15), rgba(0,0,0,0.5)); border: 1px solid rgba(245, 158, 11, 0.6); border-radius: 3px; flex: 1; }
+          .ability-name { font-size: 5px; font-weight: 700; color: #F59E0B; }
+          .ability-value { font-family: 'Cinzel', serif; font-size: 8px; font-weight: 700; color: #FCD34D; }
           .motto { font-family: 'Crimson Text', Georgia, serif; font-style: italic; font-size: 6px; color: #d4d4d8; text-align: center; padding: 0 4px; line-height: 1.2; margin-bottom: 2px; }
-          .logo { text-align: center; position: absolute; bottom: 3px; left: 0; right: 0; }
-          .logo .d { font-family: 'Cinzel Decorative', serif; font-size: 8px; font-weight: 700; color: #C9A227; }
-          .logo .amp { font-family: 'Cinzel Decorative', serif; font-size: 9px; font-weight: 400; color: #8B0000; }
+          .logo { text-align: center; position: absolute; bottom: 4px; left: 0; right: 0; }
+          .logo .d { font-family: 'Cinzel Decorative', serif; font-size: 10px; font-weight: 900; color: #D4A84B; }
+          .logo .amp { font-family: 'Cinzel Decorative', serif; font-size: 11px; font-weight: 700; color: #E53935; }
         </style>
       </head>
       <body>
@@ -197,10 +197,10 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
           </div>
           <div class="subtitle">${character.race} • ${character.class} • Level ${character.level}</div>
           <div class="stats-grid">
-            <div class="stat-box pwr"><div class="stat-icon">⚔</div><div class="stat-value">${power}</div><div class="stat-label">PWR</div></div>
-            <div class="stat-box def"><div class="stat-icon">🛡</div><div class="stat-value">${defense}</div><div class="stat-label">DEF</div></div>
+            <div class="stat-box pwr"><div class="stat-icon">⚔️</div><div class="stat-value">${power}</div><div class="stat-label">PWR</div></div>
+            <div class="stat-box def"><div class="stat-icon">🛡️</div><div class="stat-value">${defense}</div><div class="stat-label">DEF</div></div>
             <div class="stat-box mag"><div class="stat-icon">✨</div><div class="stat-value">+${magicBonus}</div><div class="stat-label">MAG</div></div>
-            <div class="stat-box hp"><div class="stat-icon">❤</div><div class="stat-value">${hp}</div><div class="stat-label">HP</div></div>
+            <div class="stat-box hp"><div class="stat-icon">❤️</div><div class="stat-value">${hp}</div><div class="stat-label">HP</div></div>
           </div>
           <div class="abilities">
             <div class="ability-box"><div class="ability-name">STR</div><div class="ability-value">${abilities.strength}</div></div>
@@ -239,17 +239,16 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
             onClick={(e) => e.stopPropagation()}
             className="flex flex-col items-center gap-4"
           >
-            {/* Trading Card Container - compact layout */}
+            {/* Trading Card Container - rich dark fantasy style */}
             <div
               className="relative"
               style={{
                 width: '320px',
-                height: '500px',
-                background: 'linear-gradient(160deg, #3d3650 0%, #2a2438 40%, #1e1b26 70%, #151218 100%)',
-                borderRadius: '12px',
-                boxShadow: '0 0 60px rgba(245, 158, 11, 0.25), 0 8px 32px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-                border: '3px solid',
-                borderImage: 'linear-gradient(180deg, #FFD700 0%, #F59E0B 30%, #D97706 60%, #92400E 100%) 1',
+                height: '520px',
+                background: 'linear-gradient(160deg, #2d2640 0%, #1f1a2e 30%, #171320 60%, #0d0a12 100%)',
+                borderRadius: '16px',
+                boxShadow: '0 0 80px rgba(245, 158, 11, 0.35), 0 0 40px rgba(168, 85, 247, 0.15), 0 12px 40px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                border: '3px solid #D4A84B',
               }}
             >
               {/* Inner glow effect */}
@@ -298,15 +297,15 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
                 }}
               />
 
-              {/* Image Section */}
+              {/* Image Section - with ornate frame */}
               <div
                 className="mx-3 relative overflow-hidden"
                 style={{
-                  height: '200px',
-                  borderRadius: '6px',
-                  border: '2px solid #F59E0B',
-                  background: 'radial-gradient(ellipse at center, #252030 0%, #1a1520 50%, #0f0d13 100%)',
-                  boxShadow: 'inset 0 0 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(245, 158, 11, 0.2)',
+                  height: '210px',
+                  borderRadius: '8px',
+                  border: '2px solid #D4A84B',
+                  background: 'radial-gradient(ellipse at center, #1a1625 0%, #110e18 50%, #0a0810 100%)',
+                  boxShadow: 'inset 0 0 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(212, 168, 75, 0.25), 0 4px 12px rgba(0, 0, 0, 0.5)',
                 }}
               >
                 {hasImages && currentImage ? (
@@ -343,18 +342,17 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
                         >
                           ›
                         </button>
-                        {/* Image Counter - small dots */}
-                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-                          {imageList.map((_, idx) => (
-                            <div
-                              key={idx}
-                              className="w-2 h-2 rounded-full transition-all"
-                              style={{
-                                background: idx === currentImageIndex ? '#FFD700' : 'rgba(255, 255, 255, 0.3)',
-                                boxShadow: idx === currentImageIndex ? '0 0 8px rgba(255, 215, 0, 0.8)' : 'none'
-                              }}
-                            />
-                          ))}
+                        {/* Image Counter - "1/3" style like mockup */}
+                        <div
+                          className="absolute bottom-2 right-2 px-2 py-0.5 rounded text-xs font-semibold"
+                          style={{
+                            background: 'rgba(0, 0, 0, 0.7)',
+                            color: '#D4A84B',
+                            border: '1px solid rgba(212, 168, 75, 0.5)',
+                            textShadow: '0 0 4px rgba(212, 168, 75, 0.4)'
+                          }}
+                        >
+                          {currentImageIndex + 1}/{imageList.length}
                         </div>
                       </>
                     )}
@@ -391,36 +389,36 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
                 {character.race} • {character.class} • Level {character.level}
               </p>
 
-              {/* Stats Grid (PWR, DEF, MAG, HP) - no outer border, smaller boxes */}
-              <div className="mx-4 grid grid-cols-4 gap-1.5">
-                {/* Power */}
-                <div className="text-center py-1.5 rounded" style={{ background: 'linear-gradient(180deg, rgba(255, 80, 80, 0.2) 0%, rgba(0, 0, 0, 0.4) 100%)', border: '1px solid rgba(255, 100, 100, 0.5)' }}>
-                  <div className="text-lg" style={{ textShadow: '0 0 10px #FF6B6B' }}>⚔</div>
-                  <div className="text-base font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#FF9999', textShadow: '0 0 6px rgba(255, 100, 100, 0.5)' }}>{power}</div>
-                  <div className="text-[8px] uppercase tracking-wider font-semibold" style={{ color: '#FF6B6B' }}>PWR</div>
+              {/* Stats Grid (PWR, DEF, MAG, HP) - vibrant colors with glowing icons */}
+              <div className="mx-3 grid grid-cols-4 gap-2">
+                {/* Power - Red/Orange */}
+                <div className="text-center py-2 rounded-lg" style={{ background: 'linear-gradient(180deg, rgba(239, 68, 68, 0.35) 0%, rgba(153, 27, 27, 0.25) 50%, rgba(0, 0, 0, 0.5) 100%)', border: '2px solid rgba(239, 68, 68, 0.7)', boxShadow: '0 0 15px rgba(239, 68, 68, 0.3), inset 0 0 20px rgba(239, 68, 68, 0.1)' }}>
+                  <div className="text-xl" style={{ filter: 'drop-shadow(0 0 8px #EF4444)', textShadow: '0 0 15px #EF4444' }}>⚔️</div>
+                  <div className="text-lg font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#FCA5A5', textShadow: '0 0 10px rgba(252, 165, 165, 0.6)' }}>{power}</div>
+                  <div className="text-[8px] uppercase tracking-wider font-bold" style={{ color: '#EF4444', textShadow: '0 0 6px rgba(239, 68, 68, 0.5)' }}>PWR</div>
                 </div>
-                {/* Defense */}
-                <div className="text-center py-1.5 rounded" style={{ background: 'linear-gradient(180deg, rgba(80, 200, 255, 0.2) 0%, rgba(0, 0, 0, 0.4) 100%)', border: '1px solid rgba(100, 200, 255, 0.5)' }}>
-                  <div className="text-lg" style={{ textShadow: '0 0 10px #7DD3FC' }}>🛡</div>
-                  <div className="text-base font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#99DDFF', textShadow: '0 0 6px rgba(100, 200, 255, 0.5)' }}>{defense}</div>
-                  <div className="text-[8px] uppercase tracking-wider font-semibold" style={{ color: '#7DD3FC' }}>DEF</div>
+                {/* Defense - Cyan/Blue */}
+                <div className="text-center py-2 rounded-lg" style={{ background: 'linear-gradient(180deg, rgba(34, 211, 238, 0.35) 0%, rgba(6, 95, 70, 0.25) 50%, rgba(0, 0, 0, 0.5) 100%)', border: '2px solid rgba(34, 211, 238, 0.7)', boxShadow: '0 0 15px rgba(34, 211, 238, 0.3), inset 0 0 20px rgba(34, 211, 238, 0.1)' }}>
+                  <div className="text-xl" style={{ filter: 'drop-shadow(0 0 8px #22D3EE)', textShadow: '0 0 15px #22D3EE' }}>🛡️</div>
+                  <div className="text-lg font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#A5F3FC', textShadow: '0 0 10px rgba(165, 243, 252, 0.6)' }}>{defense}</div>
+                  <div className="text-[8px] uppercase tracking-wider font-bold" style={{ color: '#22D3EE', textShadow: '0 0 6px rgba(34, 211, 238, 0.5)' }}>DEF</div>
                 </div>
-                {/* Magic */}
-                <div className="text-center py-1.5 rounded" style={{ background: 'linear-gradient(180deg, rgba(180, 140, 255, 0.2) 0%, rgba(0, 0, 0, 0.4) 100%)', border: '1px solid rgba(180, 150, 255, 0.5)' }}>
-                  <div className="text-lg" style={{ textShadow: '0 0 10px #C4B5FD' }}>✨</div>
-                  <div className="text-base font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#D4CCFF', textShadow: '0 0 6px rgba(180, 150, 255, 0.5)' }}>+{magicBonus}</div>
-                  <div className="text-[8px] uppercase tracking-wider font-semibold" style={{ color: '#C4B5FD' }}>MAG</div>
+                {/* Magic - Purple/Violet */}
+                <div className="text-center py-2 rounded-lg" style={{ background: 'linear-gradient(180deg, rgba(168, 85, 247, 0.35) 0%, rgba(88, 28, 135, 0.25) 50%, rgba(0, 0, 0, 0.5) 100%)', border: '2px solid rgba(168, 85, 247, 0.7)', boxShadow: '0 0 15px rgba(168, 85, 247, 0.3), inset 0 0 20px rgba(168, 85, 247, 0.1)' }}>
+                  <div className="text-xl" style={{ filter: 'drop-shadow(0 0 8px #A855F7)', textShadow: '0 0 15px #A855F7' }}>✨</div>
+                  <div className="text-lg font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#D8B4FE', textShadow: '0 0 10px rgba(216, 180, 254, 0.6)' }}>+{magicBonus}</div>
+                  <div className="text-[8px] uppercase tracking-wider font-bold" style={{ color: '#A855F7', textShadow: '0 0 6px rgba(168, 85, 247, 0.5)' }}>MAG</div>
                 </div>
-                {/* HP */}
-                <div className="text-center py-1.5 rounded" style={{ background: 'linear-gradient(180deg, rgba(80, 230, 130, 0.2) 0%, rgba(0, 0, 0, 0.4) 100%)', border: '1px solid rgba(100, 230, 150, 0.5)' }}>
-                  <div className="text-lg" style={{ textShadow: '0 0 10px #86EFAC' }}>❤</div>
-                  <div className="text-base font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#99FFBB', textShadow: '0 0 6px rgba(100, 230, 150, 0.5)' }}>{hp}</div>
-                  <div className="text-[8px] uppercase tracking-wider font-semibold" style={{ color: '#86EFAC' }}>HP</div>
+                {/* HP - Green/Emerald */}
+                <div className="text-center py-2 rounded-lg" style={{ background: 'linear-gradient(180deg, rgba(34, 197, 94, 0.35) 0%, rgba(6, 78, 59, 0.25) 50%, rgba(0, 0, 0, 0.5) 100%)', border: '2px solid rgba(34, 197, 94, 0.7)', boxShadow: '0 0 15px rgba(34, 197, 94, 0.3), inset 0 0 20px rgba(34, 197, 94, 0.1)' }}>
+                  <div className="text-xl" style={{ filter: 'drop-shadow(0 0 8px #22C55E)', textShadow: '0 0 15px #22C55E' }}>❤️</div>
+                  <div className="text-lg font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#86EFAC', textShadow: '0 0 10px rgba(134, 239, 172, 0.6)' }}>{hp}</div>
+                  <div className="text-[8px] uppercase tracking-wider font-bold" style={{ color: '#22C55E', textShadow: '0 0 6px rgba(34, 197, 94, 0.5)' }}>HP</div>
                 </div>
               </div>
 
-              {/* Ability Scores Row - no outer border */}
-              <div className="mx-4 mt-1.5 flex justify-between gap-1">
+              {/* Ability Scores Row - richer gold styling */}
+              <div className="mx-3 mt-2 flex justify-between gap-1.5">
                 {[
                   { name: 'STR', value: abilities.strength },
                   { name: 'DEX', value: abilities.dexterity },
@@ -431,11 +429,15 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
                 ].map((ability) => (
                   <div
                     key={ability.name}
-                    className="text-center px-1.5 py-1 rounded flex-1"
-                    style={{ background: 'rgba(0, 0, 0, 0.5)', border: '1px solid rgba(255, 215, 0, 0.4)' }}
+                    className="text-center px-1 py-1.5 rounded-md flex-1"
+                    style={{
+                      background: 'linear-gradient(180deg, rgba(245, 158, 11, 0.15) 0%, rgba(0, 0, 0, 0.6) 100%)',
+                      border: '1px solid rgba(245, 158, 11, 0.6)',
+                      boxShadow: '0 0 8px rgba(245, 158, 11, 0.15), inset 0 0 10px rgba(0, 0, 0, 0.3)'
+                    }}
                   >
-                    <div className="text-[7px] font-bold tracking-wide" style={{ color: '#FFD700' }}>{ability.name}</div>
-                    <div className="text-xs font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#FFE066', textShadow: '0 0 6px rgba(255, 215, 0, 0.3)' }}>{ability.value}</div>
+                    <div className="text-[7px] font-bold tracking-wide" style={{ color: '#F59E0B', textShadow: '0 0 4px rgba(245, 158, 11, 0.4)' }}>{ability.name}</div>
+                    <div className="text-sm font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#FCD34D', textShadow: '0 0 8px rgba(252, 211, 77, 0.4)' }}>{ability.value}</div>
                   </div>
                 ))}
               </div>
@@ -456,12 +458,12 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
                 </p>
               </div>
 
-              {/* D&D Logo - with Cinzel Decorative font for authentic D&D look */}
+              {/* D&D Logo - matching mockup: gold D, bright red & */}
               <div className="absolute bottom-2 left-0 right-0 flex justify-center items-center">
                 <div className="flex items-baseline gap-0">
-                  <span className="font-[var(--font-cinzel-decorative)]" style={{ fontSize: '12px', fontWeight: 700, color: '#C9A227', textShadow: '0 0 8px rgba(201, 162, 39, 0.4), 1px 1px 2px rgba(0, 0, 0, 0.9)' }}>D</span>
-                  <span className="font-[var(--font-cinzel-decorative)]" style={{ fontSize: '14px', fontWeight: 400, color: '#8B0000', textShadow: '0 0 6px rgba(139, 0, 0, 0.3), 1px 1px 2px rgba(0, 0, 0, 0.9)' }}>&amp;</span>
-                  <span className="font-[var(--font-cinzel-decorative)]" style={{ fontSize: '12px', fontWeight: 700, color: '#C9A227', textShadow: '0 0 8px rgba(201, 162, 39, 0.4), 1px 1px 2px rgba(0, 0, 0, 0.9)' }}>D</span>
+                  <span style={{ fontFamily: 'var(--font-cinzel-decorative), Cinzel, serif', fontSize: '14px', fontWeight: 900, color: '#D4A84B', textShadow: '0 0 12px rgba(212, 168, 75, 0.6), 0 2px 4px rgba(0, 0, 0, 0.9)' }}>D</span>
+                  <span style={{ fontFamily: 'var(--font-cinzel-decorative), Cinzel, serif', fontSize: '16px', fontWeight: 700, color: '#E53935', textShadow: '0 0 10px rgba(229, 57, 53, 0.5), 0 2px 4px rgba(0, 0, 0, 0.9)' }}>&amp;</span>
+                  <span style={{ fontFamily: 'var(--font-cinzel-decorative), Cinzel, serif', fontSize: '14px', fontWeight: 900, color: '#D4A84B', textShadow: '0 0 12px rgba(212, 168, 75, 0.6), 0 2px 4px rgba(0, 0, 0, 0.9)' }}>D</span>
                 </div>
               </div>
 
