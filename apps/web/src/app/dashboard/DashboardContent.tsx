@@ -125,13 +125,45 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
   const magicBonus = Math.floor((magicMod - 10) / 2) + proficiencyBonus;
   const hp = character.maxHitPoints || 10;
 
-  // Calculate rarity based on race/class uniqueness
-  const rareRaces = ['tiefling', 'dragonborn', 'aasimar', 'drow', 'genasi'];
-  const rareClasses = ['warlock', 'sorcerer', 'paladin', 'monk'];
-  let rarity = 1;
-  if (rareRaces.includes(character.race.toLowerCase())) rarity += 2;
-  if (rareClasses.includes(character.class.toLowerCase())) rarity += 1;
-  rarity = Math.min(rarity, 5);
+  // Calculate rarity based on multiple factors:
+  // - Race uniqueness (common vs rare)
+  // - Class uniqueness (common vs rare)
+  // - Level (higher level = rarer)
+  // - High ability scores (18+ in any stat)
+  const rareRaces = ['tiefling', 'dragonborn', 'aasimar', 'drow', 'genasi', 'half-orc', 'gnome'];
+  const legendaryRaces = ['aasimar', 'genasi'];
+  const rareClasses = ['warlock', 'sorcerer', 'paladin', 'monk', 'bard'];
+  const legendaryClasses = ['paladin', 'warlock'];
+
+  let rarity = 1; // Base: 1 star
+
+  // Race bonus
+  if (legendaryRaces.includes(character.race.toLowerCase())) {
+    rarity += 2;
+  } else if (rareRaces.includes(character.race.toLowerCase())) {
+    rarity += 1;
+  }
+
+  // Class bonus
+  if (legendaryClasses.includes(character.class.toLowerCase())) {
+    rarity += 1;
+  } else if (rareClasses.includes(character.class.toLowerCase())) {
+    rarity += 0.5;
+  }
+
+  // Level bonus (every 5 levels adds a star)
+  rarity += Math.floor(character.level / 5);
+
+  // High stats bonus (any ability 16+ adds 0.5, 18+ adds 1)
+  const highestStat = Math.max(
+    abilities.strength, abilities.dexterity, abilities.constitution,
+    abilities.intelligence, abilities.wisdom, abilities.charisma
+  );
+  if (highestStat >= 18) rarity += 1;
+  else if (highestStat >= 16) rarity += 0.5;
+
+  // Clamp between 1-5
+  rarity = Math.min(Math.max(Math.round(rarity), 1), 5);
 
   const goToPrevious = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? imageList.length - 1 : prev - 1));
@@ -141,7 +173,7 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
     setCurrentImageIndex((prev) => (prev === imageList.length - 1 ? 0 : prev + 1));
   };
 
-  // Print handler - standard trading card size (2.5" x 3.5")
+  // Print handler - trading card that auto-sizes to content
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
@@ -153,35 +185,34 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
         <title>${character.name} - Character Card</title>
         <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
         <style>
-          @page { size: 2.5in 3.5in; margin: 0; }
+          @page { margin: 0.25in; }
+          @media print {
+            body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          }
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #0a0810; }
+          body { margin: 0; padding: 20px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background: #0a0810; }
           .card {
-            width: 2.5in;
-            height: 3.5in;
+            width: 280px;
             background: linear-gradient(160deg, #2d2640 0%, #1f1a2e 30%, #171320 60%, #0d0a12 100%);
-            border-radius: 8px;
-            border: 2px solid #D4A84B;
-            padding: 6px;
+            border-radius: 12px;
+            border: 3px solid #D4A84B;
+            padding: 12px;
             font-family: system-ui;
             color: white;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
           }
-          .name { font-family: 'Cinzel', serif; font-size: 10px; font-weight: 700; color: #FFD700; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0 0 8px rgba(255, 215, 0, 0.5); margin-bottom: 2px; }
-          .stars { text-align: center; font-size: 8px; margin-bottom: 2px; letter-spacing: 2px; }
+          .name { font-family: 'Cinzel', serif; font-size: 14px; font-weight: 700; color: #FFD700; text-align: center; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 8px rgba(255, 215, 0, 0.5); margin-bottom: 4px; }
+          .stars { text-align: center; font-size: 12px; margin-bottom: 6px; letter-spacing: 3px; }
           .star-filled { color: #FFD700; text-shadow: 0 0 4px rgba(255, 215, 0, 0.6); }
           .star-empty { color: #3f3f46; }
-          .gold-bar { height: 1px; background: linear-gradient(90deg, transparent 5%, #92400E 20%, #D4A84B 50%, #92400E 80%, transparent 95%); margin: 2px 10px 4px; flex-shrink: 0; }
-          .image-container { height: 95px; border: 2px solid #D4A84B; border-radius: 4px; overflow: hidden; margin: 0 2px 3px; background: radial-gradient(ellipse at center, #1a1625 0%, #0a0810 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+          .gold-bar { height: 2px; background: linear-gradient(90deg, transparent 5%, #92400E 20%, #D4A84B 50%, #92400E 80%, transparent 95%); margin: 4px 20px 8px; }
+          .image-container { height: 160px; border: 2px solid #D4A84B; border-radius: 6px; overflow: hidden; margin: 0 4px 8px; background: radial-gradient(ellipse at center, #1a1625 0%, #0a0810 100%); display: flex; align-items: center; justify-content: center; }
           .image-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
-          .subtitle { font-family: 'Crimson Text', Georgia, serif; font-size: 7px; color: #e2e2e2; text-align: center; text-transform: capitalize; margin-bottom: 3px; flex-shrink: 0; }
-          .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin: 0 2px 3px; flex-shrink: 0; }
-          .stat-box { text-align: center; padding: 3px 1px; border-radius: 4px; border: 1px solid; }
-          .stat-icon { font-size: 11px; }
-          .stat-value { font-family: 'Cinzel', serif; font-size: 10px; font-weight: 700; }
-          .stat-label { font-size: 5px; text-transform: uppercase; letter-spacing: 0.3px; font-weight: 700; }
+          .subtitle { font-family: 'Crimson Text', Georgia, serif; font-size: 11px; color: #e2e2e2; text-align: center; text-transform: capitalize; margin-bottom: 8px; }
+          .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 0 4px 8px; }
+          .stat-box { text-align: center; padding: 6px 2px; border-radius: 6px; border: 2px solid; }
+          .stat-icon { font-size: 16px; }
+          .stat-value { font-family: 'Cinzel', serif; font-size: 16px; font-weight: 700; }
+          .stat-label { font-size: 8px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
           .pwr { border-color: rgba(239, 68, 68, 0.7); background: linear-gradient(180deg, rgba(239, 68, 68, 0.3), rgba(0,0,0,0.5)); }
           .pwr .stat-icon { color: #EF4444; } .pwr .stat-value { color: #FCA5A5; } .pwr .stat-label { color: #EF4444; }
           .def { border-color: rgba(34, 211, 238, 0.7); background: linear-gradient(180deg, rgba(34, 211, 238, 0.3), rgba(0,0,0,0.5)); }
@@ -190,13 +221,13 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
           .mag .stat-icon { color: #A855F7; } .mag .stat-value { color: #D8B4FE; } .mag .stat-label { color: #A855F7; }
           .hp { border-color: rgba(34, 197, 94, 0.7); background: linear-gradient(180deg, rgba(34, 197, 94, 0.3), rgba(0,0,0,0.5)); }
           .hp .stat-icon { color: #22C55E; } .hp .stat-value { color: #86EFAC; } .hp .stat-label { color: #22C55E; }
-          .abilities { display: flex; justify-content: space-between; gap: 2px; margin: 0 2px 3px; flex-shrink: 0; }
-          .ability-box { text-align: center; padding: 2px 2px; background: linear-gradient(180deg, rgba(245, 158, 11, 0.15), rgba(0,0,0,0.5)); border: 1px solid rgba(245, 158, 11, 0.6); border-radius: 3px; flex: 1; }
-          .ability-name { font-size: 5px; font-weight: 700; color: #F59E0B; }
-          .ability-value { font-family: 'Cinzel', serif; font-size: 8px; font-weight: 700; color: #FCD34D; }
-          .motto { font-family: 'Crimson Text', Georgia, serif; font-style: italic; font-size: 6px; color: #d4d4d8; text-align: center; padding: 0 4px; line-height: 1.2; flex-shrink: 0; }
-          .logo { text-align: center; margin-top: 4px; flex-shrink: 0; }
-          .logo img { height: 18px; width: auto; filter: drop-shadow(0 0 4px rgba(229, 57, 53, 0.5)); }
+          .abilities { display: flex; justify-content: space-between; gap: 4px; margin: 0 4px 8px; }
+          .ability-box { text-align: center; padding: 4px 4px; background: linear-gradient(180deg, rgba(245, 158, 11, 0.15), rgba(0,0,0,0.5)); border: 1px solid rgba(245, 158, 11, 0.6); border-radius: 4px; flex: 1; }
+          .ability-name { font-size: 8px; font-weight: 700; color: #F59E0B; }
+          .ability-value { font-family: 'Cinzel', serif; font-size: 12px; font-weight: 700; color: #FCD34D; }
+          .motto { font-family: 'Crimson Text', Georgia, serif; font-style: italic; font-size: 10px; color: #d4d4d8; text-align: center; padding: 0 8px; line-height: 1.3; margin-bottom: 8px; }
+          .logo { text-align: center; }
+          .logo img { height: 28px; width: auto; filter: drop-shadow(0 0 4px rgba(229, 57, 53, 0.5)); }
         </style>
       </head>
       <body>
