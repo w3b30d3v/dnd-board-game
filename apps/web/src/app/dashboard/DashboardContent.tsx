@@ -163,7 +163,7 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    // Standard trading card: 2.5" x 3.5"
+    // 2.5" x 3.5" at 96 DPI = 240px x 336px
     const cardHtml = `
       <!DOCTYPE html>
       <html>
@@ -171,83 +171,34 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
         <title>${character.name} - Character Card</title>
         <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
         <style>
-          @page {
-            size: 2.5in 3.5in;
-            margin: 0;
+          @page { size: 2.5in 3.5in; margin: 0; }
+          @media print {
+            body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           }
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          html, body {
-            width: 2.5in;
-            height: 3.5in;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background: white;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
+          body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: white; }
           .card {
             width: 2.5in;
             height: 3.5in;
             background: linear-gradient(160deg, #2d2640 0%, #1f1a2e 30%, #171320 60%, #0d0a12 100%);
-            border-radius: 6px;
+            border-radius: 8px;
             border: 2px solid #D4A84B;
-            font-family: system-ui, -apple-system, sans-serif;
+            padding: 6px;
+            font-family: system-ui;
             color: white;
-            padding: 4px;
-            position: relative;
-          }
-          .name {
-            font-family: 'Cinzel', serif;
-            font-size: 10px;
-            font-weight: 700;
-            color: #FFD700;
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            text-shadow: 0 0 4px rgba(255, 215, 0, 0.5);
-            padding: 2px 0;
-          }
-          .gold-bar {
-            height: 1px;
-            background: linear-gradient(90deg, transparent 5%, #92400E 20%, #D4A84B 50%, #92400E 80%, transparent 95%);
-            margin: 0 10px 3px;
-          }
-          .image-container {
-            height: 110px;
-            border: 1px solid #D4A84B;
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 0 2px 3px;
-            background: radial-gradient(ellipse at center, #1a1625 0%, #0a0810 100%);
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: column;
           }
+          .name { font-family: 'Cinzel', serif; font-size: 11px; font-weight: 700; color: #FFD700; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0 0 6px rgba(255, 215, 0, 0.5); margin-bottom: 2px; }
+          .gold-bar { height: 1px; background: linear-gradient(90deg, transparent 5%, #92400E 20%, #D4A84B 50%, #92400E 80%, transparent 95%); margin: 2px 12px 4px; }
+          .image-container { height: 115px; border: 1px solid #D4A84B; border-radius: 4px; overflow: hidden; margin: 0 2px 4px; background: radial-gradient(ellipse at center, #1a1625 0%, #0a0810 100%); display: flex; align-items: center; justify-content: center; }
           .image-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
-          .subtitle {
-            font-family: 'Crimson Text', Georgia, serif;
-            font-size: 7px;
-            color: #e2e2e2;
-            text-align: center;
-            text-transform: capitalize;
-            padding: 1px 0 2px;
-          }
-          .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 2px;
-            margin: 0 2px 2px;
-          }
-          .stat-box {
-            text-align: center;
-            padding: 2px 1px;
-            border-radius: 3px;
-            border: 1px solid;
-          }
-          .stat-icon { font-size: 8px; line-height: 1; }
-          .stat-value { font-family: 'Cinzel', serif; font-size: 9px; font-weight: 700; line-height: 1.1; }
-          .stat-label { font-size: 5px; text-transform: uppercase; letter-spacing: 0.2px; font-weight: 700; }
+          .subtitle { font-family: 'Crimson Text', Georgia, serif; font-size: 8px; color: #e2e2e2; text-align: center; text-transform: capitalize; margin-bottom: 4px; }
+          .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin: 0 2px 4px; }
+          .stat-box { text-align: center; padding: 3px 1px; border-radius: 4px; border: 1px solid; }
+          .stat-icon { font-size: 10px; }
+          .stat-value { font-family: 'Cinzel', serif; font-size: 11px; font-weight: 700; }
+          .stat-label { font-size: 6px; text-transform: uppercase; letter-spacing: 0.3px; font-weight: 700; }
           .hp-stat { border-color: rgba(239, 68, 68, 0.7); background: linear-gradient(180deg, rgba(239, 68, 68, 0.3), rgba(0,0,0,0.5)); }
           .hp-stat .stat-icon { color: #EF4444; } .hp-stat .stat-value { color: #FCA5A5; } .hp-stat .stat-label { color: #EF4444; }
           .ac-stat { border-color: rgba(34, 211, 238, 0.7); background: linear-gradient(180deg, rgba(34, 211, 238, 0.3), rgba(0,0,0,0.5)); }
@@ -256,52 +207,14 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
           .sp-stat .stat-icon { color: #22C55E; } .sp-stat .stat-value { color: #86EFAC; } .sp-stat .stat-label { color: #22C55E; }
           .pro-stat { border-color: rgba(168, 85, 247, 0.7); background: linear-gradient(180deg, rgba(168, 85, 247, 0.3), rgba(0,0,0,0.5)); }
           .pro-stat .stat-icon { color: #A855F7; } .pro-stat .stat-value { color: #D8B4FE; } .pro-stat .stat-label { color: #A855F7; }
-          .abilities {
-            display: flex;
-            justify-content: space-between;
-            gap: 2px;
-            margin: 0 2px 2px;
-          }
-          .ability-box {
-            text-align: center;
-            padding: 1px;
-            background: linear-gradient(180deg, rgba(245, 158, 11, 0.15), rgba(0,0,0,0.5));
-            border: 1px solid rgba(245, 158, 11, 0.6);
-            border-radius: 2px;
-            flex: 1;
-          }
-          .ability-name { font-size: 5px; font-weight: 700; color: #F59E0B; }
-          .ability-value { font-family: 'Cinzel', serif; font-size: 8px; font-weight: 700; color: #FCD34D; }
-          .bottom-section {
-            position: absolute;
-            bottom: 4px;
-            left: 4px;
-            right: 4px;
-          }
-          .motto {
-            font-family: 'Crimson Text', Georgia, serif;
-            font-style: italic;
-            font-size: 6px;
-            color: #d4d4d8;
-            text-align: center;
-            padding: 0 4px;
-            line-height: 1.2;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-          }
-          .logo {
-            text-align: center;
-            font-family: 'Cinzel Decorative', Cinzel, serif;
-            font-size: 7px;
-            font-weight: 900;
-            letter-spacing: 0.3px;
-            text-shadow: 0 0 4px rgba(212, 168, 75, 0.5);
-            padding: 2px 0;
-          }
+          .abilities { display: flex; justify-content: space-between; gap: 2px; margin: 0 2px 4px; }
+          .ability-box { text-align: center; padding: 2px 2px; background: linear-gradient(180deg, rgba(245, 158, 11, 0.15), rgba(0,0,0,0.5)); border: 1px solid rgba(245, 158, 11, 0.6); border-radius: 3px; flex: 1; }
+          .ability-name { font-size: 6px; font-weight: 700; color: #F59E0B; }
+          .ability-value { font-family: 'Cinzel', serif; font-size: 9px; font-weight: 700; color: #FCD34D; }
+          .motto { font-family: 'Crimson Text', Georgia, serif; font-style: italic; font-size: 7px; color: #d4d4d8; text-align: center; padding: 0 4px; line-height: 1.3; margin-bottom: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 18px; }
+          .logo { text-align: center; font-family: 'Cinzel Decorative', Cinzel, serif; font-size: 8px; font-weight: 900; letter-spacing: 0.5px; text-shadow: 0 0 6px rgba(212, 168, 75, 0.5); margin-top: auto; }
           .logo .gold { color: #D4A84B; }
-          .logo .red { color: #E53935; text-shadow: 0 0 4px rgba(229, 57, 53, 0.5); margin: 0 1px; }
+          .logo .red { color: #E53935; text-shadow: 0 0 6px rgba(229, 57, 53, 0.5); margin: 0 2px; }
         </style>
       </head>
       <body>
@@ -326,10 +239,8 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
             <div class="ability-box"><div class="ability-name">WIS</div><div class="ability-value">${abilities.wisdom}</div></div>
             <div class="ability-box"><div class="ability-name">CHA</div><div class="ability-value">${abilities.charisma}</div></div>
           </div>
-          <div class="bottom-section">
-            <div class="motto">"${character.appearance?.personalityTrait?.substring(0, 80) || 'Fortune favors the bold.'}"</div>
-            <div class="logo"><span class="gold">DUNGEONS</span><span class="red">&</span><span class="gold">DRAGONS</span></div>
-          </div>
+          <div class="motto">"${character.appearance?.personalityTrait?.substring(0, 80) || 'Fortune favors the bold.'}"</div>
+          <div class="logo"><span class="gold">DUNGEONS</span><span class="red">&</span><span class="gold">DRAGONS</span></div>
         </div>
         <script>window.onload = () => { setTimeout(() => window.print(), 500); }</script>
       </body>
