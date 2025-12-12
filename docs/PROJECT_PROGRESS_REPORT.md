@@ -1,6 +1,6 @@
 # D&D Digital Board Game Platform - Project Progress Report
 
-**Report Date:** December 12, 2024
+**Report Date:** December 12, 2025
 **Repository:** https://github.com/w3b30d3v/dnd-board-game
 
 ---
@@ -253,7 +253,7 @@ The D&D Digital Board Game Platform is a cinematic, multiplayer, AI-powered D&D 
 
 ---
 
-## Recent Updates (December 2024)
+## Recent Updates (December 2025)
 
 ### Trading Card Improvements
 - Fixed print card layout (2.5" × 3.5")
@@ -293,4 +293,4 @@ For questions about this project, please open an issue on the GitHub repository.
 
 ---
 
-*Report generated: December 12, 2024*
+*Report generated: December 12, 2025*
