@@ -163,7 +163,7 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    // 2.5" x 3.5" at 96 DPI = 240px x 336px
+    // Standard trading card: 2.5" x 3.5"
     const cardHtml = `
       <!DOCTYPE html>
       <html>
@@ -171,34 +171,98 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
         <title>${character.name} - Character Card</title>
         <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
         <style>
-          @page { size: 2.5in 3.5in; margin: 0; }
+          @page {
+            size: 2.5in 3.5in;
+            margin: 0;
+          }
           @media print {
-            body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            html, body {
+              width: 2.5in;
+              height: 3.5in;
+              margin: 0;
+              padding: 0;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
           }
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: white; }
+          html, body {
+            width: 2.5in;
+            height: 3.5in;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+          }
+          body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: white;
+          }
           .card {
             width: 2.5in;
             height: 3.5in;
             background: linear-gradient(160deg, #2d2640 0%, #1f1a2e 30%, #171320 60%, #0d0a12 100%);
-            border-radius: 8px;
+            border-radius: 6px;
             border: 2px solid #D4A84B;
-            padding: 6px;
-            font-family: system-ui;
+            padding: 5px 5px 4px 5px;
+            font-family: system-ui, -apple-system, sans-serif;
             color: white;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
           }
-          .name { font-family: 'Cinzel', serif; font-size: 11px; font-weight: 700; color: #FFD700; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0 0 6px rgba(255, 215, 0, 0.5); margin-bottom: 2px; }
-          .gold-bar { height: 1px; background: linear-gradient(90deg, transparent 5%, #92400E 20%, #D4A84B 50%, #92400E 80%, transparent 95%); margin: 2px 12px 4px; }
-          .image-container { height: 115px; border: 1px solid #D4A84B; border-radius: 4px; overflow: hidden; margin: 0 2px 4px; background: radial-gradient(ellipse at center, #1a1625 0%, #0a0810 100%); display: flex; align-items: center; justify-content: center; }
+          .name {
+            font-family: 'Cinzel', serif;
+            font-size: 10px;
+            font-weight: 700;
+            color: #FFD700;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 4px rgba(255, 215, 0, 0.5);
+            padding: 2px 0;
+          }
+          .gold-bar {
+            height: 1px;
+            background: linear-gradient(90deg, transparent 5%, #92400E 20%, #D4A84B 50%, #92400E 80%, transparent 95%);
+            margin: 2px 10px 4px;
+          }
+          .image-container {
+            height: 105px;
+            border: 1px solid #D4A84B;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0 2px 3px;
+            background: radial-gradient(ellipse at center, #1a1625 0%, #0a0810 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
           .image-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
-          .subtitle { font-family: 'Crimson Text', Georgia, serif; font-size: 8px; color: #e2e2e2; text-align: center; text-transform: capitalize; margin-bottom: 4px; }
-          .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin: 0 2px 4px; }
-          .stat-box { text-align: center; padding: 3px 1px; border-radius: 4px; border: 1px solid; }
-          .stat-icon { font-size: 10px; }
-          .stat-value { font-family: 'Cinzel', serif; font-size: 11px; font-weight: 700; }
-          .stat-label { font-size: 6px; text-transform: uppercase; letter-spacing: 0.3px; font-weight: 700; }
+          .subtitle {
+            font-family: 'Crimson Text', Georgia, serif;
+            font-size: 7px;
+            color: #e2e2e2;
+            text-align: center;
+            text-transform: capitalize;
+            padding: 2px 0 3px;
+          }
+          .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2px;
+            margin: 0 2px 3px;
+          }
+          .stat-box {
+            text-align: center;
+            padding: 2px 1px;
+            border-radius: 3px;
+            border: 1px solid;
+          }
+          .stat-icon { font-size: 8px; line-height: 1; }
+          .stat-value { font-family: 'Cinzel', serif; font-size: 9px; font-weight: 700; line-height: 1.1; }
+          .stat-label { font-size: 5px; text-transform: uppercase; letter-spacing: 0.2px; font-weight: 700; }
           .hp-stat { border-color: rgba(239, 68, 68, 0.7); background: linear-gradient(180deg, rgba(239, 68, 68, 0.3), rgba(0,0,0,0.5)); }
           .hp-stat .stat-icon { color: #EF4444; } .hp-stat .stat-value { color: #FCA5A5; } .hp-stat .stat-label { color: #EF4444; }
           .ac-stat { border-color: rgba(34, 211, 238, 0.7); background: linear-gradient(180deg, rgba(34, 211, 238, 0.3), rgba(0,0,0,0.5)); }
@@ -207,14 +271,49 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
           .sp-stat .stat-icon { color: #22C55E; } .sp-stat .stat-value { color: #86EFAC; } .sp-stat .stat-label { color: #22C55E; }
           .pro-stat { border-color: rgba(168, 85, 247, 0.7); background: linear-gradient(180deg, rgba(168, 85, 247, 0.3), rgba(0,0,0,0.5)); }
           .pro-stat .stat-icon { color: #A855F7; } .pro-stat .stat-value { color: #D8B4FE; } .pro-stat .stat-label { color: #A855F7; }
-          .abilities { display: flex; justify-content: space-between; gap: 2px; margin: 0 2px 4px; }
-          .ability-box { text-align: center; padding: 2px 2px; background: linear-gradient(180deg, rgba(245, 158, 11, 0.15), rgba(0,0,0,0.5)); border: 1px solid rgba(245, 158, 11, 0.6); border-radius: 3px; flex: 1; }
-          .ability-name { font-size: 6px; font-weight: 700; color: #F59E0B; }
-          .ability-value { font-family: 'Cinzel', serif; font-size: 9px; font-weight: 700; color: #FCD34D; }
-          .motto { font-family: 'Crimson Text', Georgia, serif; font-style: italic; font-size: 7px; color: #d4d4d8; text-align: center; padding: 0 4px; line-height: 1.3; margin-bottom: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 18px; }
-          .logo { text-align: center; font-family: 'Cinzel Decorative', Cinzel, serif; font-size: 8px; font-weight: 900; letter-spacing: 0.5px; text-shadow: 0 0 6px rgba(212, 168, 75, 0.5); margin-top: auto; padding-bottom: 3px; }
+          .abilities {
+            display: flex;
+            justify-content: space-between;
+            gap: 2px;
+            margin: 0 2px 3px;
+          }
+          .ability-box {
+            text-align: center;
+            padding: 1px;
+            background: linear-gradient(180deg, rgba(245, 158, 11, 0.15), rgba(0,0,0,0.5));
+            border: 1px solid rgba(245, 158, 11, 0.6);
+            border-radius: 2px;
+            flex: 1;
+          }
+          .ability-name { font-size: 5px; font-weight: 700; color: #F59E0B; }
+          .ability-value { font-family: 'Cinzel', serif; font-size: 8px; font-weight: 700; color: #FCD34D; }
+          .motto {
+            font-family: 'Crimson Text', Georgia, serif;
+            font-style: italic;
+            font-size: 6px;
+            color: #d4d4d8;
+            text-align: center;
+            padding: 0 3px;
+            line-height: 1.2;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-height: 14px;
+            flex-shrink: 0;
+          }
+          .logo {
+            text-align: center;
+            font-family: 'Cinzel Decorative', Cinzel, serif;
+            font-size: 7px;
+            font-weight: 900;
+            letter-spacing: 0.3px;
+            text-shadow: 0 0 4px rgba(212, 168, 75, 0.5);
+            margin-top: auto;
+            padding: 2px 0 2px;
+          }
           .logo .gold { color: #D4A84B; }
-          .logo .red { color: #E53935; text-shadow: 0 0 6px rgba(229, 57, 53, 0.5); margin: 0 2px; }
+          .logo .red { color: #E53935; text-shadow: 0 0 4px rgba(229, 57, 53, 0.5); margin: 0 1px; }
         </style>
       </head>
       <body>
@@ -283,9 +382,9 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
               {/* Inner glow effect */}
               <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ boxShadow: 'inset 0 0 40px rgba(245, 158, 11, 0.1)' }} />
 
-              {/* Header with Name and Rarity Stars */}
+              {/* Header with Name */}
               <div
-                className="flex flex-col items-center justify-center px-4 pt-3 pb-1"
+                className="flex flex-col items-center justify-center px-4 pt-2 pb-1"
                 style={{ background: 'linear-gradient(180deg, rgba(255, 215, 0, 0.15) 0%, rgba(245, 158, 11, 0.08) 50%, transparent 100%)' }}
               >
                 <h2
@@ -302,7 +401,7 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
 
               {/* Ornate Gold Bar - thinner */}
               <div
-                className="mx-6 mb-2"
+                className="mx-6 mb-3"
                 style={{
                   height: '2px',
                   background: 'linear-gradient(90deg, transparent 0%, #92400E 10%, #F59E0B 40%, #FFD700 50%, #F59E0B 60%, #92400E 90%, transparent 100%)',
@@ -473,7 +572,7 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
               </div>
 
               {/* D&D Logo - single line text with styled ampersand, positioned at bottom */}
-              <div className="flex justify-center items-end mt-auto pb-1">
+              <div className="flex justify-center items-end mt-auto pb-2">
                 <span
                   style={{
                     fontFamily: 'var(--font-cinzel-decorative), Cinzel Decorative, serif',
