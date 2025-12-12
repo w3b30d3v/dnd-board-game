@@ -194,9 +194,8 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
             border: 2px solid #D4A84B;
             font-family: system-ui, -apple-system, sans-serif;
             color: white;
-            display: flex;
-            flex-direction: column;
             padding: 4px;
+            position: relative;
           }
           .name {
             font-family: 'Cinzel', serif;
@@ -273,8 +272,11 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
           }
           .ability-name { font-size: 5px; font-weight: 700; color: #F59E0B; }
           .ability-value { font-family: 'Cinzel', serif; font-size: 8px; font-weight: 700; color: #FCD34D; }
-          .spacer {
-            flex: 1;
+          .bottom-section {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            right: 4px;
           }
           .motto {
             font-family: 'Crimson Text', Georgia, serif;
@@ -324,9 +326,10 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
             <div class="ability-box"><div class="ability-name">WIS</div><div class="ability-value">${abilities.wisdom}</div></div>
             <div class="ability-box"><div class="ability-name">CHA</div><div class="ability-value">${abilities.charisma}</div></div>
           </div>
-          <div class="spacer"></div>
-          <div class="motto">"${character.appearance?.personalityTrait?.substring(0, 80) || 'Fortune favors the bold.'}"</div>
-          <div class="logo"><span class="gold">DUNGEONS</span><span class="red">&</span><span class="gold">DRAGONS</span></div>
+          <div class="bottom-section">
+            <div class="motto">"${character.appearance?.personalityTrait?.substring(0, 80) || 'Fortune favors the bold.'}"</div>
+            <div class="logo"><span class="gold">DUNGEONS</span><span class="red">&</span><span class="gold">DRAGONS</span></div>
+          </div>
         </div>
         <script>window.onload = () => { setTimeout(() => window.print(), 500); }</script>
       </body>
@@ -544,18 +547,22 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
 
               {/* Bottom Section - pushed to bottom with mt-auto */}
               <div className="mt-auto">
-                {/* Motto/Quote - single line */}
+                {/* Motto/Quote - two lines allowed */}
                 <div className="px-4 text-center">
                   <p
-                    className="text-xs italic truncate"
+                    className="text-xs italic"
                     style={{
                       fontFamily: 'Crimson Text, Georgia, serif',
                       lineHeight: '1.3',
-                      color: '#d4d4d8'
+                      color: '#d4d4d8',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
                     }}
                   >
                     {character.appearance?.personalityTrait
-                      ? `"${character.appearance.personalityTrait.substring(0, 45)}${character.appearance.personalityTrait.length > 45 ? '...' : ''}"`
+                      ? `"${character.appearance.personalityTrait.substring(0, 90)}${character.appearance.personalityTrait.length > 90 ? '...' : ''}"`
                       : '"Fortune favors the bold."'}
                   </p>
                 </div>
