@@ -6,7 +6,7 @@ import { Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { EnchantedCard } from '@/components/dnd/EnchantedCard';
 import { OrnateCorners } from '@/components/dnd/OrnateCorners';
-import { D20Icon, SwordIcon, ScrollIcon, ShieldIcon } from '@/components/dnd/DnDIcons';
+import { D20Icon, SwordIcon, ShieldIcon } from '@/components/dnd/DnDIcons';
 
 // Dynamic import for particles to avoid SSR issues
 const AmbientParticles = dynamic(
