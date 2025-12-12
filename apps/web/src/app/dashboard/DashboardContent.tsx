@@ -1027,8 +1027,8 @@ export default function DashboardContent() {
                               <h3 className="font-display font-semibold text-lg text-text-primary">
                                 {char.name}
                               </h3>
-                              <p className="text-sm text-text-secondary">
-                                Level {char.level} {char.race} {char.class}
+                              <p className="text-sm text-text-secondary capitalize">
+                                {char.race} {char.class}
                               </p>
                               {isGenerating && (
                                 <p className="text-xs text-warning mt-1">Generating images...</p>
