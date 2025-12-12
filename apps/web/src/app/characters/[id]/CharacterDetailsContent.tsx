@@ -486,19 +486,23 @@ function ImageCarousel({ images, characterName }: { images: { url: string; label
 
   return (
     <div className="relative h-full flex flex-col">
-      {/* Main Image - Takes most of the space */}
-      <div className="relative flex-1 min-h-0 rounded-lg overflow-hidden border-2 border-primary/50 bg-bg-tertiary shadow-lg shadow-primary/20">
+      {/* Main Image - Fixed aspect ratio container for consistent arrow positioning */}
+      <div className="relative flex-1 min-h-0 rounded-lg overflow-hidden border-2 border-primary/50 bg-bg-tertiary shadow-lg shadow-primary/20" style={{ aspectRatio: '2/3' }}>
         <AnimatePresence mode="wait">
-          <motion.img
+          <motion.div
             key={currentIndex}
-            src={images[currentIndex].url}
-            alt={`${characterName} - ${images[currentIndex].label}`}
-            className="w-full h-full object-contain"
+            className="absolute inset-0 flex items-center justify-center p-4"
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
             transition={{ duration: 0.3 }}
-          />
+          >
+            <img
+              src={images[currentIndex].url}
+              alt={`${characterName} - ${images[currentIndex].label}`}
+              className="max-w-full max-h-full object-contain"
+            />
+          </motion.div>
         </AnimatePresence>
 
         {/* Navigation Arrows */}

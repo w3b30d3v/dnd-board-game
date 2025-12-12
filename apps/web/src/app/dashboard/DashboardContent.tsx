@@ -146,51 +146,9 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
     charisma: character.charisma ?? 10,
   };
   const proficiencyBonus = Math.floor((character.level - 1) / 4) + 2;
-  const power = Math.max(abilities.strength, abilities.dexterity) + proficiencyBonus;
-  const defense = character.armorClass || 10;
-  const magicMod = Math.max(abilities.intelligence, abilities.wisdom, abilities.charisma);
-  const magicBonus = Math.floor((magicMod - 10) / 2) + proficiencyBonus;
   const hp = character.maxHitPoints || 10;
-
-  // Calculate rarity based on multiple factors:
-  // - Race uniqueness (common vs rare)
-  // - Class uniqueness (common vs rare)
-  // - Level (higher level = rarer)
-  // - High ability scores (18+ in any stat)
-  const rareRaces = ['tiefling', 'dragonborn', 'aasimar', 'drow', 'genasi', 'half-orc', 'gnome'];
-  const legendaryRaces = ['aasimar', 'genasi'];
-  const rareClasses = ['warlock', 'sorcerer', 'paladin', 'monk', 'bard'];
-  const legendaryClasses = ['paladin', 'warlock'];
-
-  let rarity = 1; // Base: 1 star
-
-  // Race bonus
-  if (legendaryRaces.includes(character.race.toLowerCase())) {
-    rarity += 2;
-  } else if (rareRaces.includes(character.race.toLowerCase())) {
-    rarity += 1;
-  }
-
-  // Class bonus
-  if (legendaryClasses.includes(character.class.toLowerCase())) {
-    rarity += 1;
-  } else if (rareClasses.includes(character.class.toLowerCase())) {
-    rarity += 0.5;
-  }
-
-  // Level bonus (every 5 levels adds a star)
-  rarity += Math.floor(character.level / 5);
-
-  // High stats bonus (any ability 16+ adds 0.5, 18+ adds 1)
-  const highestStat = Math.max(
-    abilities.strength, abilities.dexterity, abilities.constitution,
-    abilities.intelligence, abilities.wisdom, abilities.charisma
-  );
-  if (highestStat >= 18) rarity += 1;
-  else if (highestStat >= 16) rarity += 0.5;
-
-  // Clamp between 1-5
-  rarity = Math.min(Math.max(Math.round(rarity), 1), 5);
+  const ac = character.armorClass || 10;
+  const speed = character.speed || 30;
 
   const goToPrevious = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? imageList.length - 1 : prev - 1));
@@ -200,11 +158,12 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
     setCurrentImageIndex((prev) => (prev === imageList.length - 1 ? 0 : prev + 1));
   };
 
-  // Print handler - trading card that auto-sizes to content
+  // Print handler - trading card 2.5" x 3.5" (standard trading card size)
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
+    // 2.5" x 3.5" at 96 DPI = 240px x 336px
     const cardHtml = `
       <!DOCTYPE html>
       <html>
@@ -212,66 +171,65 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
         <title>${character.name} - Character Card</title>
         <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
         <style>
-          @page { margin: 0.25in; }
+          @page { size: 2.5in 3.5in; margin: 0; }
           @media print {
             body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           }
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { margin: 0; padding: 20px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background: white; }
+          body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: white; }
           .card {
-            width: 280px;
+            width: 2.5in;
+            height: 3.5in;
             background: linear-gradient(160deg, #2d2640 0%, #1f1a2e 30%, #171320 60%, #0d0a12 100%);
-            border-radius: 12px;
-            border: 3px solid #D4A84B;
-            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid #D4A84B;
+            padding: 6px;
             font-family: system-ui;
             color: white;
+            display: flex;
+            flex-direction: column;
           }
-          .name { font-family: 'Cinzel', serif; font-size: 14px; font-weight: 700; color: #FFD700; text-align: center; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 8px rgba(255, 215, 0, 0.5); margin-bottom: 4px; }
-          .stars { text-align: center; font-size: 12px; margin-bottom: 6px; letter-spacing: 3px; }
-          .star-filled { color: #FFD700; text-shadow: 0 0 4px rgba(255, 215, 0, 0.6); }
-          .star-empty { color: #3f3f46; }
-          .gold-bar { height: 2px; background: linear-gradient(90deg, transparent 5%, #92400E 20%, #D4A84B 50%, #92400E 80%, transparent 95%); margin: 4px 20px 8px; }
-          .image-container { height: 160px; border: 2px solid #D4A84B; border-radius: 6px; overflow: hidden; margin: 0 4px 8px; background: radial-gradient(ellipse at center, #1a1625 0%, #0a0810 100%); display: flex; align-items: center; justify-content: center; }
+          .name { font-family: 'Cinzel', serif; font-size: 11px; font-weight: 700; color: #FFD700; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0 0 6px rgba(255, 215, 0, 0.5); margin-bottom: 2px; }
+          .gold-bar { height: 1px; background: linear-gradient(90deg, transparent 5%, #92400E 20%, #D4A84B 50%, #92400E 80%, transparent 95%); margin: 2px 12px 4px; }
+          .image-container { height: 115px; border: 1px solid #D4A84B; border-radius: 4px; overflow: hidden; margin: 0 2px 4px; background: radial-gradient(ellipse at center, #1a1625 0%, #0a0810 100%); display: flex; align-items: center; justify-content: center; }
           .image-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
-          .subtitle { font-family: 'Crimson Text', Georgia, serif; font-size: 11px; color: #e2e2e2; text-align: center; text-transform: capitalize; margin-bottom: 8px; }
-          .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 0 4px 8px; }
-          .stat-box { text-align: center; padding: 6px 2px; border-radius: 6px; border: 2px solid; }
-          .stat-icon { font-size: 16px; }
-          .stat-value { font-family: 'Cinzel', serif; font-size: 16px; font-weight: 700; }
-          .stat-label { font-size: 8px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
-          .pwr { border-color: rgba(239, 68, 68, 0.7); background: linear-gradient(180deg, rgba(239, 68, 68, 0.3), rgba(0,0,0,0.5)); }
-          .pwr .stat-icon { color: #EF4444; } .pwr .stat-value { color: #FCA5A5; } .pwr .stat-label { color: #EF4444; }
-          .def { border-color: rgba(34, 211, 238, 0.7); background: linear-gradient(180deg, rgba(34, 211, 238, 0.3), rgba(0,0,0,0.5)); }
-          .def .stat-icon { color: #22D3EE; } .def .stat-value { color: #A5F3FC; } .def .stat-label { color: #22D3EE; }
-          .mag { border-color: rgba(168, 85, 247, 0.7); background: linear-gradient(180deg, rgba(168, 85, 247, 0.3), rgba(0,0,0,0.5)); }
-          .mag .stat-icon { color: #A855F7; } .mag .stat-value { color: #D8B4FE; } .mag .stat-label { color: #A855F7; }
-          .hp { border-color: rgba(34, 197, 94, 0.7); background: linear-gradient(180deg, rgba(34, 197, 94, 0.3), rgba(0,0,0,0.5)); }
-          .hp .stat-icon { color: #22C55E; } .hp .stat-value { color: #86EFAC; } .hp .stat-label { color: #22C55E; }
-          .abilities { display: flex; justify-content: space-between; gap: 4px; margin: 0 4px 8px; }
-          .ability-box { text-align: center; padding: 4px 4px; background: linear-gradient(180deg, rgba(245, 158, 11, 0.15), rgba(0,0,0,0.5)); border: 1px solid rgba(245, 158, 11, 0.6); border-radius: 4px; flex: 1; }
-          .ability-name { font-size: 8px; font-weight: 700; color: #F59E0B; }
-          .ability-value { font-family: 'Cinzel', serif; font-size: 12px; font-weight: 700; color: #FCD34D; }
-          .motto { font-family: 'Crimson Text', Georgia, serif; font-style: italic; font-size: 10px; color: #d4d4d8; text-align: center; padding: 0 8px; line-height: 1.3; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-          .logo { text-align: center; font-family: 'Cinzel Decorative', Cinzel, serif; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-shadow: 0 0 8px rgba(212, 168, 75, 0.5); padding-bottom: 4px; }
+          .subtitle { font-family: 'Crimson Text', Georgia, serif; font-size: 8px; color: #e2e2e2; text-align: center; text-transform: capitalize; margin-bottom: 4px; }
+          .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin: 0 2px 4px; }
+          .stat-box { text-align: center; padding: 3px 1px; border-radius: 4px; border: 1px solid; }
+          .stat-icon { font-size: 10px; }
+          .stat-value { font-family: 'Cinzel', serif; font-size: 11px; font-weight: 700; }
+          .stat-label { font-size: 6px; text-transform: uppercase; letter-spacing: 0.3px; font-weight: 700; }
+          .hp-stat { border-color: rgba(239, 68, 68, 0.7); background: linear-gradient(180deg, rgba(239, 68, 68, 0.3), rgba(0,0,0,0.5)); }
+          .hp-stat .stat-icon { color: #EF4444; } .hp-stat .stat-value { color: #FCA5A5; } .hp-stat .stat-label { color: #EF4444; }
+          .ac-stat { border-color: rgba(34, 211, 238, 0.7); background: linear-gradient(180deg, rgba(34, 211, 238, 0.3), rgba(0,0,0,0.5)); }
+          .ac-stat .stat-icon { color: #22D3EE; } .ac-stat .stat-value { color: #A5F3FC; } .ac-stat .stat-label { color: #22D3EE; }
+          .sp-stat { border-color: rgba(34, 197, 94, 0.7); background: linear-gradient(180deg, rgba(34, 197, 94, 0.3), rgba(0,0,0,0.5)); }
+          .sp-stat .stat-icon { color: #22C55E; } .sp-stat .stat-value { color: #86EFAC; } .sp-stat .stat-label { color: #22C55E; }
+          .pro-stat { border-color: rgba(168, 85, 247, 0.7); background: linear-gradient(180deg, rgba(168, 85, 247, 0.3), rgba(0,0,0,0.5)); }
+          .pro-stat .stat-icon { color: #A855F7; } .pro-stat .stat-value { color: #D8B4FE; } .pro-stat .stat-label { color: #A855F7; }
+          .abilities { display: flex; justify-content: space-between; gap: 2px; margin: 0 2px 4px; }
+          .ability-box { text-align: center; padding: 2px 2px; background: linear-gradient(180deg, rgba(245, 158, 11, 0.15), rgba(0,0,0,0.5)); border: 1px solid rgba(245, 158, 11, 0.6); border-radius: 3px; flex: 1; }
+          .ability-name { font-size: 6px; font-weight: 700; color: #F59E0B; }
+          .ability-value { font-family: 'Cinzel', serif; font-size: 9px; font-weight: 700; color: #FCD34D; }
+          .motto { font-family: 'Crimson Text', Georgia, serif; font-style: italic; font-size: 7px; color: #d4d4d8; text-align: center; padding: 0 4px; line-height: 1.3; margin-bottom: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 18px; }
+          .logo { text-align: center; font-family: 'Cinzel Decorative', Cinzel, serif; font-size: 8px; font-weight: 900; letter-spacing: 0.5px; text-shadow: 0 0 6px rgba(212, 168, 75, 0.5); margin-top: auto; }
           .logo .gold { color: #D4A84B; }
-          .logo .red { color: #E53935; text-shadow: 0 0 8px rgba(229, 57, 53, 0.5); margin: 0 3px; }
+          .logo .red { color: #E53935; text-shadow: 0 0 6px rgba(229, 57, 53, 0.5); margin: 0 2px; }
         </style>
       </head>
       <body>
         <div class="card">
           <div class="name">${character.name}</div>
-          <div class="stars">${[1,2,3,4,5].map(s => `<span class="${s <= rarity ? 'star-filled' : 'star-empty'}">★</span>`).join('')}</div>
           <div class="gold-bar"></div>
           <div class="image-container">
             ${currentImage ? `<img src="${currentImage.url}" alt="${character.name}" />` : ''}
           </div>
           <div class="subtitle">${character.race} • ${character.class} • Level ${character.level}</div>
           <div class="stats-grid">
-            <div class="stat-box pwr"><div class="stat-icon">⚔️</div><div class="stat-value">${power}</div><div class="stat-label">PWR</div></div>
-            <div class="stat-box def"><div class="stat-icon">🛡️</div><div class="stat-value">${defense}</div><div class="stat-label">DEF</div></div>
-            <div class="stat-box mag"><div class="stat-icon">✨</div><div class="stat-value">+${magicBonus}</div><div class="stat-label">MAG</div></div>
-            <div class="stat-box hp"><div class="stat-icon">❤️</div><div class="stat-value">${hp}</div><div class="stat-label">HP</div></div>
+            <div class="stat-box hp-stat"><div class="stat-icon">❤️</div><div class="stat-value">${hp}</div><div class="stat-label">HP</div></div>
+            <div class="stat-box ac-stat"><div class="stat-icon">🛡️</div><div class="stat-value">${ac}</div><div class="stat-label">AC</div></div>
+            <div class="stat-box sp-stat"><div class="stat-icon">👟</div><div class="stat-value">${speed}</div><div class="stat-label">SP</div></div>
+            <div class="stat-box pro-stat"><div class="stat-icon">⭐</div><div class="stat-value">+${proficiencyBonus}</div><div class="stat-label">PRO</div></div>
           </div>
           <div class="abilities">
             <div class="ability-box"><div class="ability-name">STR</div><div class="ability-value">${abilities.strength}</div></div>
@@ -281,7 +239,7 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
             <div class="ability-box"><div class="ability-name">WIS</div><div class="ability-value">${abilities.wisdom}</div></div>
             <div class="ability-box"><div class="ability-name">CHA</div><div class="ability-value">${abilities.charisma}</div></div>
           </div>
-          <div class="motto">"${character.appearance?.personalityTrait?.substring(0, 45) || 'Fortune favors the bold.'}"</div>
+          <div class="motto">"${character.appearance?.personalityTrait?.substring(0, 80) || 'Fortune favors the bold.'}"</div>
           <div class="logo"><span class="gold">DUNGEONS</span><span class="red">&</span><span class="gold">DRAGONS</span></div>
         </div>
         <script>window.onload = () => { setTimeout(() => window.print(), 500); }</script>
@@ -340,21 +298,6 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
                 >
                   {character.name || 'Unnamed Hero'}
                 </h2>
-                {/* Rarity Stars - smaller */}
-                <div className="flex gap-1 mt-0.5">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <span
-                      key={star}
-                      className="text-xs"
-                      style={{
-                        color: star <= rarity ? '#FFD700' : '#4a4a4a',
-                        textShadow: star <= rarity ? '0 0 8px rgba(255, 215, 0, 0.6)' : 'none',
-                      }}
-                    >
-                      ★
-                    </span>
-                  ))}
-                </div>
               </div>
 
               {/* Ornate Gold Bar - thinner */}
@@ -460,31 +403,31 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
                 {character.race} • {character.class} • Level {character.level}
               </p>
 
-              {/* Stats Grid (PWR, DEF, MAG, HP) - vibrant colors with glowing icons */}
+              {/* Stats Grid (HP, AC, SP, PRO) - D&D combat stats */}
               <div className="mx-3 grid grid-cols-4 gap-2">
-                {/* Power - Red/Orange */}
+                {/* HP - Red */}
                 <div className="text-center py-2 rounded-lg" style={{ background: 'linear-gradient(180deg, rgba(239, 68, 68, 0.35) 0%, rgba(153, 27, 27, 0.25) 50%, rgba(0, 0, 0, 0.5) 100%)', border: '2px solid rgba(239, 68, 68, 0.7)', boxShadow: '0 0 15px rgba(239, 68, 68, 0.3), inset 0 0 20px rgba(239, 68, 68, 0.1)' }}>
-                  <div className="text-xl" style={{ filter: 'drop-shadow(0 0 8px #EF4444)', textShadow: '0 0 15px #EF4444' }}>⚔️</div>
-                  <div className="text-lg font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#FCA5A5', textShadow: '0 0 10px rgba(252, 165, 165, 0.6)' }}>{power}</div>
-                  <div className="text-[8px] uppercase tracking-wider font-bold" style={{ color: '#EF4444', textShadow: '0 0 6px rgba(239, 68, 68, 0.5)' }}>PWR</div>
+                  <div className="text-xl" style={{ filter: 'drop-shadow(0 0 8px #EF4444)', textShadow: '0 0 15px #EF4444' }}>❤️</div>
+                  <div className="text-lg font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#FCA5A5', textShadow: '0 0 10px rgba(252, 165, 165, 0.6)' }}>{hp}</div>
+                  <div className="text-[8px] uppercase tracking-wider font-bold" style={{ color: '#EF4444', textShadow: '0 0 6px rgba(239, 68, 68, 0.5)' }}>HP</div>
                 </div>
-                {/* Defense - Cyan/Blue */}
+                {/* AC - Cyan/Blue */}
                 <div className="text-center py-2 rounded-lg" style={{ background: 'linear-gradient(180deg, rgba(34, 211, 238, 0.35) 0%, rgba(6, 95, 70, 0.25) 50%, rgba(0, 0, 0, 0.5) 100%)', border: '2px solid rgba(34, 211, 238, 0.7)', boxShadow: '0 0 15px rgba(34, 211, 238, 0.3), inset 0 0 20px rgba(34, 211, 238, 0.1)' }}>
                   <div className="text-xl" style={{ filter: 'drop-shadow(0 0 8px #22D3EE)', textShadow: '0 0 15px #22D3EE' }}>🛡️</div>
-                  <div className="text-lg font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#A5F3FC', textShadow: '0 0 10px rgba(165, 243, 252, 0.6)' }}>{defense}</div>
-                  <div className="text-[8px] uppercase tracking-wider font-bold" style={{ color: '#22D3EE', textShadow: '0 0 6px rgba(34, 211, 238, 0.5)' }}>DEF</div>
+                  <div className="text-lg font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#A5F3FC', textShadow: '0 0 10px rgba(165, 243, 252, 0.6)' }}>{ac}</div>
+                  <div className="text-[8px] uppercase tracking-wider font-bold" style={{ color: '#22D3EE', textShadow: '0 0 6px rgba(34, 211, 238, 0.5)' }}>AC</div>
                 </div>
-                {/* Magic - Purple/Violet */}
-                <div className="text-center py-2 rounded-lg" style={{ background: 'linear-gradient(180deg, rgba(168, 85, 247, 0.35) 0%, rgba(88, 28, 135, 0.25) 50%, rgba(0, 0, 0, 0.5) 100%)', border: '2px solid rgba(168, 85, 247, 0.7)', boxShadow: '0 0 15px rgba(168, 85, 247, 0.3), inset 0 0 20px rgba(168, 85, 247, 0.1)' }}>
-                  <div className="text-xl" style={{ filter: 'drop-shadow(0 0 8px #A855F7)', textShadow: '0 0 15px #A855F7' }}>✨</div>
-                  <div className="text-lg font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#D8B4FE', textShadow: '0 0 10px rgba(216, 180, 254, 0.6)' }}>+{magicBonus}</div>
-                  <div className="text-[8px] uppercase tracking-wider font-bold" style={{ color: '#A855F7', textShadow: '0 0 6px rgba(168, 85, 247, 0.5)' }}>MAG</div>
-                </div>
-                {/* HP - Green/Emerald */}
+                {/* Speed - Green */}
                 <div className="text-center py-2 rounded-lg" style={{ background: 'linear-gradient(180deg, rgba(34, 197, 94, 0.35) 0%, rgba(6, 78, 59, 0.25) 50%, rgba(0, 0, 0, 0.5) 100%)', border: '2px solid rgba(34, 197, 94, 0.7)', boxShadow: '0 0 15px rgba(34, 197, 94, 0.3), inset 0 0 20px rgba(34, 197, 94, 0.1)' }}>
-                  <div className="text-xl" style={{ filter: 'drop-shadow(0 0 8px #22C55E)', textShadow: '0 0 15px #22C55E' }}>❤️</div>
-                  <div className="text-lg font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#86EFAC', textShadow: '0 0 10px rgba(134, 239, 172, 0.6)' }}>{hp}</div>
-                  <div className="text-[8px] uppercase tracking-wider font-bold" style={{ color: '#22C55E', textShadow: '0 0 6px rgba(34, 197, 94, 0.5)' }}>HP</div>
+                  <div className="text-xl" style={{ filter: 'drop-shadow(0 0 8px #22C55E)', textShadow: '0 0 15px #22C55E' }}>👟</div>
+                  <div className="text-lg font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#86EFAC', textShadow: '0 0 10px rgba(134, 239, 172, 0.6)' }}>{speed}</div>
+                  <div className="text-[8px] uppercase tracking-wider font-bold" style={{ color: '#22C55E', textShadow: '0 0 6px rgba(34, 197, 94, 0.5)' }}>SP</div>
+                </div>
+                {/* Proficiency - Purple */}
+                <div className="text-center py-2 rounded-lg" style={{ background: 'linear-gradient(180deg, rgba(168, 85, 247, 0.35) 0%, rgba(88, 28, 135, 0.25) 50%, rgba(0, 0, 0, 0.5) 100%)', border: '2px solid rgba(168, 85, 247, 0.7)', boxShadow: '0 0 15px rgba(168, 85, 247, 0.3), inset 0 0 20px rgba(168, 85, 247, 0.1)' }}>
+                  <div className="text-xl" style={{ filter: 'drop-shadow(0 0 8px #A855F7)', textShadow: '0 0 15px #A855F7' }}>⭐</div>
+                  <div className="text-lg font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#D8B4FE', textShadow: '0 0 10px rgba(216, 180, 254, 0.6)' }}>+{proficiencyBonus}</div>
+                  <div className="text-[8px] uppercase tracking-wider font-bold" style={{ color: '#A855F7', textShadow: '0 0 6px rgba(168, 85, 247, 0.5)' }}>PRO</div>
                 </div>
               </div>
 
