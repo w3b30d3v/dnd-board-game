@@ -37,23 +37,30 @@ export function AmbientParticles({ variant = 'dust', className = '' }: AmbientPa
           ...baseConfig,
           particles: {
             number: {
-              value: 30,
+              value: 80,
               density: { enable: true, width: 800, height: 800 },
             },
-            color: { value: '#F59E0B' },
+            color: { value: ['#F59E0B', '#FBBF24', '#FCD34D'] },
             opacity: {
-              value: { min: 0.05, max: 0.2 },
+              value: { min: 0.1, max: 0.4 },
             },
             size: {
-              value: { min: 0.5, max: 2 },
+              value: { min: 1, max: 3 },
             },
             move: {
               enable: true,
-              speed: 0.3,
+              speed: 0.5,
               direction: 'top',
               random: true,
               straight: false,
               outModes: { default: 'out' },
+            },
+            twinkle: {
+              particles: {
+                enable: true,
+                frequency: 0.03,
+                opacity: 0.6,
+              },
             },
           },
         };
