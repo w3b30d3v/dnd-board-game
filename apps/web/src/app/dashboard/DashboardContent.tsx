@@ -191,7 +191,7 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
           }
           .name { font-family: 'Cinzel', serif; font-size: 11px; font-weight: 700; color: #FFD700; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0 0 6px rgba(255, 215, 0, 0.5); margin-bottom: 2px; }
           .gold-bar { height: 1px; background: linear-gradient(90deg, transparent 5%, #92400E 20%, #D4A84B 50%, #92400E 80%, transparent 95%); margin: 2px 12px 4px; }
-          .image-container { height: 115px; border: 1px solid #D4A84B; border-radius: 4px; overflow: hidden; margin: 0 2px 4px; background: radial-gradient(ellipse at center, #1a1625 0%, #0a0810 100%); display: flex; align-items: center; justify-content: center; }
+          .image-container { flex: 1; min-height: 100px; border: 1px solid #D4A84B; border-radius: 4px; overflow: hidden; margin: 0 2px 4px; background: radial-gradient(ellipse at center, #1a1625 0%, #0a0810 100%); display: flex; align-items: center; justify-content: center; }
           .image-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
           .subtitle { font-family: 'Crimson Text', Georgia, serif; font-size: 8px; color: #e2e2e2; text-align: center; text-transform: capitalize; margin-bottom: 4px; }
           .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin: 0 2px 4px; }
@@ -211,7 +211,7 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
           .ability-box { text-align: center; padding: 2px 2px; background: linear-gradient(180deg, rgba(245, 158, 11, 0.15), rgba(0,0,0,0.5)); border: 1px solid rgba(245, 158, 11, 0.6); border-radius: 3px; flex: 1; }
           .ability-name { font-size: 6px; font-weight: 700; color: #F59E0B; }
           .ability-value { font-family: 'Cinzel', serif; font-size: 9px; font-weight: 700; color: #FCD34D; }
-          .motto { font-family: 'Crimson Text', Georgia, serif; font-style: italic; font-size: 7px; color: #d4d4d8; text-align: center; padding: 0 4px; line-height: 1.3; margin-top: auto; margin-bottom: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+          .motto { font-family: 'Crimson Text', Georgia, serif; font-style: italic; font-size: 7px; color: #d4d4d8; text-align: center; padding: 0 4px; line-height: 1.3; margin-bottom: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
           .logo { text-align: center; font-family: 'Cinzel Decorative', Cinzel, serif; font-size: 8px; font-weight: 900; letter-spacing: 0.5px; text-shadow: 0 0 6px rgba(212, 168, 75, 0.5); }
           .logo .gold { color: #D4A84B; }
           .logo .red { color: #E53935; text-shadow: 0 0 6px rgba(229, 57, 53, 0.5); margin: 0 2px; }
