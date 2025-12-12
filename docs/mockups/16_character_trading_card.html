@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Proposal 3: Heroic Character Card (Updated)</title>
+  <title>D&D Character Trading Card - 2.5" × 3.5" Print</title>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
   <style>
     * {
@@ -50,8 +50,8 @@
 
     /* Trading Card Container - Standard 2.5" x 3.5" ratio */
     .card-container {
-      width: 250px;
-      height: 350px;
+      width: 2.5in;
+      height: 3.5in;
       position: relative;
     }
 
@@ -59,10 +59,13 @@
     .character-card {
       width: 100%;
       height: 100%;
-      background: linear-gradient(160deg, #2a2735 0%, #1e1b26 50%, #151218 100%);
-      border-radius: 10px;
+      background: linear-gradient(160deg, #2d2640 0%, #1f1a2e 30%, #171320 60%, #0d0a12 100%);
+      border-radius: 8px;
       overflow: hidden;
       position: relative;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
       box-shadow:
         0 4px 20px rgba(0, 0, 0, 0.5),
         inset 0 0 60px rgba(0, 0, 0, 0.3);
@@ -145,20 +148,24 @@
       box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
     }
 
-    /* Image Section - reduced height to fit all content */
+    /* Image Section - flex:1 to fill available space */
     .card-image-section {
       width: calc(100% - 24px);
-      height: 120px;
-      margin: 0 12px;
+      flex: 1;
+      min-height: 100px;
+      margin: 0 12px 4px;
       position: relative;
       border-radius: 6px;
       overflow: hidden;
-      background: #0f0d13;
-      border: 2px solid #F59E0B;
+      background: radial-gradient(ellipse at center, #1a1625 0%, #0a0810 100%);
+      border: 1px solid #D4A84B;
       box-shadow:
         inset 0 0 20px rgba(0, 0, 0, 0.5),
         0 2px 8px rgba(0, 0, 0, 0.3),
-        0 0 10px rgba(245, 158, 11, 0.3);
+        0 0 10px rgba(212, 168, 75, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .card-image {
@@ -349,22 +356,22 @@
       text-shadow: 0 0 4px rgba(252, 211, 77, 0.3);
     }
 
-    /* Motto/Quote - limited to 1 line to ensure space */
+    /* Motto/Quote - limited to 2 lines */
     .motto-section {
-      padding: 4px 14px 0px;
+      padding: 4px 14px 2px;
       text-align: center;
     }
 
     .motto {
       font-style: italic;
-      font-size: 9px;
+      font-size: 7px;
       color: #d4d4d8;
       line-height: 1.3;
-      /* Limit to 1 line with ellipsis */
-      white-space: nowrap;
+      /* Limit to 2 lines with ellipsis */
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
       overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100%;
     }
 
     /* D&D Logo - Positioned at the very bottom */
@@ -502,9 +509,9 @@
   </style>
 </head>
 <body>
-  <h1>Proposal 3: Heroic Character Card</h1>
-  <p class="subtitle">Updated with name at top, rarity stars, and arrow navigation</p>
-  <div class="recommendation">&#9733; FINAL DESIGN - Ready for implementation</div>
+  <h1>D&D Character Trading Card</h1>
+  <p class="subtitle">Printable 2.5" × 3.5" trading card with AI-generated artwork</p>
+  <div class="recommendation">&#9733; IMPLEMENTED - Matches production code</div>
 
   <div class="card-container">
     <div class="character-card">
@@ -515,16 +522,9 @@
       <div class="corner-accent bottom-left"></div>
       <div class="corner-accent bottom-right"></div>
 
-      <!-- Header with Name and Rarity Stars -->
+      <!-- Header with Name -->
       <div class="card-header">
         <h2 class="character-name">Aldric Stormwind</h2>
-        <div class="rarity-stars">
-          <span class="star filled">&#9733;</span>
-          <span class="star filled">&#9733;</span>
-          <span class="star filled">&#9733;</span>
-          <span class="star">&#9733;</span>
-          <span class="star">&#9733;</span>
-        </div>
       </div>
 
       <!-- Ornate bar -->
@@ -547,27 +547,27 @@
       <!-- Character subtitle -->
       <p class="character-subtitle">Human &bull; Paladin &bull; Lv.3</p>
 
-      <!-- Big Stats -->
+      <!-- Big Stats - HP, AC, Speed, Proficiency -->
       <div class="big-stats">
-        <div class="big-stat power">
-          <div class="big-stat-icon">&#9876;</div>
-          <div class="big-stat-value">16</div>
-          <div class="big-stat-label">PWR</div>
-        </div>
-        <div class="big-stat defense">
-          <div class="big-stat-icon">&#128737;</div>
-          <div class="big-stat-value">18</div>
-          <div class="big-stat-label">DEF</div>
-        </div>
-        <div class="big-stat magic">
-          <div class="big-stat-icon">&#10024;</div>
-          <div class="big-stat-value">+4</div>
-          <div class="big-stat-label">MAG</div>
-        </div>
         <div class="big-stat hp">
-          <div class="big-stat-icon">&#10084;</div>
+          <div class="big-stat-icon">❤️</div>
           <div class="big-stat-value">32</div>
           <div class="big-stat-label">HP</div>
+        </div>
+        <div class="big-stat defense">
+          <div class="big-stat-icon">🛡️</div>
+          <div class="big-stat-value">18</div>
+          <div class="big-stat-label">AC</div>
+        </div>
+        <div class="big-stat speed">
+          <div class="big-stat-icon">👟</div>
+          <div class="big-stat-value">30</div>
+          <div class="big-stat-label">SP</div>
+        </div>
+        <div class="big-stat magic">
+          <div class="big-stat-icon">⭐</div>
+          <div class="big-stat-value">+2</div>
+          <div class="big-stat-label">PRO</div>
         </div>
       </div>
 
@@ -616,18 +616,18 @@
   </div>
 
   <div class="print-info">
-    <h3>Updated Design Features</h3>
-    <p>Name and rarity stars at the top. Left/right arrows for image selection (hidden when printed). Use arrows to select which image appears on your printed card.</p>
+    <h3>Trading Card Features</h3>
+    <p>Print-ready 2.5" × 3.5" trading card. Use arrows to select which image appears on your printed card. Supports AI-generated character portraits.</p>
 
     <div class="features">
-      <span class="feature-tag">Name at Top</span>
-      <span class="feature-tag">1-5 Rarity Stars</span>
+      <span class="feature-tag">2.5" × 3.5" Print Size</span>
       <span class="feature-tag">Arrow Navigation</span>
-      <span class="feature-tag">Print-Ready</span>
-      <span class="feature-tag">Arrows Hidden on Print</span>
+      <span class="feature-tag">Two-Line Quotes</span>
+      <span class="feature-tag">D&D Stats</span>
+      <span class="feature-tag">Ability Scores</span>
     </div>
 
-    <div class="dimensions">2.5" &times; 3.5" (750 &times; 1050px @ 300dpi)</div>
+    <div class="dimensions">2.5" &times; 3.5" (Standard Trading Card)</div>
 
     <button class="print-btn" onclick="window.print()">Print Card</button>
   </div>

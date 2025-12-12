@@ -2,32 +2,48 @@
 
 ## Overview
 
-This document specifies the design and implementation of the **Character Trading Card** - a collectible card modal that players can use to showcase their D&D characters with AI-generated artwork. The card is designed for on-screen viewing with a larger format optimized for displaying character images.
+This document specifies the design and implementation of the **Character Trading Card** - a collectible card modal that players can use to showcase their D&D characters with AI-generated artwork. The card supports both on-screen viewing and print functionality for physical trading cards.
 
 ---
 
 ## Implementation Status
 
-**✅ IMPLEMENTED** - The trading card modal is fully functional in `apps/web/src/app/dashboard/DashboardContent.tsx`
+**✅ FULLY IMPLEMENTED** - The trading card modal is fully functional in `apps/web/src/app/dashboard/DashboardContent.tsx`
+
+### Features Implemented:
+- On-screen card modal (320px × 520px)
+- Print functionality (2.5" × 3.5" standard trading card size)
+- Image carousel with navigation arrows
+- Two-line quote/motto support
+- All D&D ability scores and combat stats
 
 ---
 
 ## Card Dimensions
 
+### On-Screen Card
 | Property | Value |
 |----------|-------|
-| **Screen Size** | 320px × 520px |
+| **Size** | 320px × 520px |
 | **Aspect Ratio** | ~8:13 |
 | **Border Radius** | 16px |
-| **Image Area** | 240px height (optimized for full image display) |
+| **Border** | 3px solid gold (#D4A84B) |
+
+### Print Card
+| Property | Value |
+|----------|-------|
+| **Size** | 2.5" × 3.5" (standard trading card) |
+| **Border Radius** | 8px |
+| **Border** | 2px solid gold (#D4A84B) |
+| **Image Area** | flex: 1 (expands to fill available space) |
 
 ---
 
 ## Card Layout (Top to Bottom)
 
 ### 1. Header Section
-- **Character Name**: Center-aligned, Cinzel font, 16px (text-base), gold (#F59E0B), uppercase, tracking-wider
-- **Rarity Stars**: 1-5 stars below name (14px), filled stars are gold with glow, empty stars are zinc-700
+- **Character Name**: Center-aligned, Cinzel font, gold (#FFD700), uppercase, letter-spacing
+- **Text Shadow**: Gold glow effect for magical appearance
 - **Background**: Subtle gold gradient fade (15% opacity)
 
 ### 2. Ornate Bar
@@ -53,20 +69,20 @@ This document specifies the design and implementation of the **Character Trading
 - Capitalized text
 
 ### 5. Main Stats (4 boxes)
-- Grid layout, 4 columns with gap-2
+- Grid layout, 4 columns with gap-3
 - Rounded corners with colored borders matching each stat
 - Each stat box has:
-  - Colored icon (text-xl) with glow effect and brightness filter
-  - Large value number (text-lg, Cinzel font, colored per stat with glow)
-  - Label below (text-[9px], uppercase, tracking-wider, colored)
-  - Background gradient from stat color (10% opacity) to black
+  - Colored icon with glow effect
+  - Large value number (Cinzel font, colored per stat with glow)
+  - Label below (uppercase, tracking-wider, colored)
+  - Background gradient from stat color to black
 
 | Stat | Icon | Icon Color | Value Color | Border Color |
 |------|------|------------|-------------|--------------|
-| **PWR** (Power) | ⚔ | #FF6B6B | #FCA5A5 | rgba(239, 68, 68, 0.4) |
-| **DEF** (Defense) | 🛡 | #7DD3FC | #BAE6FD | rgba(56, 189, 248, 0.4) |
-| **MAG** (Magic) | ✨ | #C4B5FD | #DDD6FE | rgba(167, 139, 250, 0.4) |
-| **HP** (Hit Points) | ❤ | #86EFAC | #BBF7D0 | rgba(74, 222, 128, 0.4) |
+| **HP** (Hit Points) | ❤️ | #EF4444 | #FCA5A5 | rgba(239, 68, 68, 0.7) |
+| **AC** (Armor Class) | 🛡️ | #22D3EE | #A5F3FC | rgba(34, 211, 238, 0.7) |
+| **SP** (Speed) | 👟 | #22C55E | #86EFAC | rgba(34, 197, 94, 0.7) |
+| **PRO** (Proficiency) | ⭐ | #A855F7 | #D8B4FE | rgba(168, 85, 247, 0.7) |
 
 ### 6. Ability Scores (6 boxes)
 - Horizontal row of 6 boxes with justify-between
@@ -207,12 +223,33 @@ function calculateRarity(race: string, characterClass: string): number {
 
 ---
 
-## Print Functionality (Future Enhancement)
+## Print Functionality
 
-Print functionality is planned for a future release. When implemented:
-- Navigation arrows and image counter will be hidden
-- Card will be sized to standard trading card dimensions (2.5" × 3.5")
-- Users can select which image to print before printing
+**✅ FULLY IMPLEMENTED** - Print functionality is complete and working.
+
+### Print Card Features:
+- **Dimensions**: 2.5" × 3.5" (standard trading card size)
+- **Page Size**: Uses `@page { size: 2.5in 3.5in; margin: 0; }` for exact sizing
+- **Colors**: Full color support with `-webkit-print-color-adjust: exact`
+- **Fonts**: Google Fonts (Cinzel, Cinzel Decorative, Crimson Text)
+- **Layout**: Flexbox with image container using `flex: 1` to fill space
+
+### Print Card Layout:
+1. Character name (gold, centered, uppercase)
+2. Gold ornate bar
+3. Character image (flexible height, fills available space)
+4. Race/Class/Level subtitle
+5. Stats grid (HP, AC, Speed, Proficiency)
+6. Ability scores row (STR, DEX, CON, INT, WIS, CHA)
+7. Motto/quote (2 lines max with line-clamp)
+8. D&D logo at bottom
+
+### How to Print:
+1. Click on a character's portrait to open the trading card modal
+2. Use the arrow navigation to select desired image
+3. Click the "Print Card" button
+4. A new window opens with the print-optimized card
+5. The browser print dialog appears automatically after 500ms
 
 ---
 
@@ -297,8 +334,9 @@ All animations are disabled in print mode.
 - [x] Integration with dashboard character list
 - [x] AI-generated image display (NanoBanana integration)
 - [x] Image carousel with navigation arrows
-- [x] Rarity system based on race/class
-- [x] All stat displays working
-- [ ] Print functionality (future enhancement)
+- [x] All stat displays working (HP, AC, Speed, Proficiency, Ability Scores)
+- [x] Print functionality (2.5" × 3.5" trading card)
+- [x] Two-line motto/quote support with line-clamp
+- [x] D&D logo with proper styling
 - [ ] Export to PNG/PDF feature (future enhancement)
 - [ ] Standalone CharacterTradingCard component (optional refactor)
