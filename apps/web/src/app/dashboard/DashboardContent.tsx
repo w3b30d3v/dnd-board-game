@@ -163,7 +163,7 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    // Standard trading card: 2.5" x 3.5"
+    // Standard trading card: 2.5" x 3.5" = 240px x 336px at 96 DPI
     const cardHtml = `
       <!DOCTYPE html>
       <html>
@@ -175,16 +175,6 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
             size: 2.5in 3.5in;
             margin: 0;
           }
-          @media print {
-            html, body {
-              width: 2.5in;
-              height: 3.5in;
-              margin: 0;
-              padding: 0;
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-            }
-          }
           * { margin: 0; padding: 0; box-sizing: border-box; }
           html, body {
             width: 2.5in;
@@ -192,12 +182,9 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
             margin: 0;
             padding: 0;
             overflow: hidden;
-          }
-          body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
             background: white;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           .card {
             width: 2.5in;
@@ -205,12 +192,15 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
             background: linear-gradient(160deg, #2d2640 0%, #1f1a2e 30%, #171320 60%, #0d0a12 100%);
             border-radius: 6px;
             border: 2px solid #D4A84B;
-            padding: 5px 5px 4px 5px;
+            padding: 4px;
             font-family: system-ui, -apple-system, sans-serif;
             color: white;
+            position: relative;
+          }
+          .card-inner {
+            height: 100%;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
           }
           .name {
             font-family: 'Cinzel', serif;
@@ -221,15 +211,15 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
             text-transform: uppercase;
             letter-spacing: 0.5px;
             text-shadow: 0 0 4px rgba(255, 215, 0, 0.5);
-            padding: 2px 0;
+            padding: 3px 0 2px;
           }
           .gold-bar {
             height: 1px;
             background: linear-gradient(90deg, transparent 5%, #92400E 20%, #D4A84B 50%, #92400E 80%, transparent 95%);
-            margin: 2px 10px 4px;
+            margin: 0 10px 3px;
           }
           .image-container {
-            height: 105px;
+            height: 110px;
             border: 1px solid #D4A84B;
             border-radius: 4px;
             overflow: hidden;
@@ -246,13 +236,13 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
             color: #e2e2e2;
             text-align: center;
             text-transform: capitalize;
-            padding: 2px 0 3px;
+            padding: 1px 0 2px;
           }
           .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 2px;
-            margin: 0 2px 3px;
+            margin: 0 2px 2px;
           }
           .stat-box {
             text-align: center;
@@ -275,7 +265,7 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
             display: flex;
             justify-content: space-between;
             gap: 2px;
-            margin: 0 2px 3px;
+            margin: 0 2px 2px;
           }
           .ability-box {
             text-align: center;
@@ -287,20 +277,25 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
           }
           .ability-name { font-size: 5px; font-weight: 700; color: #F59E0B; }
           .ability-value { font-family: 'Cinzel', serif; font-size: 8px; font-weight: 700; color: #FCD34D; }
+          .bottom-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            min-height: 0;
+          }
           .motto {
             font-family: 'Crimson Text', Georgia, serif;
             font-style: italic;
             font-size: 6px;
             color: #d4d4d8;
             text-align: center;
-            padding: 0 3px;
+            padding: 0 4px;
             line-height: 1.2;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            min-height: 14px;
-            flex-shrink: 0;
           }
           .logo {
             text-align: center;
@@ -309,8 +304,7 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
             font-weight: 900;
             letter-spacing: 0.3px;
             text-shadow: 0 0 4px rgba(212, 168, 75, 0.5);
-            margin-top: auto;
-            padding: 2px 0 2px;
+            padding: 2px 0 3px;
           }
           .logo .gold { color: #D4A84B; }
           .logo .red { color: #E53935; text-shadow: 0 0 4px rgba(229, 57, 53, 0.5); margin: 0 1px; }
@@ -318,28 +312,32 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
       </head>
       <body>
         <div class="card">
-          <div class="name">${character.name}</div>
-          <div class="gold-bar"></div>
-          <div class="image-container">
-            ${currentImage ? `<img src="${currentImage.url}" alt="${character.name}" />` : ''}
+          <div class="card-inner">
+            <div class="name">${character.name}</div>
+            <div class="gold-bar"></div>
+            <div class="image-container">
+              ${currentImage ? `<img src="${currentImage.url}" alt="${character.name}" />` : ''}
+            </div>
+            <div class="subtitle">${character.race} • ${character.class} • Level ${character.level}</div>
+            <div class="stats-grid">
+              <div class="stat-box hp-stat"><div class="stat-icon">❤️</div><div class="stat-value">${hp}</div><div class="stat-label">HP</div></div>
+              <div class="stat-box ac-stat"><div class="stat-icon">🛡️</div><div class="stat-value">${ac}</div><div class="stat-label">AC</div></div>
+              <div class="stat-box sp-stat"><div class="stat-icon">👟</div><div class="stat-value">${speed}</div><div class="stat-label">SP</div></div>
+              <div class="stat-box pro-stat"><div class="stat-icon">⭐</div><div class="stat-value">+${proficiencyBonus}</div><div class="stat-label">PRO</div></div>
+            </div>
+            <div class="abilities">
+              <div class="ability-box"><div class="ability-name">STR</div><div class="ability-value">${abilities.strength}</div></div>
+              <div class="ability-box"><div class="ability-name">DEX</div><div class="ability-value">${abilities.dexterity}</div></div>
+              <div class="ability-box"><div class="ability-name">CON</div><div class="ability-value">${abilities.constitution}</div></div>
+              <div class="ability-box"><div class="ability-name">INT</div><div class="ability-value">${abilities.intelligence}</div></div>
+              <div class="ability-box"><div class="ability-name">WIS</div><div class="ability-value">${abilities.wisdom}</div></div>
+              <div class="ability-box"><div class="ability-name">CHA</div><div class="ability-value">${abilities.charisma}</div></div>
+            </div>
+            <div class="bottom-section">
+              <div class="motto">"${character.appearance?.personalityTrait?.substring(0, 80) || 'Fortune favors the bold.'}"</div>
+              <div class="logo"><span class="gold">DUNGEONS</span><span class="red">&</span><span class="gold">DRAGONS</span></div>
+            </div>
           </div>
-          <div class="subtitle">${character.race} • ${character.class} • Level ${character.level}</div>
-          <div class="stats-grid">
-            <div class="stat-box hp-stat"><div class="stat-icon">❤️</div><div class="stat-value">${hp}</div><div class="stat-label">HP</div></div>
-            <div class="stat-box ac-stat"><div class="stat-icon">🛡️</div><div class="stat-value">${ac}</div><div class="stat-label">AC</div></div>
-            <div class="stat-box sp-stat"><div class="stat-icon">👟</div><div class="stat-value">${speed}</div><div class="stat-label">SP</div></div>
-            <div class="stat-box pro-stat"><div class="stat-icon">⭐</div><div class="stat-value">+${proficiencyBonus}</div><div class="stat-label">PRO</div></div>
-          </div>
-          <div class="abilities">
-            <div class="ability-box"><div class="ability-name">STR</div><div class="ability-value">${abilities.strength}</div></div>
-            <div class="ability-box"><div class="ability-name">DEX</div><div class="ability-value">${abilities.dexterity}</div></div>
-            <div class="ability-box"><div class="ability-name">CON</div><div class="ability-value">${abilities.constitution}</div></div>
-            <div class="ability-box"><div class="ability-name">INT</div><div class="ability-value">${abilities.intelligence}</div></div>
-            <div class="ability-box"><div class="ability-name">WIS</div><div class="ability-value">${abilities.wisdom}</div></div>
-            <div class="ability-box"><div class="ability-name">CHA</div><div class="ability-value">${abilities.charisma}</div></div>
-          </div>
-          <div class="motto">"${character.appearance?.personalityTrait?.substring(0, 80) || 'Fortune favors the bold.'}"</div>
-          <div class="logo"><span class="gold">DUNGEONS</span><span class="red">&</span><span class="gold">DRAGONS</span></div>
         </div>
         <script>window.onload = () => { setTimeout(() => window.print(), 500); }</script>
       </body>
@@ -556,7 +554,7 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
               </div>
 
               {/* Motto/Quote - single line */}
-              <div className="px-4 pt-1.5 text-center">
+              <div className="px-4 pt-1 text-center">
                 <p
                   className="text-xs italic truncate"
                   style={{
@@ -571,8 +569,8 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
                 </p>
               </div>
 
-              {/* D&D Logo - single line text with styled ampersand, positioned at bottom */}
-              <div className="flex justify-center items-end mt-auto pb-2">
+              {/* D&D Logo - at bottom with minimal gap matching top */}
+              <div className="flex justify-center items-center pt-1 pb-2">
                 <span
                   style={{
                     fontFamily: 'var(--font-cinzel-decorative), Cinzel Decorative, serif',

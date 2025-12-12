@@ -1311,7 +1311,7 @@ export default function CharacterDetailsContent() {
                 <EnchantedCard showCorners className="p-4 flex-1 flex flex-col">
                   {/* Character Header */}
                   <div className="text-center mb-3">
-                    <h1 className="dnd-heading-epic text-2xl pb-1">{character.name}</h1>
+                    <h1 className="dnd-heading-epic text-2xl pb-4">{character.name}</h1>
                     <p className="text-text-secondary text-sm">
                       {toTitleCase(character.subrace || character.race)} {toTitleCase(character.subclass || character.class)}
                     </p>
