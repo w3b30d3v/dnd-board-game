@@ -10,15 +10,18 @@ import { TERRAIN_COLORS, GRID_COLORS } from './types';
 import { TERRAIN_IMAGES } from '@/data/staticImages';
 
 // Map terrain types to texture keys
+// NOTE: AI-generated textures have circular/vignette effects that look unnatural when tiled
+// Using null for all terrain to get clean procedural colors that tile seamlessly
+// To re-enable AI textures, change null back to the texture key names
 const TERRAIN_TO_TEXTURE: Record<TerrainType, string | null> = {
-  NORMAL: 'stone_floor',
-  DIFFICULT: 'forest', // Forest floor looks like difficult terrain
-  WATER: 'water',
-  LAVA: 'lava',
+  NORMAL: null, // Was 'stone_floor' - AI texture has circular pattern
+  DIFFICULT: null, // Was 'forest' - AI texture doesn't tile well
+  WATER: null, // Was 'water' - AI texture has vignette
+  LAVA: null, // Was 'lava' - AI texture has circular glow
   PIT: null, // Keep procedural for pit (dark hole effect)
-  WALL: 'stone_floor',
+  WALL: null, // Was 'stone_floor' - AI texture has circular pattern
   DOOR: null, // Keep procedural for door
-  STAIRS: 'stone_floor',
+  STAIRS: null, // Was 'stone_floor' - AI texture has circular pattern
 };
 
 // Ambient particle for terrain effects
