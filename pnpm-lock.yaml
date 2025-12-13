@@ -144,7 +144,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
 
   packages/proto:
     dependencies:
@@ -169,7 +169,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
 
   packages/shared:
     dependencies:
@@ -197,7 +197,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
 
   packages/ui:
     dependencies:
@@ -246,7 +246,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
 
   services/api-gateway:
     dependencies:
@@ -325,7 +325,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
 
   services/game-state:
     dependencies:
@@ -353,7 +353,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
 
   services/media-service:
     dependencies:
@@ -387,7 +387,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
 
   services/ws-gateway:
     dependencies:
@@ -397,19 +397,31 @@ importers:
       ioredis:
         specifier: ^5.3.2
         version: 5.8.2
+      jsonwebtoken:
+        specifier: ^9.0.2
+        version: 9.0.3
       pino:
         specifier: ^8.18.0
         version: 8.21.0
       pino-pretty:
         specifier: ^10.3.0
         version: 10.3.1
+      uuid:
+        specifier: ^13.0.0
+        version: 13.0.0
       ws:
         specifier: ^8.16.0
         version: 8.18.3
     devDependencies:
+      '@types/jsonwebtoken':
+        specifier: ^9.0.5
+        version: 9.0.10
       '@types/node':
         specifier: ^20.11.0
         version: 20.19.25
+      '@types/uuid':
+        specifier: ^11.0.0
+        version: 11.0.0
       '@types/ws':
         specifier: ^8.5.10
         version: 8.18.1
@@ -421,7 +433,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
 
 packages:
 
@@ -1658,6 +1670,10 @@ packages:
 
   '@types/serve-static@1.15.10':
     resolution: {integrity: sha512-tRs1dB+g8Itk72rlSI2ZrW6vZg0YrLI81iQSTkMmOqnqCaNr/8Ek4VwWcN5vZgCYWbg/JJSGBlUaYGAOP73qBw==}
+
+  '@types/uuid@11.0.0':
+    resolution: {integrity: sha512-HVyk8nj2m+jcFRNazzqyVKiZezyhDKrGUA3jlEcg/nZ6Ms+qHwocba1Y/AaVaznJTAM9xpdFSh+ptbNrhOGvZA==}
+    deprecated: This is a stub types definition. uuid provides its own type definitions, so you do not need this installed.
 
   '@types/ws@8.18.1':
     resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
@@ -4208,6 +4224,10 @@ packages:
     resolution: {integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==}
     engines: {node: '>= 0.4.0'}
 
+  uuid@13.0.0:
+    resolution: {integrity: sha512-XQegIaBTVUjSHliKqcnFqYypAd4S+WCYt5NIeRs6w/UAry7z8Y9j5ZwRRL4kzq9U3sD6v+85er9FvkEaBpji2w==}
+    hasBin: true
+
   vary@1.1.2:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
@@ -5533,6 +5553,10 @@ snapshots:
       '@types/http-errors': 2.0.5
       '@types/node': 20.19.25
       '@types/send': 0.17.6
+
+  '@types/uuid@11.0.0':
+    dependencies:
+      uuid: 13.0.0
 
   '@types/ws@8.18.1':
     dependencies:
@@ -8507,6 +8531,8 @@ snapshots:
 
   utils-merge@1.0.1: {}
 
+  uuid@13.0.0: {}
+
   vary@1.1.2: {}
 
   vite-node@1.6.1(@types/node@20.19.25):
@@ -8551,7 +8577,7 @@ snapshots:
       tsx: 4.21.0
       yaml: 2.8.2
 
-  vitest@1.6.1(@types/node@20.19.25)(jsdom@27.3.0):
+  vitest@1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6)):
     dependencies:
       '@vitest/expect': 1.6.1
       '@vitest/runner': 1.6.1

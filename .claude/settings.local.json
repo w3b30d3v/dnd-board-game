@@ -7,7 +7,17 @@
       "Bash(pnpm --filter @dnd/web typecheck:*)",
       "Bash(pnpm --filter @dnd/web test:unit:*)",
       "Bash(wc:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(NANOBANANA_API_KEY=4889c7b5aa3135a4dc538ecd6f52002d node scripts/generate-static-assets.mjs:*)",
+      "Bash(node scripts/generate-static-via-api.mjs:*)",
+      "Bash(node scripts/download-images.mjs:*)",
+      "Bash(git tag -a v3.0.0 -m \"$(cat <<''EOF''\nPhase 3 Complete: Game Board Core\n\nFeatures implemented:\n- PixiJS 8 WebGL/Canvas rendering (60 FPS target)\n- Tile-based grid system with 8 terrain types\n- Token management with health bars, temp HP, conditions\n- 15 D&D 5e condition icons\n- Fog of war with 3 visibility states\n- Area of effect overlays (5 shapes: sphere, cube, cone, line, cylinder)\n- Camera pan/zoom with smooth tweening\n- Mouse, touch, and keyboard input\n- Mobile-friendly pinch zoom\n- Token animations (idle, damage, healing, death, spawn)\n- React integration via useGameCanvas hook\n\nTests: 184 passing (152 web + 32 API)\n\nProduction URLs:\n- Web: https://web-production-85b97.up.railway.app\n- API: https://api-production-2f00.up.railway.app\n- Game Demo: https://web-production-85b97.up.railway.app/game/test\nEOF\n)\")",
+      "Bash(pnpm --filter @dnd/rules-engine test)",
+      "Bash(pnpm --filter @dnd/rules-engine build:*)",
+      "Bash(git tag -a v4.0.0 -m \"$(cat <<''EOF''\nPhase 4 Complete: Rules Engine\n\nD&D 5e RAW Rules Engine implementation with:\n\nCombat System:\n- Full initiative system with advantage/tie-breaking\n- Attack rolls: melee, ranged, weapon, spell\n- Damage calculation with resistance/vulnerability/immunity\n- Saving throws with advantage/disadvantage\n- Critical hits (2x dice) and fumbles\n\nDice System:\n- All dice types: d4, d6, d8, d10, d12, d20, d100\n- Advantage/disadvantage handling\n- Modifiers and expressions (2d6+4, 1d20+5)\n\nCharacter Mechanics:\n- Ability modifiers calculation\n- Proficiency bonus by level\n- AC calculation (armor + DEX + shields)\n- Spell save DC calculation\n- Movement and speed\n\nConditions & Status:\n- All 15 D&D 5e conditions\n- Concentration tracking\n- Death saves (3 successes/failures)\n- Exhaustion levels\n\nCombatManager Integration:\n- Bridges rules-engine with game board\n- Combat state management\n- Turn-based initiative tracking\n- Event system for UI updates\n\nTests: 276 total (190 web + 32 API + 54 rules-engine)\n- 54 RAW 5e golden tests\n- 38 CombatManager integration tests\n\nProduction URLs:\n- Web: https://web-production-b649.up.railway.app\n- API: https://api-production-2f00.up.railway.app\nEOF\n)\")",
+      "Bash(pnpm --filter @dnd/ws-gateway add jsonwebtoken uuid)",
+      "Bash(pnpm --filter @dnd/ws-gateway add:*)",
+      "Bash(pnpm:*)"
     ],
     "deny": [],
     "ask": []

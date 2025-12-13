@@ -121,6 +121,7 @@ jobs:
           pnpm --filter @dnd/rules-engine test
           pnpm --filter @dnd/web test:unit
           pnpm --filter @dnd/api-gateway test
+          pnpm --filter @dnd/ws-gateway test
         env:
           DATABASE_URL: "postgresql://placeholder:placeholder@localhost:5432/placeholder"
           JWT_SECRET: "ci-test-secret-key-minimum-32-characters"
