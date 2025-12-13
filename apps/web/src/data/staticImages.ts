@@ -54,7 +54,7 @@ export const TERRAIN_IMAGES: Record<string, string> = {
 export const HERO_IMAGES: Record<string, string> = {
   'epic_battle': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633174400_9jqaow_16x9_1024x576.png',
   'dungeon_entrance': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633192550_ixih9v_16x9_1024x576.png',
-  'tavern_gathering': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633206390_r4k1bb_16x9_1024x576.png',
+  'tavern_gathering': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765637674065_4qh2ll_16x9_1024x576.png',
 };
 
 export function getRaceImage(raceId: string): string {
