@@ -61,6 +61,20 @@ function generateSampleMap(): MapData {
   };
 }
 
+// Token portrait URLs - using existing images and DiceBear for monsters
+const TOKEN_PORTRAITS = {
+  // Players - use existing race/class images
+  'thorin': '/images/races/dwarf.png',
+  'elara': '/images/races/elf.png',
+  // Monsters - use DiceBear with fantasy style for now (can replace with AI-generated)
+  'goblin-scout': 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=goblin1&backgroundColor=1a472a&eyes=eva&mouth=smile01',
+  'goblin-boss': 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=goblinboss&backgroundColor=2d5a27&eyes=robocop&mouth=diagram',
+  'ogre': 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=ogre&backgroundColor=4a3728&eyes=shade01&mouth=bite',
+  'skeleton': 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=skeleton&backgroundColor=2a2a2a&eyes=happy&mouth=square01',
+  // NPC
+  'merchant': 'https://api.dicebear.com/7.x/avataaars/svg?seed=merchant&backgroundColor=c0aede&top=shortHairShortFlat&accessories=round&facialHair=beardMedium',
+};
+
 // Generate sample creatures with various conditions for visual demo
 function generateSampleCreatures(): Creature[] {
   return [
@@ -80,6 +94,7 @@ function generateSampleCreatures(): Creature[] {
       isVisible: true,
       isHidden: false,
       tokenColor: '#22c55e',
+      spriteUrl: TOKEN_PORTRAITS['thorin'],
     },
     {
       id: 'player-2',
@@ -98,6 +113,7 @@ function generateSampleCreatures(): Creature[] {
       isVisible: true,
       isHidden: false,
       tokenColor: '#3b82f6',
+      spriteUrl: TOKEN_PORTRAITS['elara'],
     },
     {
       id: 'goblin-1',
@@ -114,6 +130,7 @@ function generateSampleCreatures(): Creature[] {
       isConcentrating: false,
       isVisible: true,
       isHidden: false,
+      spriteUrl: TOKEN_PORTRAITS['goblin-scout'],
     },
     {
       id: 'goblin-2',
@@ -130,6 +147,7 @@ function generateSampleCreatures(): Creature[] {
       isConcentrating: false,
       isVisible: true,
       isHidden: false,
+      spriteUrl: TOKEN_PORTRAITS['goblin-boss'],
     },
     {
       id: 'ogre-1',
@@ -146,6 +164,7 @@ function generateSampleCreatures(): Creature[] {
       isConcentrating: false,
       isVisible: true,
       isHidden: false,
+      spriteUrl: TOKEN_PORTRAITS['ogre'],
     },
     {
       id: 'skeleton-1',
@@ -162,6 +181,7 @@ function generateSampleCreatures(): Creature[] {
       isConcentrating: false,
       isVisible: true,
       isHidden: false,
+      spriteUrl: TOKEN_PORTRAITS['skeleton'],
     },
     {
       id: 'npc-1',
@@ -178,6 +198,7 @@ function generateSampleCreatures(): Creature[] {
       isConcentrating: false,
       isVisible: true,
       isHidden: false,
+      spriteUrl: TOKEN_PORTRAITS['merchant'],
     },
   ];
 }
