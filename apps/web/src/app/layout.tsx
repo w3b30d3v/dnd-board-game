@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Cinzel, Cinzel_Decorative, Inter } from 'next/font/google';
 import './globals.css';
+import { ImagePreloadProvider } from '@/components/ImagePreloadProvider';
 
 // Force dynamic rendering for all pages - no static generation
 export const dynamic = 'force-dynamic';
@@ -37,7 +38,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${cinzel.variable} ${cinzelDecorative.variable} ${inter.variable}`} suppressHydrationWarning>
       <body className="bg-bg-primary text-text-primary font-body min-h-screen antialiased" suppressHydrationWarning>
-        {children}
+        <ImagePreloadProvider>
+          {children}
+        </ImagePreloadProvider>
       </body>
     </html>
   );

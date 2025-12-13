@@ -323,4 +323,28 @@
     pointer-events: none;
     background: radial-gradient(ellipse at center, transparent 0%, rgba(15, 13, 19, 0.8) 100%);
   }
+
+  /* Skeleton shimmer animation */
+  .skeleton-shimmer {
+    animation: shimmer 1.5s infinite;
+  }
+}
+
+/* Animations */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
 }
