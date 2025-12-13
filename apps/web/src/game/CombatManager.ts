@@ -14,9 +14,7 @@ import {
   rollD20,
   rollWithAdvantage,
   rollWithDisadvantage,
-  rollDie,
   // Combat
-  resolveAttack,
   resolveAttackWithConditions,
   calculateDamage,
   applyDamage,
