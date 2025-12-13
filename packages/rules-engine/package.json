@@ -1,0 +1,21 @@
+{
+  "name": "@dnd/rules-engine",
+  "version": "0.1.0",
+  "description": "RAW D&D 5e rules engine for dice rolling, combat, spells, and conditions",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:golden": "vitest run --testNamePattern='RAW 5e'",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": ["dnd", "5e", "rules", "dice", "combat"],
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  }
+}
