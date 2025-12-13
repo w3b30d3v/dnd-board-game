@@ -656,7 +656,7 @@ export class BoardRenderer {
    * Update animated tiles (water, lava)
    */
   private updateAnimatedTiles(): void {
-    for (const [_key, data] of this.animatedTiles) {
+    for (const data of this.animatedTiles.values()) {
       data.animPhase += this.animationSpeed;
 
       // Update glow intensity for animated effects
@@ -670,7 +670,7 @@ export class BoardRenderer {
     // Update animated effects layer
     this.animatedEffectsLayer.removeChildren();
 
-    for (const [_key, data] of this.animatedTiles) {
+    for (const data of this.animatedTiles.values()) {
       const x = data.tile.x * this.tileSize;
       const y = data.tile.y * this.tileSize;
       const size = this.tileSize;
@@ -725,7 +725,7 @@ export class BoardRenderer {
     this.particleSpawnTimer = 0;
 
     // Spawn particles for animated tiles
-    for (const [_key, data] of this.animatedTiles) {
+    for (const data of this.animatedTiles.values()) {
       if (Math.random() > 0.3) continue; // 30% chance per tile
 
       const x = data.tile.x * this.tileSize + Math.random() * this.tileSize;

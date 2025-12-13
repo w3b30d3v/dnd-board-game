@@ -128,11 +128,8 @@ export class TokenManager {
     tokenContainer.addChild(borderRing);
 
     // Create main sprite (circle with optional portrait)
-    let sprite: PIXI.Graphics | PIXI.Sprite;
+    const sprite: PIXI.Graphics | PIXI.Sprite = this.createEnhancedPlaceholderToken(creature, size);
     let portraitSprite: PIXI.Sprite | undefined;
-
-    // Always create the base token first
-    sprite = this.createEnhancedPlaceholderToken(creature, size);
     tokenContainer.addChild(sprite);
 
     // Load portrait image if available
@@ -342,7 +339,6 @@ export class TokenManager {
    */
   private createEnhancedPlaceholderToken(creature: Creature, size: number): PIXI.Graphics {
     const graphics = new PIXI.Graphics();
-    const color = this.getCreatureColor(creature);
 
     // Get gradient colors based on creature type
     const gradientKey = creature.type === 'character' ? 'player' :
