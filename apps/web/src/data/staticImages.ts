@@ -1,5 +1,5 @@
 // Auto-generated static images from NanoBanana API
-// Generated on: 2025-12-13T13:28:16.695Z
+// Generated on: 2025-12-13T13:40:08.666Z
 // Run: node scripts/generate-static-via-api.mjs --token=YOUR_TOKEN
 
 export const RACE_IMAGES: Record<string, string> = {
@@ -40,6 +40,23 @@ export const BACKGROUND_IMAGES: Record<string, string> = {
   'entertainer': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765632494402_104d09_1x1_1024x1024.png',
 };
 
+export const TERRAIN_IMAGES: Record<string, string> = {
+  'stone_floor': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633033542_54ajen_1x1_1024x1024.png',
+  'grass': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633047642_npibyk_1x1_1024x1024.png',
+  'water': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633061486_8rcki1_1x1_1024x1024.png',
+  'lava': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633075372_ral472_1x1_1024x1024.png',
+  'sand': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633089375_vx1xgv_1x1_1024x1024.png',
+  'snow': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633104700_h2wg9n_1x1_1024x1024.png',
+  'forest': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633119157_aqscl1_1x1_1024x1024.png',
+  'swamp': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633135218_xvbu75_1x1_1024x1024.png',
+};
+
+export const HERO_IMAGES: Record<string, string> = {
+  'epic_battle': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633174400_9jqaow_16x9_1024x576.png',
+  'dungeon_entrance': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633192550_ixih9v_16x9_1024x576.png',
+  'tavern_gathering': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633206390_r4k1bb_16x9_1024x576.png',
+};
+
 export function getRaceImage(raceId: string): string {
   return RACE_IMAGES[raceId] || '';
 }
@@ -50,4 +67,12 @@ export function getClassImage(classId: string): string {
 
 export function getBackgroundImage(backgroundId: string): string {
   return BACKGROUND_IMAGES[backgroundId] || '';
+}
+
+export function getTerrainImage(terrainId: string): string {
+  return TERRAIN_IMAGES[terrainId] || '';
+}
+
+export function getHeroImage(heroId: string): string {
+  return HERO_IMAGES[heroId] || '';
 }
