@@ -1,0 +1,50 @@
+{
+  "acolyte": {
+    "name": "Acolyte",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765632381656_hjqzm4_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T13:26:21.855Z"
+  },
+  "criminal": {
+    "name": "Criminal",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765632395848_23jlti_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T13:26:36.024Z"
+  },
+  "folk-hero": {
+    "name": "Folk Hero",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765632409151_q8ucym_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T13:26:49.368Z"
+  },
+  "noble": {
+    "name": "Noble",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765632425154_ct5r5j_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T13:27:05.319Z"
+  },
+  "sage": {
+    "name": "Sage",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765632446726_gswp2k_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T13:27:26.997Z"
+  },
+  "soldier": {
+    "name": "Soldier",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765632463941_avnam9_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T13:27:44.277Z"
+  },
+  "hermit": {
+    "name": "Hermit",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765632479068_h4qy4w_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T13:27:59.302Z"
+  },
+  "entertainer": {
+    "name": "Entertainer",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765632494402_104d09_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T13:28:14.683Z"
+  }
+}

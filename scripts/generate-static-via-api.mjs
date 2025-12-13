@@ -64,6 +64,59 @@ const BACKGROUNDS = [
   { id: 'entertainer', name: 'Entertainer' },
 ];
 
+const TERRAIN_PROMPTS = {
+  stone_floor: {
+    name: 'Stone Floor',
+    prompt: 'seamless dungeon stone floor texture, ancient carved flagstones, worn by centuries of footsteps, subtle cracks and moss, top-down view, tileable pattern, gray stone with hints of color, fantasy dungeon aesthetic',
+  },
+  grass: {
+    name: 'Grass',
+    prompt: 'seamless grassy meadow texture, lush green grass with wildflowers, fantasy field, top-down view, tileable pattern, vibrant natural colors',
+  },
+  water: {
+    name: 'Water',
+    prompt: 'seamless crystal clear water texture, gentle ripples, light playing on surface, underwater pebbles visible, fantasy pond or stream, top-down view, tileable pattern, blue-green magical water',
+  },
+  lava: {
+    name: 'Lava',
+    prompt: 'seamless molten lava texture, glowing orange-red magma, cooling black crust, heat distortion, volcanic hellscape, top-down view, tileable pattern, dangerous fiery terrain, ember particles',
+  },
+  sand: {
+    name: 'Sand',
+    prompt: 'seamless desert sand texture, golden dunes, wind-swept patterns, scattered pebbles, fantasy desert, top-down view, tileable pattern, warm sandy colors',
+  },
+  snow: {
+    name: 'Snow',
+    prompt: 'seamless snow texture, pristine white snowfield, subtle blue shadows, snowflake details, fantasy winter landscape, top-down view, tileable pattern, crisp cold atmosphere',
+  },
+  forest: {
+    name: 'Forest Floor',
+    prompt: 'seamless forest floor texture, fallen leaves, twigs, roots, mushrooms, dappled light, fantasy woodland, top-down view, tileable pattern, earthy natural colors',
+  },
+  swamp: {
+    name: 'Swamp',
+    prompt: 'seamless swamp texture, murky green water, lily pads, reeds, muddy patches, fantasy marshland, top-down view, tileable pattern, mysterious foggy atmosphere',
+  },
+};
+
+const HERO_PROMPTS = {
+  epic_battle: {
+    name: 'Epic Battle',
+    prompt: 'epic fantasy battle scene, party of adventurers fighting dragon, warrior with sword, wizard casting fireball, dramatic action poses, dungeon treasure hoard, cinematic wide shot',
+    aspectRatio: '16:9',
+  },
+  dungeon_entrance: {
+    name: 'Dungeon Entrance',
+    prompt: 'mysterious dungeon entrance, massive stone archway with runes, adventuring party silhouettes entering, torchlight piercing darkness, fog rolling out, ancient carved warnings, sense of adventure',
+    aspectRatio: '16:9',
+  },
+  tavern_gathering: {
+    name: 'Tavern Gathering',
+    prompt: 'fantasy tavern scene, diverse adventurers gathered around table, map spread out planning quest, warm firelight, ale mugs, bard playing in corner, camaraderie and anticipation',
+    aspectRatio: '16:9',
+  },
+};
+
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -216,6 +269,102 @@ async function generateBackgroundImages(token) {
   return results;
 }
 
+async function generateCustomImage(token, prompt, aspectRatio = '1:1') {
+  const response = await fetch(`${API_BASE_URL}/media/generate/custom`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      prompt,
+      aspectRatio,
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`API error ${response.status}: ${text}`);
+  }
+
+  const data = await response.json();
+
+  if (!data.success) {
+    throw new Error(data.error || 'Generation failed');
+  }
+
+  return {
+    imageUrl: data.imageUrl,
+    source: data.source,
+  };
+}
+
+async function generateTerrainImages(token) {
+  console.log('\n=== Generating TERRAIN Images ===\n');
+  const results = {};
+  const entries = Object.entries(TERRAIN_PROMPTS);
+
+  for (let i = 0; i < entries.length; i++) {
+    const [id, config] = entries[i];
+    console.log(`[${i + 1}/${entries.length}] ${config.name}...`);
+
+    try {
+      const result = await generateCustomImage(token, config.prompt, '1:1');
+      results[id] = {
+        name: config.name,
+        imageUrl: result.imageUrl,
+        source: result.source,
+        generatedAt: new Date().toISOString(),
+      };
+      console.log(`  ✓ Success (${result.source}): ${result.imageUrl.substring(0, 50)}...`);
+
+      await sleep(2000);
+    } catch (error) {
+      console.log(`  ✗ Failed: ${error.message}`);
+      results[id] = {
+        name: config.name,
+        error: error.message,
+        generatedAt: new Date().toISOString(),
+      };
+    }
+  }
+
+  return results;
+}
+
+async function generateHeroImages(token) {
+  console.log('\n=== Generating HERO Images ===\n');
+  const results = {};
+  const entries = Object.entries(HERO_PROMPTS);
+
+  for (let i = 0; i < entries.length; i++) {
+    const [id, config] = entries[i];
+    console.log(`[${i + 1}/${entries.length}] ${config.name}...`);
+
+    try {
+      const result = await generateCustomImage(token, config.prompt, config.aspectRatio || '16:9');
+      results[id] = {
+        name: config.name,
+        imageUrl: result.imageUrl,
+        source: result.source,
+        generatedAt: new Date().toISOString(),
+      };
+      console.log(`  ✓ Success (${result.source}): ${result.imageUrl.substring(0, 50)}...`);
+
+      await sleep(2000);
+    } catch (error) {
+      console.log(`  ✗ Failed: ${error.message}`);
+      results[id] = {
+        name: config.name,
+        error: error.message,
+        generatedAt: new Date().toISOString(),
+      };
+    }
+  }
+
+  return results;
+}
+
 function saveResults(category, results) {
   if (!fs.existsSync(OUTPUT_DIR)) {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
@@ -253,6 +402,20 @@ ${Object.entries(allResults.backgrounds || {})
   .join('\n')}
 };
 
+export const TERRAIN_IMAGES: Record<string, string> = {
+${Object.entries(allResults.terrain || {})
+  .filter(([_, v]) => v.imageUrl)
+  .map(([id, v]) => `  '${id}': '${v.imageUrl}',`)
+  .join('\n')}
+};
+
+export const HERO_IMAGES: Record<string, string> = {
+${Object.entries(allResults.heroes || {})
+  .filter(([_, v]) => v.imageUrl)
+  .map(([id, v]) => `  '${id}': '${v.imageUrl}',`)
+  .join('\n')}
+};
+
 export function getRaceImage(raceId: string): string {
   return RACE_IMAGES[raceId] || '';
 }
@@ -263,6 +426,14 @@ export function getClassImage(classId: string): string {
 
 export function getBackgroundImage(backgroundId: string): string {
   return BACKGROUND_IMAGES[backgroundId] || '';
+}
+
+export function getTerrainImage(terrainId: string): string {
+  return TERRAIN_IMAGES[terrainId] || '';
+}
+
+export function getHeroImage(heroId: string): string {
+  return HERO_IMAGES[heroId] || '';
 }
 `;
 
@@ -301,10 +472,12 @@ async function main() {
     races: {},
     classes: {},
     backgrounds: {},
+    terrain: {},
+    heroes: {},
   };
 
   // Load existing results
-  for (const cat of ['races', 'classes', 'backgrounds']) {
+  for (const cat of ['races', 'classes', 'backgrounds', 'terrain', 'heroes']) {
     const filePath = path.join(OUTPUT_DIR, `${cat}.json`);
     if (fs.existsSync(filePath)) {
       try {
@@ -330,6 +503,16 @@ async function main() {
   if (category === 'backgrounds' || category === 'all') {
     allResults.backgrounds = await generateBackgroundImages(token);
     saveResults('backgrounds', allResults.backgrounds);
+  }
+
+  if (category === 'terrain' || category === 'all') {
+    allResults.terrain = await generateTerrainImages(token);
+    saveResults('terrain', allResults.terrain);
+  }
+
+  if (category === 'heroes' || category === 'all') {
+    allResults.heroes = await generateHeroImages(token);
+    saveResults('heroes', allResults.heroes);
   }
 
   // Update TypeScript file

@@ -1,0 +1,56 @@
+{
+  "human": {
+    "name": "Human",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765629806097_kvaqyx_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T12:30:06.097Z"
+  },
+  "elf": {
+    "name": "Elf",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765629873281_qo1dzl_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T12:31:13.281Z"
+  },
+  "dwarf": {
+    "name": "Dwarf",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765629943400_onby6u_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T12:32:23.400Z"
+  },
+  "halfling": {
+    "name": "Halfling",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765630011986_q6trwo_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T12:33:31.986Z"
+  },
+  "dragonborn": {
+    "name": "Dragonborn",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765630077852_wcqmfa_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T12:34:37.852Z"
+  },
+  "gnome": {
+    "name": "Gnome",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765630145060_br6m0n_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T12:35:45.060Z"
+  },
+  "half-elf": {
+    "name": "Half-Elf",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765630212562_y5vjby_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T12:36:52.562Z"
+  },
+  "half-orc": {
+    "name": "Half-Orc",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765630282633_1kc61y_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T12:38:02.633Z"
+  },
+  "tiefling": {
+    "name": "Tiefling",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765630346862_5cbbyk_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T12:39:06.862Z"
+  }
+}

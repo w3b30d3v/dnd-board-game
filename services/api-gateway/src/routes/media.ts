@@ -190,6 +190,50 @@ router.post('/generate/character-images', auth, async (req: Request, res: Respon
   }
 });
 
+// Generate custom image with arbitrary prompt (for static assets like terrain, heroes)
+// Does not count against user limits - intended for admin/dev use
+router.post('/generate/custom', auth, async (req: Request, res: Response) => {
+  try {
+    const { prompt, aspectRatio = '1:1', negativePrompt } = req.body;
+
+    if (!prompt) {
+      return res.status(400).json({
+        success: false,
+        error: 'Prompt is required',
+      });
+    }
+
+    // If NanoBanana API is not configured, return error
+    if (!NANOBANANA_API_KEY || !CALLBACK_BASE_URL) {
+      return res.status(500).json({
+        success: false,
+        error: 'Image generation service not configured',
+      });
+    }
+
+    try {
+      const imageUrl = await generateCustomImage(prompt, aspectRatio, negativePrompt);
+      return res.json({
+        success: true,
+        imageUrl,
+        source: 'nanobanana',
+      });
+    } catch (apiError: any) {
+      console.error('Custom image generation failed:', apiError);
+      return res.status(500).json({
+        success: false,
+        error: apiError.message || 'Image generation failed',
+      });
+    }
+  } catch (error: any) {
+    console.error('Custom image generation failed:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Custom image generation failed',
+    });
+  }
+});
+
 // Generate single character portrait (legacy endpoint, doesn't count against limit)
 router.post('/generate/portrait', auth, async (req: Request, res: Response) => {
   try {
@@ -1008,6 +1052,101 @@ async function generateWithNanoBanana(
   // Wait for webhook callback with Promise
   // Keep under Railway's 60-second timeout so fallback can return
   const maxWait = 50000; // 50 seconds for image generation
+
+  return new Promise<string>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      pendingImageTasks.delete(taskId);
+      reject(new Error('Image generation timed out waiting for webhook'));
+    }, maxWait);
+
+    pendingImageTasks.set(taskId, { resolve, reject, timeout });
+  });
+}
+
+async function generateCustomImage(
+  prompt: string,
+  aspectRatio: string = '1:1',
+  negativePrompt?: string
+): Promise<string> {
+  const fetch = (await import('node-fetch')).default;
+
+  // D&D art style prefix
+  const artStyle = [
+    'official Dungeons and Dragons 5th Edition artwork',
+    'Players Handbook illustration style',
+    'epic fantasy art',
+    'rich colors with dramatic lighting',
+    'highly detailed',
+    'professional fantasy illustration',
+  ].join(', ');
+
+  // Default negative prompt
+  const defaultNegative = [
+    'anime', 'cartoon', 'chibi', 'manga', 'pixar', 'disney',
+    'blurry', 'low quality', 'ugly', 'deformed', 'bad anatomy',
+    'watermark', 'signature', 'text', 'logo',
+    'nude', 'nsfw', 'sexual', 'gore', 'blood',
+    'modern', 'sci-fi', 'futuristic',
+    'photo', 'photorealistic', 'real person',
+  ].join(', ');
+
+  const fullPrompt = `${artStyle}, ${prompt}. DO NOT include: ${negativePrompt || defaultNegative}`;
+
+  const requestBody = {
+    prompt: fullPrompt,
+    type: 'TEXTTOIAMGE', // Note: API has typo
+    callBackUrl: `${CALLBACK_BASE_URL}/media/webhook/nanobanana`,
+    numImages: 1,
+    image_size: aspectRatio,
+  };
+
+  console.log('=== Calling NanoBanana API (custom) ===');
+  console.log('Prompt (truncated):', fullPrompt.substring(0, 100) + '...');
+
+  const response = await fetch(`${NANOBANANA_API_URL}/generate`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${NANOBANANA_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(requestBody),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('NanoBanana API error:', errorText);
+    throw new Error(`NanoBanana API error: ${response.status}`);
+  }
+
+  const data = (await response.json()) as {
+    code: number;
+    msg: string;
+    data?: {
+      taskId?: string;
+      imageUrl?: string;
+      imageUrls?: string[];
+    };
+  };
+
+  if (data.code !== 200) {
+    throw new Error(`NanoBanana API error: ${data.msg}`);
+  }
+
+  // Immediate result
+  if (data.data?.imageUrl) {
+    return data.data.imageUrl;
+  }
+  if (data.data?.imageUrls && data.data.imageUrls.length > 0 && data.data.imageUrls[0]) {
+    return data.data.imageUrls[0];
+  }
+
+  // Wait for webhook
+  const taskId = data.data?.taskId;
+  if (!taskId) {
+    throw new Error('No task ID returned from NanoBanana API');
+  }
+
+  const maxWait = 50000;
 
   return new Promise<string>((resolve, reject) => {
     const timeout = setTimeout(() => {

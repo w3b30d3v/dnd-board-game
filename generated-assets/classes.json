@@ -1,0 +1,74 @@
+{
+  "barbarian": {
+    "name": "Barbarian",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765631429844_8dknqy_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T13:10:30.428Z"
+  },
+  "bard": {
+    "name": "Bard",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765631443595_q37q3g_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T13:10:44.010Z"
+  },
+  "cleric": {
+    "name": "Cleric",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765631457665_ysy1oi_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T13:10:58.169Z"
+  },
+  "druid": {
+    "name": "Druid",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765631471112_ns8s58_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T13:11:11.519Z"
+  },
+  "fighter": {
+    "name": "Fighter",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765631484618_ahhzh7_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T13:11:25.008Z"
+  },
+  "monk": {
+    "name": "Monk",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765631499535_drb805_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T13:11:40.010Z"
+  },
+  "paladin": {
+    "name": "Paladin",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765631513746_mznm8w_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T13:11:54.291Z"
+  },
+  "ranger": {
+    "name": "Ranger",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765631530971_qvy102_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T13:12:11.581Z"
+  },
+  "rogue": {
+    "name": "Rogue",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765631549326_zpoy9j_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T13:12:29.672Z"
+  },
+  "sorcerer": {
+    "name": "Sorcerer",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765631567544_ddb092_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T13:12:47.811Z"
+  },
+  "warlock": {
+    "name": "Warlock",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765631581041_eoycbr_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T13:13:01.312Z"
+  },
+  "wizard": {
+    "name": "Wizard",
+    "imageUrl": "https://tempfile.aiquickdraw.com/workers/nano/image_1765631595472_mb1nji_1x1_1024x1024.png",
+    "source": "nanobanana",
+    "generatedAt": "2025-12-13T13:13:15.647Z"
+  }
+}
