@@ -16,6 +16,16 @@ interface TokenData {
   conditionIcons: PIXI.Container;
   state: TokenVisualState;
   animationTarget?: GridPosition;
+  // Animation state
+  idlePhase: number;
+  baseY: number;
+  selectionPulsePhase: number;
+  flashTimer: number;
+  flashColor: number | null;
+  spawnProgress: number;
+  deathProgress: number;
+  isSpawning: boolean;
+  isDying: boolean;
 }
 
 export class TokenManager {
@@ -29,6 +39,12 @@ export class TokenManager {
 
   // Animation settings
   private moveAnimationSpeed: number = 0.15;
+  private idleFloatAmplitude: number = 4; // pixels
+  private idleFloatSpeed: number = 0.03; // radians per frame
+  private selectionPulseSpeed: number = 0.05; // radians per frame
+  private flashDuration: number = 18; // frames (~0.3s at 60fps)
+  private spawnDuration: number = 30; // frames (~0.5s at 60fps)
+  private deathDuration: number = 30; // frames (~0.5s at 60fps)
 
   constructor(container: PIXI.Container, tileSize: number) {
     this.container = container;
@@ -99,6 +115,9 @@ export class TokenManager {
     // Add to main container
     this.container.addChild(tokenContainer);
 
+    // Store base Y position for idle animation
+    const baseY = tokenContainer.y;
+
     return {
       creature,
       container: tokenContainer,
@@ -112,6 +131,16 @@ export class TokenManager {
         isMoving: false,
         animationProgress: 0,
       },
+      // Animation state
+      idlePhase: Math.random() * Math.PI * 2, // Random start phase
+      baseY,
+      selectionPulsePhase: 0,
+      flashTimer: 0,
+      flashColor: null,
+      spawnProgress: 0,
+      deathProgress: 0,
+      isSpawning: true, // Start with spawn animation
+      isDying: false,
     };
   }
 
@@ -473,6 +502,49 @@ export class TokenManager {
    */
   public update(_delta: number): void {
     for (const tokenData of this.tokens.values()) {
+      // Skip animation updates for dying tokens that are complete
+      if (tokenData.isDying && tokenData.deathProgress >= 1) {
+        continue;
+      }
+
+      // Spawn animation
+      if (tokenData.isSpawning) {
+        tokenData.spawnProgress += 1 / this.spawnDuration;
+        if (tokenData.spawnProgress >= 1) {
+          tokenData.spawnProgress = 1;
+          tokenData.isSpawning = false;
+          tokenData.container.scale.set(1);
+          tokenData.container.alpha = tokenData.creature.isVisible ? 1 : 0.3;
+        } else {
+          // Bounce easing: overshoot then settle
+          const t = tokenData.spawnProgress;
+          const bounce = t < 0.5
+            ? 4 * t * t * t
+            : 1 - Math.pow(-2 * t + 2, 3) / 2;
+          const scale = bounce * 1.2;
+          tokenData.container.scale.set(Math.min(scale, 1.2));
+          tokenData.container.alpha = bounce * (tokenData.creature.isVisible ? 1 : 0.3);
+        }
+        continue; // Skip other animations during spawn
+      }
+
+      // Death animation
+      if (tokenData.isDying) {
+        tokenData.deathProgress += 1 / this.deathDuration;
+        if (tokenData.deathProgress >= 1) {
+          tokenData.deathProgress = 1;
+          tokenData.container.alpha = 0;
+          tokenData.container.scale.set(0);
+        } else {
+          const t = tokenData.deathProgress;
+          tokenData.container.alpha = (1 - t) * (tokenData.creature.isVisible ? 1 : 0.3);
+          tokenData.container.scale.set(1 - t * 0.5);
+          tokenData.container.rotation = t * 0.5; // Slight rotation
+        }
+        continue; // Skip other animations during death
+      }
+
+      // Movement animation
       if (tokenData.state.isMoving && tokenData.animationTarget) {
         const cells = SIZE_TO_CELLS[tokenData.creature.size];
         const targetX = tokenData.animationTarget.x * this.tileSize + (this.tileSize * cells) / 2;
@@ -491,8 +563,124 @@ export class TokenManager {
           tokenData.container.y = targetY;
           tokenData.state.isMoving = false;
           tokenData.animationTarget = undefined;
+          // Update baseY for idle animation
+          tokenData.baseY = targetY;
         }
       }
+
+      // Idle float animation (only when not moving)
+      if (!tokenData.state.isMoving) {
+        tokenData.idlePhase += this.idleFloatSpeed;
+        const floatOffset = Math.sin(tokenData.idlePhase) * this.idleFloatAmplitude;
+        tokenData.container.y = tokenData.baseY + floatOffset;
+      }
+
+      // Selection pulse animation
+      if (tokenData.state.isSelected) {
+        tokenData.selectionPulsePhase += this.selectionPulseSpeed;
+        const pulseScale = 1 + Math.sin(tokenData.selectionPulsePhase) * 0.05;
+        tokenData.sprite.scale.set(pulseScale);
+
+        // Update selection ring glow
+        const ring = tokenData.container.getChildByName('selectionRing') as PIXI.Graphics;
+        if (ring) {
+          const glowAlpha = 0.6 + Math.sin(tokenData.selectionPulsePhase) * 0.4;
+          ring.alpha = glowAlpha;
+        }
+      } else {
+        // Reset scale when not selected
+        tokenData.sprite.scale.set(1);
+      }
+
+      // Flash animation (damage/healing)
+      if (tokenData.flashTimer > 0) {
+        tokenData.flashTimer--;
+        const flashIntensity = tokenData.flashTimer / this.flashDuration;
+
+        if (tokenData.flashColor !== null) {
+          // Apply tint
+          tokenData.sprite.tint = this.blendColors(0xffffff, tokenData.flashColor, flashIntensity);
+        }
+
+        if (tokenData.flashTimer <= 0) {
+          // Reset tint
+          tokenData.sprite.tint = 0xffffff;
+          tokenData.flashColor = null;
+        }
+      }
+    }
+  }
+
+  /**
+   * Blend two colors
+   */
+  private blendColors(color1: number, color2: number, ratio: number): number {
+    const r1 = (color1 >> 16) & 0xff;
+    const g1 = (color1 >> 8) & 0xff;
+    const b1 = color1 & 0xff;
+    const r2 = (color2 >> 16) & 0xff;
+    const g2 = (color2 >> 8) & 0xff;
+    const b2 = color2 & 0xff;
+
+    const r = Math.round(r1 + (r2 - r1) * ratio);
+    const g = Math.round(g1 + (g2 - g1) * ratio);
+    const b = Math.round(b1 + (b2 - b1) * ratio);
+
+    return (r << 16) | (g << 8) | b;
+  }
+
+  /**
+   * Play damage flash on a token
+   */
+  public playDamageFlash(creatureId: string): void {
+    const tokenData = this.tokens.get(creatureId);
+    if (tokenData && !tokenData.isDying) {
+      tokenData.flashTimer = this.flashDuration;
+      tokenData.flashColor = 0xff0000; // Red
+    }
+  }
+
+  /**
+   * Play healing flash on a token
+   */
+  public playHealingFlash(creatureId: string): void {
+    const tokenData = this.tokens.get(creatureId);
+    if (tokenData && !tokenData.isDying) {
+      tokenData.flashTimer = Math.round(this.flashDuration * 1.3); // Slightly longer
+      tokenData.flashColor = 0x00ff00; // Green
+    }
+  }
+
+  /**
+   * Play death animation on a token
+   */
+  public playDeathAnimation(creatureId: string): Promise<void> {
+    return new Promise((resolve) => {
+      const tokenData = this.tokens.get(creatureId);
+      if (tokenData) {
+        tokenData.isDying = true;
+        tokenData.deathProgress = 0;
+
+        // Resolve after animation completes
+        setTimeout(() => {
+          resolve();
+        }, (this.deathDuration / 60) * 1000);
+      } else {
+        resolve();
+      }
+    });
+  }
+
+  /**
+   * Play spawn animation (restarts if already on board)
+   */
+  public playSpawnAnimation(creatureId: string): void {
+    const tokenData = this.tokens.get(creatureId);
+    if (tokenData) {
+      tokenData.isSpawning = true;
+      tokenData.spawnProgress = 0;
+      tokenData.container.scale.set(0);
+      tokenData.container.alpha = 0;
     }
   }
 

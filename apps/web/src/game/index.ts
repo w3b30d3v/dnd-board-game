@@ -11,4 +11,8 @@ export { AoEOverlayRenderer } from './AoEOverlayRenderer';
 export { InputHandler } from './InputHandler';
 export { CameraController } from './CameraController';
 
+// React integration
+export { useGameCanvas } from './useGameCanvas';
+export type { UseGameCanvasConfig, UseGameCanvasReturn } from './useGameCanvas';
+
 export * from './types';
