@@ -94,6 +94,11 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
               name: payload.name,
               inviteCode: payload.inviteCode,
               status: 'lobby',
+              hostUserId: '', // Will be set from player list
+              maxPlayers: 6,
+              isPrivate: false,
+              players: [],
+              createdAt: Date.now(),
             });
             addMessage({
               senderId: 'system',
@@ -113,6 +118,11 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
               name: payload.name,
               inviteCode: '', // Will be filled by host info
               status: payload.status || 'lobby',
+              hostUserId: '',
+              maxPlayers: 6,
+              isPrivate: false,
+              players: [],
+              createdAt: Date.now(),
             });
             addMessage({
               senderId: 'system',
