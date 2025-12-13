@@ -34,7 +34,6 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     addPlayer,
     removePlayer,
     updatePlayer,
-    setIsHost,
     addMessage,
     addDiceResult,
     setCurrentTurn,

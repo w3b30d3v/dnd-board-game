@@ -12,9 +12,9 @@ interface ChatPanelProps {
 }
 
 export function ChatPanel({
-  sessionId,
+  sessionId: _sessionId,
   onSendMessage,
-  onSendWhisper,
+  onSendWhisper: _onSendWhisper,
   maxHeight = '400px',
 }: ChatPanelProps) {
   const [input, setInput] = useState('');
@@ -73,7 +73,7 @@ export function ChatPanel({
         style={{ maxHeight }}
       >
         <AnimatePresence mode="popLayout">
-          {messages.map((message, index) => (
+          {messages.map((message) => (
             <motion.div
               key={message.id}
               initial={{ opacity: 0, y: 10 }}
