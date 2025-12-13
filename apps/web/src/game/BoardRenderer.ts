@@ -68,6 +68,7 @@ export class BoardRenderer {
   // Texture cache
   private terrainTextures: Map<string, PIXI.Texture> = new Map();
   private texturesLoaded: boolean = false;
+  private currentMapTiles: TileData[] = [];  // Store tiles to re-render after textures load
 
   // Ambient particles
   private ambientParticles: AmbientParticle[] = [];
@@ -161,6 +162,14 @@ export class BoardRenderer {
 
     this.texturesLoaded = true;
     console.log('Terrain textures loaded:', this.terrainTextures.size);
+
+    // Re-render all tiles now that textures are loaded
+    if (this.currentMapTiles.length > 0) {
+      console.log('Re-rendering tiles with loaded textures...');
+      for (const tile of this.currentMapTiles) {
+        this.renderTile(tile);
+      }
+    }
   }
 
   /**
@@ -535,9 +544,19 @@ export class BoardRenderer {
     });
     this.tileGraphics.clear();
 
+    // Clear existing texture sprites
+    this.tileSprites.forEach((sprite) => {
+      this.textureLayer.removeChild(sprite);
+      sprite.destroy();
+    });
+    this.tileSprites.clear();
+
     // Update grid dimensions
     this.gridWidth = map.width;
     this.gridHeight = map.height;
+
+    // Store tiles for re-rendering after textures load
+    this.currentMapTiles = [...map.tiles];
 
     // Render background if provided
     if (map.backgroundUrl) {
