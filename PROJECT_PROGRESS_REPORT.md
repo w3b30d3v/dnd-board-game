@@ -194,16 +194,37 @@ services/api-gateway/src/routes/media.ts
 - Death animation (fade + scale to 0)
 - Damage flash (red tint 0.3s)
 - Healing flash (green tint 0.4s)
+- Animated border rings with gold accents
+- Floating damage numbers (with critical hit support)
+- Floating healing numbers
+- Condition particle effects
+
+### Enhanced Visual Features (NEW)
+- **Token Visuals:**
+  - Portrait image loading with circular masks
+  - Gradient-styled placeholder tokens with 3D effects
+  - Enhanced health bars with gradient fills
+  - Glow effects on selection
+- **Board Visuals:**
+  - Animated water tiles (shimmer, ripples, bubbles)
+  - Animated lava tiles (glow pulses, embers)
+  - Ambient particle system (dust, embers, bubbles)
+  - Pulsing highlight effects with corner accents
+  - Vignette overlay for depth
+- **Combat Feedback:**
+  - Floating damage numbers (-X in red/gold for crits)
+  - Floating healing numbers (+X in green)
+  - Condition particle effects (poisoned, frightened, etc.)
 
 ### Terrain Types
 1. NORMAL - Basic floor
-2. DIFFICULT - Movement cost x2
-3. WATER - Blue wave pattern
-4. LAVA - Orange glow effect
-5. PIT - Dark concentric circles
-6. WALL - Impassable barrier
-7. DOOR - Opens/closes
-8. STAIRS - Level transition
+2. DIFFICULT - Movement cost x2, pebble details
+3. WATER - Animated shimmer, ripples, bubble particles
+4. LAVA - Animated glow, ember particles
+5. PIT - Depth effect with concentric rings
+6. WALL - Enhanced brick pattern with depth
+7. DOOR - Wood grain, gold handle with shine
+8. STAIRS - 3D stepped effect
 
 ### AoE Shapes
 1. SPHERE - Circular area (Fireball)
@@ -226,9 +247,9 @@ services/api-gateway/src/routes/media.ts
 
 ### Key Files
 ```
-apps/web/src/game/GameApplication.ts    (472 lines)
-apps/web/src/game/BoardRenderer.ts      (426 lines)
-apps/web/src/game/TokenManager.ts       (708 lines - with animations)
+apps/web/src/game/GameApplication.ts    (504 lines - with combat effects)
+apps/web/src/game/BoardRenderer.ts      (996 lines - with animations)
+apps/web/src/game/TokenManager.ts       (1200 lines - with particles)
 apps/web/src/game/FogOfWarRenderer.ts   (394 lines)
 apps/web/src/game/AoEOverlayRenderer.ts (369 lines)
 apps/web/src/game/CameraController.ts   (301 lines - with tweening)
@@ -237,10 +258,10 @@ apps/web/src/game/useGameCanvas.ts      (305 lines - React hook)
 apps/web/src/game/types.ts              (188 lines)
 apps/web/src/game/index.ts              (18 lines)
 apps/web/src/app/game/test/page.tsx
-apps/web/src/app/game/test/GameBoardTest.tsx
+apps/web/src/app/game/test/GameBoardTest.tsx (550 lines - enhanced demo)
 ```
 
-### Test Coverage (86 tests)
+### Test Coverage (152 tests)
 ```
 apps/web/src/__tests__/game/
 ├── BoardRenderer.test.ts      (12 tests)
@@ -250,18 +271,30 @@ apps/web/src/__tests__/game/
 ├── AoEOverlayRenderer.test.ts (20 tests)
 ├── InputHandler.test.ts       (14 tests)
 └── types.test.ts              (8 tests)
+
+Other tests:
+├── utils/helpers.test.ts      (23 tests)
+└── stores/authStore.test.ts   (7 tests)
 ```
 
 ### Test Page
 URL: `/game/test`
 
 Interactive demo featuring:
-- Sample dungeon map (20x15 grid)
+- Sample dungeon map (20x15 grid) with lava and water
 - Multiple creature types (PCs, monsters, NPCs)
-- Health bar visualization
+- Creatures with various conditions (Frightened, Poisoned, etc.)
+- Health bar visualization with temp HP
 - Fog of war toggle
-- AoE preview toggle
+- AoE preview toggle (Fireball)
+- Combat demo buttons:
+  - Deal Damage (with random critical hits)
+  - Heal
+  - Death Animation
+  - Respawn Animation
 - Zoom controls
+- Animated terrain (water shimmer, lava glow, embers)
+- Ambient dust particles
 - Camera centering
 
 ---
