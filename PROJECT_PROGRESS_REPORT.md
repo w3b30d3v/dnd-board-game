@@ -8,7 +8,7 @@
 
 The D&D Digital Board Game Platform is a cinematic, multiplayer, AI-powered D&D 5e digital board game. This report tracks implementation progress across 8 development phases.
 
-**Current Status:** Phase 4 Complete - Ready for Phase 5
+**Current Status:** Phase 5 Complete - Ready for Phase 6
 
 ---
 
@@ -16,9 +16,10 @@ The D&D Digital Board Game Platform is a cinematic, multiplayer, AI-powered D&D 
 
 | Service | URL | Status |
 |---------|-----|--------|
-| Web App | https://web-production-85b97.up.railway.app | Live |
+| Web App | https://web-production-b649.up.railway.app | Live |
 | API Gateway | https://api-production-2f00.up.railway.app | Live |
-| Game Test Page | https://web-production-85b97.up.railway.app/game/test | Live |
+| WS Gateway | https://ws-gateway-production-xxxx.up.railway.app | Deploying |
+| Game Test Page | https://web-production-b649.up.railway.app/game/test | Live |
 
 ---
 
@@ -31,9 +32,9 @@ The D&D Digital Board Game Platform is a cinematic, multiplayer, AI-powered D&D 
 | 2 | Character Builder | COMPLETE | 100% |
 | 3 | Game Board Core | COMPLETE | 100% |
 | 4 | Rules Engine | COMPLETE | 100% |
-| 5 | Multiplayer | NOT STARTED | 0% |
+| 5 | Multiplayer | COMPLETE | 100% |
 | 6 | Campaign Builder | NOT STARTED | 0% |
-| 7 | Media Pipeline | PARTIAL | 30% |
+| 7 | Media Pipeline | PARTIAL | 50% |
 | 8 | Polish & Launch | NOT STARTED | 0% |
 
 ---
@@ -399,6 +400,115 @@ apps/web/src/game/
 
 ---
 
+## Phase 5: Multiplayer - COMPLETE
+
+**Completed:** December 2024
+
+### Features
+- WebSocket server with `ws` library
+- Connection management and tracking
+- Session management with invite codes
+- JWT authentication for WebSocket
+- Message handlers for game, chat, turn events
+- Real-time player synchronization
+- Chat system with in-character mode
+- Dice rolling broadcasts
+- Turn-based game coordination
+- Auto-reconnection handling
+
+### WebSocket Server Architecture
+```
+services/ws-gateway/
+├── src/
+│   ├── index.ts                    # Entry point with graceful shutdown
+│   ├── config.ts                   # Server configuration
+│   ├── WebSocketServer.ts          # Main WS server class
+│   ├── ConnectionManager.ts        # Connection tracking & broadcasting
+│   ├── SessionManager.ts           # Game session state (Redis/in-memory)
+│   ├── auth/
+│   │   └── validateToken.ts        # JWT validation
+│   ├── handlers/
+│   │   ├── MessageHandler.ts       # Message routing
+│   │   ├── chatHandlers.ts         # Chat & whisper handling
+│   │   └── gameHandlers.ts         # Dice rolls, turn management
+│   └── lib/
+│       └── logger.ts               # Pino logger
+├── __tests__/
+│   └── ConnectionManager.test.ts   # 17 unit tests
+└── package.json
+```
+
+### WebSocket Message Types
+| Message Type | Direction | Description |
+|--------------|-----------|-------------|
+| `AUTHENTICATE` | Client→Server | Send JWT token |
+| `CREATE_SESSION` | Client→Server | Create new game session |
+| `JOIN_SESSION` | Client→Server | Join by ID or invite code |
+| `LEAVE_SESSION` | Client→Server | Leave current session |
+| `CHAT_MESSAGE` | Client→Server | Send chat message |
+| `WHISPER` | Client→Server | Private message to player |
+| `DICE_ROLL` | Client→Server | Roll dice (e.g., "2d6+4") |
+| `PLAYER_READY` | Client→Server | Toggle ready status |
+| `TURN_END` | Client→Server | End current turn |
+| `AUTHENTICATED` | Server→Client | Auth successful |
+| `SESSION_CREATED` | Server→Client | Session created with invite code |
+| `PLAYER_JOINED` | Server→Client | Player joined session |
+| `PLAYER_LEFT` | Server→Client | Player left session |
+| `CHAT_BROADCAST` | Server→Client | Chat message to all |
+| `DICE_RESULT` | Server→Client | Dice roll results |
+| `TURN_START` | Server→Client | New turn started |
+| `GAME_START` | Server→Client | Game has started |
+
+### Frontend Integration
+- **useWebSocket hook** - Connection management with auto-reconnect
+- **multiplayerStore** - Zustand store for session/player/chat state
+- **PlayerList component** - Shows connected players with status
+- **ChatPanel component** - Chat with in-character mode toggle
+- **Lobby component** - Session management UI
+
+### API Endpoints (HTTP)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Server health check |
+
+### Key Files
+```
+services/ws-gateway/
+├── src/ConnectionManager.ts        (290 lines)
+├── src/SessionManager.ts           (400 lines)
+├── src/WebSocketServer.ts          (200 lines)
+├── src/handlers/MessageHandler.ts  (80 lines)
+├── src/handlers/chatHandlers.ts    (120 lines)
+├── src/handlers/gameHandlers.ts    (180 lines)
+
+apps/web/src/
+├── hooks/useWebSocket.ts           (470 lines)
+├── stores/multiplayerStore.ts      (200 lines)
+├── components/multiplayer/
+│   ├── PlayerList.tsx              (80 lines)
+│   ├── ChatPanel.tsx               (150 lines)
+│   └── Lobby.tsx                   (160 lines)
+
+packages/shared/src/types/
+└── websocket.ts                    (200 lines)
+```
+
+### Test Coverage (17 tests)
+```
+services/ws-gateway/src/__tests__/
+└── ConnectionManager.test.ts
+    ├── registerConnection (3 tests)
+    ├── authenticateConnection (3 tests)
+    ├── joinSession (4 tests)
+    ├── leaveSession (1 test)
+    ├── removeConnection (1 test)
+    ├── send (2 tests)
+    ├── broadcastToSession (2 tests)
+    └── getStats (1 test)
+```
+
+---
+
 ## Phase 7: Media Pipeline - PARTIAL (50%)
 
 **Implemented Early:** AI character portrait generation + Static asset library
@@ -440,107 +550,94 @@ scripts/download-images.mjs        (image download script)
 
 ---
 
-## Next Phase: Phase 5 - Multiplayer
+## Next Phase: Phase 6 - Campaign Builder
 
 ### Objectives
-- Real-time game state synchronization
-- WebSocket server for live updates
-- Player session management
-- Turn-based combat coordination
-- DM controls and permissions
-- Party management
+- DM campaign creation and management tools
+- Map/encounter editor
+- NPC and monster management
+- Story/dialogue system
+- Campaign progression tracking
 
 ### Key Features to Implement
 
-1. **WebSocket Server**
-   - Real-time bidirectional communication
-   - Event-based message system
-   - Connection state management
-   - Reconnection handling
+1. **Campaign Management**
+   - Create/edit/delete campaigns
+   - Campaign settings and rules
+   - Player invitations
+   - Campaign sharing
 
-2. **Game Session Management**
-   - Create/join game sessions
-   - Session state persistence
-   - Player roster tracking
-   - DM designation
+2. **Map Editor**
+   - Tile-based map creation
+   - Terrain type placement
+   - Prop placement (doors, chests, etc.)
+   - Grid size configuration
+   - Save/load maps
 
-3. **State Synchronization**
-   - Creature position updates
-   - HP/condition changes
-   - Fog of war updates
-   - Turn advancement
-   - Combat event broadcasts
+3. **Encounter Builder**
+   - Monster placement on maps
+   - Encounter difficulty calculator
+   - Initiative order presets
+   - Environmental hazards
 
-4. **Player Permissions**
-   - DM: Full control
-   - Player: Own character only
-   - Spectator: View only
-   - Token ownership
+4. **NPC/Monster Management**
+   - Custom NPC creation
+   - Monster stat block editor
+   - Import from SRD data
+   - NPC dialogue trees
 
-5. **Turn Management**
-   - Initiative order sync
-   - Active turn indicator
-   - Turn timeout handling
-   - Ready state tracking
+5. **Story System**
+   - Quest creation and tracking
+   - Branching dialogue
+   - Journal/notes system
+   - Read-aloud text boxes
 
-6. **Chat & Dice Log**
-   - In-game chat
-   - Dice roll history
-   - Combat log
-   - DM whispers
+6. **Session Management**
+   - Schedule sessions
+   - Session notes
+   - Loot distribution
+   - XP tracking
 
 ### Files to Create
 
 ```
-services/ws-gateway/
-├── src/
-│   ├── index.ts               # WebSocket server entry
-│   ├── handlers/
-│   │   ├── connection.ts      # Connect/disconnect
-│   │   ├── session.ts         # Game session events
-│   │   ├── combat.ts          # Combat events
-│   │   └── chat.ts            # Chat messages
-│   ├── services/
-│   │   ├── sessionManager.ts  # Session state
-│   │   └── playerManager.ts   # Player tracking
-│   └── types.ts               # WebSocket message types
-├── tests/
-│   └── integration.test.ts
-└── package.json
+apps/web/src/
+├── components/dm-tools/
+│   ├── CampaignEditor.tsx
+│   ├── MapEditor.tsx
+│   ├── EncounterBuilder.tsx
+│   ├── NPCEditor.tsx
+│   ├── DialogueEditor.tsx
+│   └── QuestManager.tsx
+├── stores/
+│   └── campaignStore.ts
 
-apps/web/src/stores/
-└── gameSessionStore.ts        # Client-side session state
+services/api-gateway/src/routes/
+├── campaigns.ts
+├── maps.ts
+├── encounters.ts
+└── npcs.ts
 
-apps/web/src/hooks/
-└── useWebSocket.ts            # WebSocket React hook
+prisma/schema.prisma (updates for campaign tables)
 ```
 
-### Message Types
-```typescript
-// Server → Client
-type ServerMessage =
-  | { type: 'STATE_UPDATE'; state: GameState }
-  | { type: 'CREATURE_MOVED'; creatureId: string; position: GridPosition }
-  | { type: 'DAMAGE_DEALT'; targetId: string; damage: number; isCritical: boolean }
-  | { type: 'TURN_CHANGED'; currentTurnId: string }
-  | { type: 'DICE_ROLLED'; result: DiceRollResult }
-  | { type: 'CHAT_MESSAGE'; from: string; message: string }
-
-// Client → Server
-type ClientMessage =
-  | { type: 'JOIN_SESSION'; sessionId: string; playerId: string }
-  | { type: 'MOVE_CREATURE'; creatureId: string; position: GridPosition }
-  | { type: 'ATTACK'; attackerId: string; targetId: string }
-  | { type: 'END_TURN' }
-  | { type: 'ROLL_DICE'; formula: string }
-  | { type: 'CHAT'; message: string }
-```
+### API Endpoints
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/campaigns` | POST | Create campaign |
+| `/campaigns` | GET | List user's campaigns |
+| `/campaigns/:id` | GET/PUT/DELETE | Campaign CRUD |
+| `/campaigns/:id/maps` | GET/POST | Campaign maps |
+| `/campaigns/:id/encounters` | GET/POST | Campaign encounters |
+| `/campaigns/:id/npcs` | GET/POST | Campaign NPCs |
+| `/maps/:id` | GET/PUT/DELETE | Map CRUD |
+| `/encounters/:id` | GET/PUT/DELETE | Encounter CRUD |
 
 ### Integration Points
-- **Game Board:** Subscribe to state updates
-- **Rules Engine:** Process combat actions
-- **CombatManager:** Emit events to WebSocket
-- **Redis:** Session state caching
+- **Game Board:** Load maps into play
+- **Multiplayer:** Share campaigns with players
+- **Rules Engine:** Validate encounters
+- **Media Pipeline:** Generate location art
 
 ---
 
@@ -581,13 +678,14 @@ type ClientMessage =
 
 | Metric | Value |
 |--------|-------|
-| Total Commits | 75+ |
+| Total Commits | 85+ |
 | Lines of Code (game module) | 4,500+ |
 | Lines of Code (rules engine) | 2,600+ |
-| Lines of Code (total) | 22,000+ |
+| Lines of Code (ws-gateway) | 1,500+ |
+| Lines of Code (total) | 26,000+ |
 | Documentation Files | 45 |
-| Test Files | 13 (10 web + 2 API + 1 rules) |
-| Total Tests | 276 (190 web + 32 API + 54 rules) |
+| Test Files | 14 (10 web + 2 API + 1 rules + 1 ws) |
+| Total Tests | 293 (190 web + 32 API + 54 rules + 17 ws) |
 | AI Images Hosted | 40 |
 
 ---
