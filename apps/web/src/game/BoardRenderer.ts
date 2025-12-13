@@ -166,6 +166,8 @@ export class BoardRenderer {
     // Re-render all tiles now that textures are loaded
     if (this.currentMapTiles.length > 0) {
       console.log('Re-rendering tiles with loaded textures...');
+      // Log which textures are available
+      console.log('Available textures:', Array.from(this.terrainTextures.keys()));
       for (const tile of this.currentMapTiles) {
         this.renderTile(tile);
       }
@@ -278,7 +280,14 @@ export class BoardRenderer {
 
     // Try to use AI-generated texture first
     const textureKey = TERRAIN_TO_TEXTURE[tile.terrain];
-    if (textureKey && this.terrainTextures.has(textureKey)) {
+    const hasTexture = textureKey && this.terrainTextures.has(textureKey);
+
+    // Debug log for first few tiles
+    if (tile.x < 3 && tile.y < 3) {
+      console.log(`Tile (${tile.x},${tile.y}): terrain=${tile.terrain}, textureKey=${textureKey}, hasTexture=${hasTexture}`);
+    }
+
+    if (hasTexture) {
       const texture = this.terrainTextures.get(textureKey)!;
       const sprite = new PIXI.Sprite(texture);
 
@@ -300,7 +309,7 @@ export class BoardRenderer {
     const graphics = new PIXI.Graphics();
 
     // If no texture available, draw procedural background
-    if (!textureKey || !this.terrainTextures.has(textureKey || '')) {
+    if (!hasTexture) {
       const color = this.getTerrainColor(tile.terrain, tile.lightLevel);
       graphics.beginFill(color);
       graphics.drawRect(
