@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs_20", "pnpm"]
+
+[phases.install]
+cmds = ["cd ../.. && pnpm install --filter @dnd/ws-gateway..."]
+
+[phases.build]
+cmds = ["cd ../.. && pnpm --filter @dnd/ws-gateway build"]
+
+[start]
+cmd = "node dist/index.js"
