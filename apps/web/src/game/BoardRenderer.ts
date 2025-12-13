@@ -7,6 +7,19 @@
 import * as PIXI from 'pixi.js';
 import type { MapData, TileData, TerrainType, GridPosition } from './types';
 import { TERRAIN_COLORS, GRID_COLORS } from './types';
+import { TERRAIN_IMAGES } from '@/data/staticImages';
+
+// Map terrain types to texture keys
+const TERRAIN_TO_TEXTURE: Record<TerrainType, string | null> = {
+  NORMAL: 'stone_floor',
+  DIFFICULT: 'forest', // Forest floor looks like difficult terrain
+  WATER: 'water',
+  LAVA: 'lava',
+  PIT: null, // Keep procedural for pit (dark hole effect)
+  WALL: 'stone_floor',
+  DOOR: null, // Keep procedural for door
+  STAIRS: 'stone_floor',
+};
 
 // Ambient particle for terrain effects
 interface AmbientParticle {
@@ -40,6 +53,7 @@ export class BoardRenderer {
   // Graphics layers
   private backgroundLayer: PIXI.Container;
   private ambientGradientLayer: PIXI.Graphics;
+  private textureLayer: PIXI.Container;  // New: AI-generated texture tiles
   private tileLayer: PIXI.Container;
   private animatedEffectsLayer: PIXI.Container;
   private gridLayer: PIXI.Graphics;
@@ -48,7 +62,12 @@ export class BoardRenderer {
 
   // Tile graphics cache
   private tileGraphics: Map<string, PIXI.Graphics> = new Map();
+  private tileSprites: Map<string, PIXI.Sprite> = new Map();
   private animatedTiles: Map<string, AnimatedTileData> = new Map();
+
+  // Texture cache
+  private terrainTextures: Map<string, PIXI.Texture> = new Map();
+  private texturesLoaded: boolean = false;
 
   // Ambient particles
   private ambientParticles: AmbientParticle[] = [];
@@ -92,7 +111,8 @@ export class BoardRenderer {
     // Create layers in order (bottom to top)
     this.backgroundLayer = new PIXI.Container();
     this.ambientGradientLayer = new PIXI.Graphics();
-    this.tileLayer = new PIXI.Container();
+    this.textureLayer = new PIXI.Container();  // AI-generated textures
+    this.tileLayer = new PIXI.Container();  // Procedural overlays
     this.animatedEffectsLayer = new PIXI.Container();
     this.gridLayer = new PIXI.Graphics();
     this.ambientParticleLayer = new PIXI.Container();
@@ -101,6 +121,7 @@ export class BoardRenderer {
     // Add layers in order
     this.container.addChild(this.backgroundLayer);
     this.container.addChild(this.ambientGradientLayer);
+    this.container.addChild(this.textureLayer);  // Textures below overlays
     this.container.addChild(this.tileLayer);
     this.container.addChild(this.animatedEffectsLayer);
     this.container.addChild(this.gridLayer);
@@ -110,6 +131,36 @@ export class BoardRenderer {
     // Draw initial grid and ambient background
     this.drawAmbientGradient();
     this.drawGrid();
+
+    // Start loading textures
+    this.loadTerrainTextures();
+  }
+
+  /**
+   * Load terrain textures from AI-generated images
+   */
+  private async loadTerrainTextures(): Promise<void> {
+    const textureKeys = Object.keys(TERRAIN_IMAGES).filter(
+      (key) => TERRAIN_IMAGES[key as keyof typeof TERRAIN_IMAGES]
+    );
+
+    console.log('Loading terrain textures:', textureKeys);
+
+    for (const key of textureKeys) {
+      const url = TERRAIN_IMAGES[key as keyof typeof TERRAIN_IMAGES];
+      if (!url) continue;
+
+      try {
+        const texture = await PIXI.Assets.load(url);
+        this.terrainTextures.set(key, texture);
+        console.log(`Loaded terrain texture: ${key}`);
+      } catch (error) {
+        console.warn(`Failed to load terrain texture ${key}:`, error);
+      }
+    }
+
+    this.texturesLoaded = true;
+    console.log('Terrain textures loaded:', this.terrainTextures.size);
   }
 
   /**
@@ -204,28 +255,55 @@ export class BoardRenderer {
   private renderTile(tile: TileData): void {
     const key = this.getTileKey(tile.x, tile.y);
 
-    // Remove existing tile graphic
-    const existing = this.tileGraphics.get(key);
-    if (existing) {
-      this.tileLayer.removeChild(existing);
-      existing.destroy();
+    // Remove existing tile graphic and sprite
+    const existingGraphic = this.tileGraphics.get(key);
+    if (existingGraphic) {
+      this.tileLayer.removeChild(existingGraphic);
+      existingGraphic.destroy();
+    }
+    const existingSprite = this.tileSprites.get(key);
+    if (existingSprite) {
+      this.textureLayer.removeChild(existingSprite);
+      existingSprite.destroy();
     }
 
-    // Create new tile graphic
+    // Try to use AI-generated texture first
+    const textureKey = TERRAIN_TO_TEXTURE[tile.terrain];
+    if (textureKey && this.terrainTextures.has(textureKey)) {
+      const texture = this.terrainTextures.get(textureKey)!;
+      const sprite = new PIXI.Sprite(texture);
+
+      // Position and scale the sprite to fit the tile
+      sprite.x = tile.x * this.tileSize;
+      sprite.y = tile.y * this.tileSize;
+      sprite.width = this.tileSize;
+      sprite.height = this.tileSize;
+
+      // Apply light level as alpha/tint
+      sprite.alpha = Math.max(0.3, tile.lightLevel);
+
+      // Add to texture layer
+      this.textureLayer.addChild(sprite);
+      this.tileSprites.set(key, sprite);
+    }
+
+    // Create graphics for overlays and special effects
     const graphics = new PIXI.Graphics();
 
-    // Fill with terrain color
-    const color = this.getTerrainColor(tile.terrain, tile.lightLevel);
-    graphics.beginFill(color);
-    graphics.drawRect(
-      tile.x * this.tileSize,
-      tile.y * this.tileSize,
-      this.tileSize,
-      this.tileSize
-    );
-    graphics.endFill();
+    // If no texture available, draw procedural background
+    if (!textureKey || !this.terrainTextures.has(textureKey || '')) {
+      const color = this.getTerrainColor(tile.terrain, tile.lightLevel);
+      graphics.beginFill(color);
+      graphics.drawRect(
+        tile.x * this.tileSize,
+        tile.y * this.tileSize,
+        this.tileSize,
+        this.tileSize
+      );
+      graphics.endFill();
+    }
 
-    // Add terrain indicators
+    // Add terrain indicators (special effects overlay)
     this.addTerrainIndicator(graphics, tile);
 
     this.tileLayer.addChild(graphics);

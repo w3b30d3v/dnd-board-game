@@ -48,7 +48,7 @@ export const TERRAIN_IMAGES: Record<string, string> = {
   'sand': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633089375_vx1xgv_1x1_1024x1024.png',
   'snow': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633104700_h2wg9n_1x1_1024x1024.png',
   'forest': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633119157_aqscl1_1x1_1024x1024.png',
-  'swamp': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633135218_xvbu75_1x1_1024x1024.png',
+  'swamp': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765637519323_3tm8k9_1x1_1024x1024.png',
 };
 
 export const HERO_IMAGES: Record<string, string> = {
