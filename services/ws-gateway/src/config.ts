@@ -1,7 +1,8 @@
 // WebSocket Gateway Configuration
 
 export const config = {
-  port: parseInt(process.env.WS_PORT || '4001', 10),
+  // Railway injects PORT, use WS_PORT as fallback for local dev
+  port: parseInt(process.env.PORT || process.env.WS_PORT || '4001', 10),
   host: process.env.WS_HOST || '0.0.0.0',
 
   jwt: {
