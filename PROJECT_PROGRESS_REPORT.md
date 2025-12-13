@@ -16,9 +16,9 @@ The D&D Digital Board Game Platform is a cinematic, multiplayer, AI-powered D&D 
 
 | Service | URL | Status |
 |---------|-----|--------|
-| Web App | https://web-production-b649.up.railway.app | Live |
+| Web App | https://web-production-85b97.up.railway.app | Live |
 | API Gateway | https://api-production-2f00.up.railway.app | Live |
-| Game Test Page | https://web-production-b649.up.railway.app/game/test | Live |
+| Game Test Page | https://web-production-85b97.up.railway.app/game/test | Live |
 
 ---
 
