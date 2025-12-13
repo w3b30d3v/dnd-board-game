@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { CLASSES, getClassById } from '@/data';
+import { getClassImage } from '@/data/staticImages';
 import type { StepProps } from '../types';
 
-// Class icons - visually represent each class
+// Class icons - fallback if images not available
 const CLASS_ICONS: Record<string, string> = {
   barbarian: '⚔️',
   bard: '🎵',
@@ -73,8 +75,19 @@ export function ClassSelection({ character, onUpdate, onNext, onBack }: StepProp
             `}
           >
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-600/20 flex items-center justify-center border-2 border-primary/30 text-2xl">
-                {CLASS_ICONS[c.id] || '⚔️'}
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-600/20 flex items-center justify-center border-2 border-primary/30 text-2xl overflow-hidden">
+                {getClassImage(c.id) ? (
+                  <Image
+                    src={getClassImage(c.id)}
+                    alt={c.name}
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  CLASS_ICONS[c.id] || '⚔️'
+                )}
               </div>
               <div>
                 <h3 className="font-display font-semibold text-text-primary">{c.name}</h3>

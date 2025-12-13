@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { BACKGROUNDS, getBackgroundById } from '@/data';
+import { getBackgroundImage } from '@/data/staticImages';
 import type { StepProps } from '../types';
 
-// Background icons - visually represent each background
+// Background icons - fallback if images not available
 const BACKGROUND_ICONS: Record<string, string> = {
   acolyte: '🙏',
   criminal: '🥷',
@@ -69,8 +71,19 @@ export function BackgroundSelection({ character, onUpdate, onNext, onBack }: Ste
             `}
           >
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-600/20 flex items-center justify-center border-2 border-primary/30 text-2xl">
-                {BACKGROUND_ICONS[bg.id] || '📜'}
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-600/20 flex items-center justify-center border-2 border-primary/30 text-2xl overflow-hidden">
+                {getBackgroundImage(bg.id) ? (
+                  <Image
+                    src={getBackgroundImage(bg.id)}
+                    alt={bg.name}
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  BACKGROUND_ICONS[bg.id] || '📜'
+                )}
               </div>
               <h3 className="font-display font-semibold text-text-primary">{bg.name}</h3>
             </div>
