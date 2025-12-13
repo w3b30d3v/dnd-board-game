@@ -1182,4 +1182,70 @@ function generateDiceBearFallback(character: PortraitRequest['character']): stri
   return `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=1e1b26&size=512`;
 }
 
+// ============================================
+// Image Proxy Endpoint - Bypasses CORS issues
+// ============================================
+
+// Allowed domains for proxying (security measure)
+const ALLOWED_IMAGE_DOMAINS = [
+  'tempfile.aiquickdraw.com',
+  'api.dicebear.com',
+];
+
+/**
+ * Proxy images from external CDNs to avoid CORS issues
+ * GET /media/proxy?url=<encoded_url>
+ */
+router.get('/proxy', async (req: Request, res: Response) => {
+  try {
+    const imageUrl = req.query.url as string;
+
+    if (!imageUrl) {
+      return res.status(400).json({ error: 'Missing url parameter' });
+    }
+
+    // Validate URL
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(imageUrl);
+    } catch {
+      return res.status(400).json({ error: 'Invalid URL' });
+    }
+
+    // Security check: only allow specific domains
+    if (!ALLOWED_IMAGE_DOMAINS.includes(parsedUrl.hostname)) {
+      return res.status(403).json({
+        error: 'Domain not allowed',
+        allowed: ALLOWED_IMAGE_DOMAINS,
+      });
+    }
+
+    // Fetch the image
+    const fetch = (await import('node-fetch')).default;
+    const response = await fetch(imageUrl);
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: `Failed to fetch image: ${response.statusText}`,
+      });
+    }
+
+    // Get content type
+    const contentType = response.headers.get('content-type') || 'image/png';
+
+    // Set CORS and caching headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+
+    // Stream the image to the response
+    const buffer = await response.buffer();
+    return res.send(buffer);
+  } catch (error: any) {
+    console.error('Image proxy error:', error);
+    return res.status(500).json({ error: 'Failed to proxy image' });
+  }
+});
+
 export default router;

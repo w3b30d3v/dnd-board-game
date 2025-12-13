@@ -2,6 +2,17 @@
 // Generated on: 2025-12-13T13:40:08.666Z
 // Run: node scripts/generate-static-via-api.mjs --token=YOUR_TOKEN
 
+// API URL for image proxy (bypasses CORS)
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-production-2f00.up.railway.app';
+
+/**
+ * Wrap an image URL with our proxy to bypass CORS
+ */
+export function proxyImageUrl(url: string): string {
+  if (!url) return '';
+  return `${API_URL}/media/proxy?url=${encodeURIComponent(url)}`;
+}
+
 export const RACE_IMAGES: Record<string, string> = {
   'human': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765629806097_kvaqyx_1x1_1024x1024.png',
   'elf': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765629873281_qo1dzl_1x1_1024x1024.png',
@@ -40,7 +51,8 @@ export const BACKGROUND_IMAGES: Record<string, string> = {
   'entertainer': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765632494402_104d09_1x1_1024x1024.png',
 };
 
-export const TERRAIN_IMAGES: Record<string, string> = {
+// Raw terrain image URLs (may have CORS issues when loaded by PixiJS)
+export const TERRAIN_IMAGES_RAW: Record<string, string> = {
   'stone_floor': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633033542_54ajen_1x1_1024x1024.png',
   'grass': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633047642_npibyk_1x1_1024x1024.png',
   'water': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633061486_8rcki1_1x1_1024x1024.png',
@@ -50,6 +62,11 @@ export const TERRAIN_IMAGES: Record<string, string> = {
   'forest': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633119157_aqscl1_1x1_1024x1024.png',
   'swamp': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765637519323_3tm8k9_1x1_1024x1024.png',
 };
+
+// Terrain images through proxy (for PixiJS/Canvas which need CORS)
+export const TERRAIN_IMAGES: Record<string, string> = Object.fromEntries(
+  Object.entries(TERRAIN_IMAGES_RAW).map(([key, url]) => [key, proxyImageUrl(url)])
+);
 
 export const HERO_IMAGES: Record<string, string> = {
   'epic_battle': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765633174400_9jqaow_16x9_1024x576.png',
