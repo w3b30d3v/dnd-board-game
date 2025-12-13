@@ -181,9 +181,19 @@ services/api-gateway/src/routes/media.ts
 - Fog of war with 3 visibility states
 - Area of effect overlays (5 shapes)
 - Camera pan/zoom with smooth interpolation
+- Camera tweening with easing functions
 - Mouse, touch, and keyboard input
 - Mobile-friendly pinch zoom
 - 60 FPS target performance
+- React integration via useGameCanvas hook
+
+### Token Animations
+- Idle float animation (±4px, 2s cycle)
+- Selection pulse glow (gold color)
+- Spawn animation (scale 0→1.2→1 bounce)
+- Death animation (fade + scale to 0)
+- Damage flash (red tint 0.3s)
+- Healing flash (green tint 0.4s)
 
 ### Terrain Types
 1. NORMAL - Basic floor
@@ -218,15 +228,28 @@ services/api-gateway/src/routes/media.ts
 ```
 apps/web/src/game/GameApplication.ts    (472 lines)
 apps/web/src/game/BoardRenderer.ts      (426 lines)
-apps/web/src/game/TokenManager.ts       (520 lines)
+apps/web/src/game/TokenManager.ts       (708 lines - with animations)
 apps/web/src/game/FogOfWarRenderer.ts   (394 lines)
 apps/web/src/game/AoEOverlayRenderer.ts (369 lines)
-apps/web/src/game/CameraController.ts   (199 lines)
+apps/web/src/game/CameraController.ts   (301 lines - with tweening)
 apps/web/src/game/InputHandler.ts       (376 lines)
+apps/web/src/game/useGameCanvas.ts      (305 lines - React hook)
 apps/web/src/game/types.ts              (188 lines)
-apps/web/src/game/index.ts              (14 lines)
+apps/web/src/game/index.ts              (18 lines)
 apps/web/src/app/game/test/page.tsx
 apps/web/src/app/game/test/GameBoardTest.tsx
+```
+
+### Test Coverage (86 tests)
+```
+apps/web/src/__tests__/game/
+├── BoardRenderer.test.ts      (12 tests)
+├── TokenManager.test.ts       (16 tests)
+├── CameraController.test.ts   (23 tests)
+├── FogOfWarRenderer.test.ts   (29 tests)
+├── AoEOverlayRenderer.test.ts (20 tests)
+├── InputHandler.test.ts       (14 tests)
+└── types.test.ts              (8 tests)
 ```
 
 ### Test Page
@@ -326,11 +349,12 @@ Interactive demo featuring:
 
 | Metric | Value |
 |--------|-------|
-| Total Commits | 60+ |
-| Lines of Code (game module) | 2,958 |
-| Lines of Code (total) | 15,000+ |
+| Total Commits | 65+ |
+| Lines of Code (game module) | 3,557 |
+| Lines of Code (total) | 16,000+ |
 | Documentation Files | 45 |
-| Test Coverage | Partial |
+| Test Files | 9 |
+| Total Tests | 152 |
 
 ---
 
@@ -338,10 +362,10 @@ Interactive demo featuring:
 
 | Script | Phase | Status |
 |--------|-------|--------|
-| `scripts/verify-phase-0.sh` | Project Setup | Available |
-| `scripts/verify-phase-1.sh` | Authentication | Available |
-| `scripts/verify-phase-2.sh` | Character Builder | Not Created |
-| `scripts/verify-phase-3.sh` | Game Board Core | Available |
+| `scripts/verify-phase-0.sh` | Project Setup | ✅ Available |
+| `scripts/verify-phase-1.sh` | Authentication | ✅ Available |
+| `scripts/verify-phase-2.sh` | Character Builder | ✅ Available |
+| `scripts/verify-phase-3.sh` | Game Board Core | ✅ Available |
 
 ---
 
