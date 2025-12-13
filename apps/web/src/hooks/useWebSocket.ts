@@ -89,8 +89,41 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
             break;
 
           case WSMessageType.SESSION_CREATED:
+            setSession({
+              id: payload.sessionId,
+              name: payload.name,
+              inviteCode: payload.inviteCode,
+              status: 'lobby',
+            });
+            addMessage({
+              senderId: 'system',
+              senderName: 'System',
+              content: `Session "${payload.name}" created! Invite code: ${payload.inviteCode}`,
+              isInCharacter: false,
+              isWhisper: false,
+              isSystem: true,
+              level: 'success',
+              timestamp: Date.now(),
+            });
+            break;
+
           case WSMessageType.SESSION_JOINED:
-            // Session info will come in PLAYER_LIST
+            setSession({
+              id: payload.sessionId,
+              name: payload.name,
+              inviteCode: '', // Will be filled by host info
+              status: payload.status || 'lobby',
+            });
+            addMessage({
+              senderId: 'system',
+              senderName: 'System',
+              content: `Joined session "${payload.name}"`,
+              isInCharacter: false,
+              isWhisper: false,
+              isSystem: true,
+              level: 'success',
+              timestamp: Date.now(),
+            });
             break;
 
           case WSMessageType.PLAYER_LIST:
@@ -219,6 +252,34 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
               timestamp: Date.now(),
             });
             setSession(null);
+            break;
+
+          case 'SESSION_LEFT':
+            addMessage({
+              senderId: 'system',
+              senderName: 'System',
+              content: 'You left the session',
+              isInCharacter: false,
+              isWhisper: false,
+              isSystem: true,
+              level: 'info',
+              timestamp: Date.now(),
+            });
+            setSession(null);
+            setPlayers([]);
+            break;
+
+          case 'SESSION_ERROR':
+            addMessage({
+              senderId: 'system',
+              senderName: 'System',
+              content: payload.message || 'Session error',
+              isInCharacter: false,
+              isWhisper: false,
+              isSystem: true,
+              level: 'error',
+              timestamp: Date.now(),
+            });
             break;
 
           case WSMessageType.ERROR:
