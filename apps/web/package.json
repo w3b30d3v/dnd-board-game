@@ -15,6 +15,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@dnd/rules-engine": "workspace:*",
     "@dnd/shared": "workspace:*",
     "@dnd/ui": "workspace:*",
     "@hookform/resolvers": "^3.3.4",
