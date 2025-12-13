@@ -8,7 +8,7 @@
 
 The D&D Digital Board Game Platform is a cinematic, multiplayer, AI-powered D&D 5e digital board game. This report tracks implementation progress across 8 development phases.
 
-**Current Status:** Phase 3 Complete - Ready for Phase 4
+**Current Status:** Phase 4 Complete - Ready for Phase 5
 
 ---
 
@@ -30,7 +30,7 @@ The D&D Digital Board Game Platform is a cinematic, multiplayer, AI-powered D&D 
 | 1 | Authentication | COMPLETE | 100% |
 | 2 | Character Builder | COMPLETE | 100% |
 | 3 | Game Board Core | COMPLETE | 100% |
-| 4 | Rules Engine | NOT STARTED | 0% |
+| 4 | Rules Engine | COMPLETE | 100% |
 | 5 | Multiplayer | NOT STARTED | 0% |
 | 6 | Campaign Builder | NOT STARTED | 0% |
 | 7 | Media Pipeline | PARTIAL | 30% |
@@ -299,6 +299,106 @@ Interactive demo featuring:
 
 ---
 
+## Phase 4: Rules Engine - COMPLETE
+
+**Completed:** December 2024
+
+### Features
+- RAW (Rules As Written) D&D 5e rules implementation
+- TypeScript rules engine package (`@dnd/rules-engine`)
+- Complete dice rolling system
+- Ability checks and saving throws
+- Attack resolution with conditions
+- Damage calculation with resistances/vulnerabilities/immunities
+- All 15 D&D 5e conditions
+- Spell system with concentration
+- Initiative tracking and combat flow
+- Death saving throws
+
+### Dice System
+- Supports d4, d6, d8, d10, d12, d20, d100
+- Advantage/disadvantage mechanics
+- Critical hit damage doubling (RAW)
+- Seeded random for deterministic testing
+- Natural 20/1 detection
+
+### Combat Mechanics
+- Attack rolls vs AC
+- Hit/miss determination
+- Critical hits (natural 20 always hits)
+- Critical misses (natural 1 always misses)
+- Damage with 13 damage types
+- Resistance (half damage)
+- Vulnerability (double damage)
+- Immunity (zero damage)
+- Temp HP absorption
+- Instant death from massive damage
+
+### Conditions (All 15)
+- Blinded, Charmed, Deafened
+- Exhaustion (6 levels)
+- Frightened, Grappled
+- Incapacitated, Invisible
+- Paralyzed, Petrified
+- Poisoned, Prone
+- Restrained, Stunned
+- Unconscious
+
+### Spell System
+- Spell save DC = 8 + proficiency + spellcasting mod
+- Spell attack bonus = proficiency + spellcasting mod
+- Full caster spell slots (levels 1-20)
+- Concentration checks (DC = max(10, damage/2))
+- AoE calculations (SPHERE, CUBE, CONE, LINE, CYLINDER)
+- Cantrip scaling (levels 5, 11, 17)
+- Upcast damage calculations
+
+### Combat Flow
+- Initiative rolling with DEX modifier
+- Tie-breaking by DEX score
+- Turn order management
+- Death saves (RAW rules)
+- Natural 1 = 2 failures
+- Natural 20 = regain consciousness at 1 HP
+
+### Game Board Integration
+- CombatManager class bridges rules engine with game board
+- Event system for UI updates
+- Integration with TokenManager for visual effects
+- Floating damage/healing numbers
+- Damage/healing flash animations
+
+### Test Coverage (54 golden tests)
+All tests verify RAW 5e compliance:
+- Dice rolling with modifiers
+- Advantage/disadvantage behavior
+- Attack resolution rules
+- Damage calculation with resistances
+- Saving throw conditions
+- Death save mechanics
+- Concentration checks
+
+### Key Files
+```
+packages/rules-engine/
+├── src/
+│   ├── index.ts           # Main exports
+│   ├── types.ts           # D&D 5e type definitions (~310 lines)
+│   ├── dice.ts            # Dice rolling system (~150 lines)
+│   ├── abilities.ts       # Ability checks & saves (~300 lines)
+│   ├── combat.ts          # Attack & damage (~425 lines)
+│   ├── conditions.ts      # 15 conditions (~290 lines)
+│   └── spells.ts          # Spell system (~350 lines)
+├── tests/
+│   └── golden.test.ts     # RAW compliance tests (54 tests)
+└── package.json
+
+apps/web/src/game/
+└── CombatManager.ts       # Game board integration (~800 lines)
+```
+
+---
+
 ## Phase 7: Media Pipeline - PARTIAL (50%)
 
 **Implemented Early:** AI character portrait generation + Static asset library
@@ -340,128 +440,107 @@ scripts/download-images.mjs        (image download script)
 
 ---
 
-## Next Phase: Phase 4 - Rules Engine
+## Next Phase: Phase 5 - Multiplayer
 
 ### Objectives
-- RAW 5e dice rolling mechanics
-- Ability checks and saving throws
-- Attack resolution (to-hit, damage)
-- Critical hits and misses
-- Damage types and resistances
-- Spell resolution and concentration
-- Condition management
-- Initiative tracking
-
-### Tech Stack Options
-
-**Option A: Rust + Tonic (gRPC)** - Original specification
-- Pros: Maximum performance, deterministic, matches spec
-- Cons: Requires Rust setup, longer implementation
-
-**Option B: TypeScript Rules Engine** - Pragmatic alternative
-- Pros: Faster implementation, shared types with frontend
-- Cons: Slightly less performant (still fine for turn-based)
-
-**Recommended:** Start with TypeScript, port to Rust later if needed.
+- Real-time game state synchronization
+- WebSocket server for live updates
+- Player session management
+- Turn-based combat coordination
+- DM controls and permissions
+- Party management
 
 ### Key Features to Implement
-1. **Dice System**
-   - Deterministic dice with seeding (for testing)
-   - d4, d6, d8, d10, d12, d20 support
-   - Advantage/disadvantage handling
-   - Critical hit detection (natural 20)
-   - Critical miss detection (natural 1)
 
-2. **Ability Checks & Saves**
-   - All 6 abilities (STR, DEX, CON, INT, WIS, CHA)
-   - Modifier calculation
-   - DC comparison
-   - Proficiency bonuses
+1. **WebSocket Server**
+   - Real-time bidirectional communication
+   - Event-based message system
+   - Connection state management
+   - Reconnection handling
 
-3. **Attack Resolution**
-   - Attack bonus vs AC
-   - Hit/miss determination
-   - Critical hit double dice
-   - Damage type application
+2. **Game Session Management**
+   - Create/join game sessions
+   - Session state persistence
+   - Player roster tracking
+   - DM designation
 
-4. **Damage Types (13)**
-   - Acid, Bludgeoning, Cold, Fire, Force
-   - Lightning, Necrotic, Piercing, Poison
-   - Psychic, Radiant, Slashing, Thunder
+3. **State Synchronization**
+   - Creature position updates
+   - HP/condition changes
+   - Fog of war updates
+   - Turn advancement
+   - Combat event broadcasts
 
-5. **Resistances & Vulnerabilities**
-   - Half damage (resistance)
-   - Double damage (vulnerability)
-   - Zero damage (immunity)
+4. **Player Permissions**
+   - DM: Full control
+   - Player: Own character only
+   - Spectator: View only
+   - Token ownership
 
-6. **Conditions (15)**
-   - Blinded, Charmed, Deafened, Exhaustion
-   - Frightened, Grappled, Incapacitated
-   - Invisible, Paralyzed, Petrified
-   - Poisoned, Prone, Restrained
-   - Stunned, Unconscious
+5. **Turn Management**
+   - Initiative order sync
+   - Active turn indicator
+   - Turn timeout handling
+   - Ready state tracking
 
-7. **Spell System**
-   - Spell slot tracking by level
-   - Cantrip vs leveled spells
-   - Spell save DC calculation
-   - Concentration tracking
-   - Concentration checks on damage
-
-8. **Combat Flow**
-   - Initiative rolling
-   - Turn order management
-   - Action economy (action, bonus, reaction)
-   - Movement tracking
+6. **Chat & Dice Log**
+   - In-game chat
+   - Dice roll history
+   - Combat log
+   - DM whispers
 
 ### Files to Create
 
 ```
-services/rules-engine/                  # Or packages/rules-engine/
+services/ws-gateway/
 ├── src/
-│   ├── index.ts                       # Main exports
-│   ├── dice.ts                        # Dice rolling
-│   ├── abilities.ts                   # Ability checks & saves
-│   ├── combat.ts                      # Attack resolution
-│   ├── damage.ts                      # Damage calculation
-│   ├── conditions.ts                  # Condition effects
-│   ├── spells.ts                      # Spell resolution
-│   ├── initiative.ts                  # Combat order
-│   └── types.ts                       # Type definitions
+│   ├── index.ts               # WebSocket server entry
+│   ├── handlers/
+│   │   ├── connection.ts      # Connect/disconnect
+│   │   ├── session.ts         # Game session events
+│   │   ├── combat.ts          # Combat events
+│   │   └── chat.ts            # Chat messages
+│   ├── services/
+│   │   ├── sessionManager.ts  # Session state
+│   │   └── playerManager.ts   # Player tracking
+│   └── types.ts               # WebSocket message types
 ├── tests/
-│   ├── dice.test.ts
-│   ├── abilities.test.ts
-│   ├── combat.test.ts
-│   ├── damage.test.ts
-│   ├── conditions.test.ts
-│   ├── spells.test.ts
-│   └── golden.test.ts                 # RAW compliance tests
+│   └── integration.test.ts
 └── package.json
+
+apps/web/src/stores/
+└── gameSessionStore.ts        # Client-side session state
+
+apps/web/src/hooks/
+└── useWebSocket.ts            # WebSocket React hook
 ```
 
-### Golden Tests (RAW Compliance)
-Tests to ensure D&D 5e rules are correct:
-- Ability check with modifier vs DC
-- Advantage takes higher of two rolls
-- Natural 20 always hits regardless of AC
-- Natural 1 always misses regardless of bonus
-- Fire damage halved with fire resistance
-- Paralyzed auto-fails STR/DEX saves
-- Concentration check DC = max(10, damage/2)
-- Spell save DC = 8 + proficiency + spellcasting mod
+### Message Types
+```typescript
+// Server → Client
+type ServerMessage =
+  | { type: 'STATE_UPDATE'; state: GameState }
+  | { type: 'CREATURE_MOVED'; creatureId: string; position: GridPosition }
+  | { type: 'DAMAGE_DEALT'; targetId: string; damage: number; isCritical: boolean }
+  | { type: 'TURN_CHANGED'; currentTurnId: string }
+  | { type: 'DICE_ROLLED'; result: DiceRollResult }
+  | { type: 'CHAT_MESSAGE'; from: string; message: string }
+
+// Client → Server
+type ClientMessage =
+  | { type: 'JOIN_SESSION'; sessionId: string; playerId: string }
+  | { type: 'MOVE_CREATURE'; creatureId: string; position: GridPosition }
+  | { type: 'ATTACK'; attackerId: string; targetId: string }
+  | { type: 'END_TURN' }
+  | { type: 'ROLL_DICE'; formula: string }
+  | { type: 'CHAT'; message: string }
+```
 
 ### Integration Points
-- **Frontend:** Call rules engine for rolls, damage, saves
-- **Game Board:** Apply damage, conditions to tokens
-- **WebSocket:** Broadcast roll results to all players
-
-### Estimated Effort
-- Core dice system: 1-2 days
-- Combat resolution: 2-3 days
-- Conditions & effects: 2 days
-- Spell system: 2-3 days
-- Testing & polish: 2 days
-- **Total: 7-10 days**
+- **Game Board:** Subscribe to state updates
+- **Rules Engine:** Process combat actions
+- **CombatManager:** Emit events to WebSocket
+- **Redis:** Session state caching
 
 ---
 
@@ -502,12 +581,13 @@ Tests to ensure D&D 5e rules are correct:
 
 | Metric | Value |
 |--------|-------|
-| Total Commits | 70+ |
-| Lines of Code (game module) | 3,689 |
-| Lines of Code (total) | 18,000+ |
+| Total Commits | 75+ |
+| Lines of Code (game module) | 4,500+ |
+| Lines of Code (rules engine) | 2,600+ |
+| Lines of Code (total) | 22,000+ |
 | Documentation Files | 45 |
-| Test Files | 11 (9 web + 2 API) |
-| Total Tests | 184 (152 web + 32 API) |
+| Test Files | 12 (9 web + 2 API + 1 rules) |
+| Total Tests | 238 (152 web + 32 API + 54 rules) |
 | AI Images Hosted | 40 |
 
 ---
@@ -520,6 +600,7 @@ Tests to ensure D&D 5e rules are correct:
 | `scripts/verify-phase-1.sh` | Authentication | ✅ Available |
 | `scripts/verify-phase-2.sh` | Character Builder | ✅ Available |
 | `scripts/verify-phase-3.sh` | Game Board Core | ✅ Available |
+| `pnpm --filter @dnd/rules-engine test` | Rules Engine | ✅ 54 tests |
 
 ---
 
