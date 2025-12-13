@@ -1,37 +1,71 @@
 /**
  * TokenManager
  * Handles creature token rendering and animation
+ * Enhanced with portrait images, particles, and rich visual effects
  */
 
 import * as PIXI from 'pixi.js';
 import type { Creature, GridPosition, TokenVisualState, CreatureSize } from './types';
 import { SIZE_TO_CELLS, TOKEN_TYPE_COLORS } from './types';
 
+// Floating damage/healing number
+interface FloatingNumber {
+  container: PIXI.Container;
+  startY: number;
+  progress: number;
+  duration: number;
+}
+
+// Particle for ambient effects
+interface Particle {
+  graphics: PIXI.Graphics;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  maxLife: number;
+  size: number;
+  color: number;
+  alpha: number;
+}
+
 interface TokenData {
   creature: Creature;
   container: PIXI.Container;
   sprite: PIXI.Graphics | PIXI.Sprite;
+  portraitSprite?: PIXI.Sprite;
+  borderRing: PIXI.Graphics;
+  glowRing: PIXI.Graphics;
   healthBar: PIXI.Graphics;
+  healthBarBg: PIXI.Graphics;
   nameText: PIXI.Text;
   conditionIcons: PIXI.Container;
+  conditionParticles: PIXI.Container;
   state: TokenVisualState;
   animationTarget?: GridPosition;
   // Animation state
   idlePhase: number;
   baseY: number;
   selectionPulsePhase: number;
+  borderRotation: number;
+  glowIntensity: number;
   flashTimer: number;
   flashColor: number | null;
   spawnProgress: number;
   deathProgress: number;
   isSpawning: boolean;
   isDying: boolean;
+  // Condition particles
+  conditionParticleList: Particle[];
 }
 
 export class TokenManager {
   private container: PIXI.Container;
+  private floatingNumbersContainer: PIXI.Container;
   private tileSize: number;
   private tokens: Map<string, TokenData> = new Map();
+  private floatingNumbers: FloatingNumber[] = [];
 
   // Selection state
   private selectedTokenId: string | null = null;
@@ -42,13 +76,27 @@ export class TokenManager {
   private idleFloatAmplitude: number = 4; // pixels
   private idleFloatSpeed: number = 0.03; // radians per frame
   private selectionPulseSpeed: number = 0.05; // radians per frame
+  private borderRotationSpeed: number = 0.02; // radians per frame for animated border
   private flashDuration: number = 18; // frames (~0.3s at 60fps)
   private spawnDuration: number = 30; // frames (~0.5s at 60fps)
   private deathDuration: number = 30; // frames (~0.5s at 60fps)
+  private floatingNumberDuration: number = 60; // frames (~1s at 60fps)
+
+  // Visual settings
+  private useEnhancedVisuals: boolean = true;
+  private gradientColors = {
+    player: [0x22c55e, 0x16a34a], // Green gradient
+    enemy: [0xef4444, 0xb91c1c],  // Red gradient
+    npc: [0x3b82f6, 0x1d4ed8],    // Blue gradient
+  };
 
   constructor(container: PIXI.Container, tileSize: number) {
     this.container = container;
     this.tileSize = tileSize;
+
+    // Create floating numbers layer (above tokens)
+    this.floatingNumbersContainer = new PIXI.Container();
+    this.container.addChild(this.floatingNumbersContainer);
   }
 
   /**
@@ -71,49 +119,77 @@ export class TokenManager {
     tokenContainer.x = creature.position.x * this.tileSize + (this.tileSize * cells) / 2;
     tokenContainer.y = creature.position.y * this.tileSize + (this.tileSize * cells) / 2;
 
-    // Create main sprite (circle for now, sprite URL later)
+    // Create glow ring (behind everything)
+    const glowRing = this.createGlowRing(creature, size);
+    tokenContainer.addChild(glowRing);
+
+    // Create animated border ring
+    const borderRing = this.createAnimatedBorder(creature, size);
+    tokenContainer.addChild(borderRing);
+
+    // Create main sprite (circle with optional portrait)
     let sprite: PIXI.Graphics | PIXI.Sprite;
+    let portraitSprite: PIXI.Sprite | undefined;
 
-    if (creature.spriteUrl) {
-      // TODO: Load sprite from URL
-      sprite = this.createPlaceholderToken(creature, size);
-    } else {
-      sprite = this.createPlaceholderToken(creature, size);
-    }
-
+    // Always create the base token first
+    sprite = this.createEnhancedPlaceholderToken(creature, size);
     tokenContainer.addChild(sprite);
 
+    // Load portrait image if available
+    if (creature.spriteUrl) {
+      this.loadPortraitImage(creature.spriteUrl, size, tokenContainer, creature);
+    }
+
+    // Create health bar background
+    const healthBarBg = new PIXI.Graphics();
+    healthBarBg.beginFill(0x000000, 0.8);
+    healthBarBg.drawRoundedRect(-size * 0.4, -size / 2 - 14, size * 0.8, 8, 4);
+    healthBarBg.endFill();
+    healthBarBg.lineStyle(1, 0x444444, 1);
+    healthBarBg.drawRoundedRect(-size * 0.4, -size / 2 - 14, size * 0.8, 8, 4);
+    tokenContainer.addChild(healthBarBg);
+
     // Create health bar
-    const healthBar = this.createHealthBar(creature, size);
-    healthBar.y = -size / 2 - 10;
+    const healthBar = this.createEnhancedHealthBar(creature, size);
     tokenContainer.addChild(healthBar);
 
-    // Create name text
+    // Create name text with better styling
     const nameText = new PIXI.Text({
       text: creature.name,
       style: {
-        fontFamily: 'Arial',
-        fontSize: 12,
+        fontFamily: 'Cinzel, Georgia, serif',
+        fontSize: 11,
         fontWeight: 'bold',
         fill: 0xffffff,
-        stroke: { color: 0x000000, width: 2 },
+        stroke: { color: 0x000000, width: 3 },
         align: 'center',
+        dropShadow: {
+          alpha: 0.8,
+          angle: Math.PI / 4,
+          blur: 2,
+          color: 0x000000,
+          distance: 2,
+        },
       },
     });
     nameText.anchor.set(0.5, 1);
-    nameText.y = -size / 2 - 15;
+    nameText.y = -size / 2 - 18;
     tokenContainer.addChild(nameText);
 
     // Create condition icons container
     const conditionIcons = new PIXI.Container();
-    conditionIcons.y = size / 2 + 5;
+    conditionIcons.y = size / 2 + 8;
     tokenContainer.addChild(conditionIcons);
+
+    // Create condition particles container
+    const conditionParticles = new PIXI.Container();
+    tokenContainer.addChild(conditionParticles);
 
     // Update condition icons
     this.updateConditionIcons(conditionIcons, creature.conditions, size);
 
-    // Add to main container
-    this.container.addChild(tokenContainer);
+    // Add to main container (before floating numbers)
+    this.container.addChildAt(tokenContainer, this.container.children.length - 1);
 
     // Store base Y position for idle animation
     const baseY = tokenContainer.y;
@@ -122,9 +198,14 @@ export class TokenManager {
       creature,
       container: tokenContainer,
       sprite,
+      portraitSprite,
+      borderRing,
+      glowRing,
       healthBar,
+      healthBarBg,
       nameText,
       conditionIcons,
+      conditionParticles,
       state: {
         isSelected: false,
         isTargeted: false,
@@ -135,44 +216,180 @@ export class TokenManager {
       idlePhase: Math.random() * Math.PI * 2, // Random start phase
       baseY,
       selectionPulsePhase: 0,
+      borderRotation: 0,
+      glowIntensity: 0,
       flashTimer: 0,
       flashColor: null,
       spawnProgress: 0,
       deathProgress: 0,
       isSpawning: true, // Start with spawn animation
       isDying: false,
+      conditionParticleList: [],
     };
   }
 
   /**
-   * Create a placeholder circular token
+   * Create glow ring behind token
    */
-  private createPlaceholderToken(creature: Creature, size: number): PIXI.Graphics {
+  private createGlowRing(creature: Creature, size: number): PIXI.Graphics {
     const graphics = new PIXI.Graphics();
-    const color = creature.tokenColor
-      ? parseInt(creature.tokenColor.replace('#', '0x'))
-      : TOKEN_TYPE_COLORS[creature.type];
+    const color = this.getCreatureColor(creature);
 
-    // Outer ring
-    graphics.lineStyle(3, 0x000000, 0.5);
-    graphics.beginFill(color, 0.9);
+    // Soft glow effect (multiple rings with decreasing alpha)
+    for (let i = 3; i >= 0; i--) {
+      const ringSize = size / 2 + 6 + i * 4;
+      const alpha = 0.1 - i * 0.02;
+      graphics.beginFill(color, alpha);
+      graphics.drawCircle(0, 0, ringSize);
+      graphics.endFill();
+    }
+
+    graphics.alpha = 0; // Hidden by default, shown on selection
+    return graphics;
+  }
+
+  /**
+   * Create animated border ring
+   */
+  private createAnimatedBorder(creature: Creature, size: number): PIXI.Graphics {
+    const graphics = new PIXI.Graphics();
+    const color = this.getCreatureColor(creature);
+
+    // Main border ring
+    graphics.lineStyle(3, color, 0.9);
+    graphics.drawCircle(0, 0, size / 2 + 2);
+
+    // Decorative dashes (animated)
+    const dashCount = 12;
+    for (let i = 0; i < dashCount; i++) {
+      const angle = (i / dashCount) * Math.PI * 2;
+      const innerRadius = size / 2 + 4;
+      const outerRadius = size / 2 + 8;
+
+      if (i % 2 === 0) {
+        graphics.lineStyle(2, 0xf59e0b, 0.8); // Gold accent
+      } else {
+        graphics.lineStyle(2, color, 0.5);
+      }
+
+      graphics.moveTo(
+        Math.cos(angle) * innerRadius,
+        Math.sin(angle) * innerRadius
+      );
+      graphics.lineTo(
+        Math.cos(angle) * outerRadius,
+        Math.sin(angle) * outerRadius
+      );
+    }
+
+    return graphics;
+  }
+
+  /**
+   * Load portrait image for token
+   */
+  private async loadPortraitImage(
+    url: string,
+    size: number,
+    container: PIXI.Container,
+    creature: Creature
+  ): Promise<void> {
+    try {
+      const texture = await PIXI.Assets.load(url);
+      const portrait = new PIXI.Sprite(texture);
+
+      // Set size to fit within circle
+      const portraitSize = size * 0.85;
+      portrait.width = portraitSize;
+      portrait.height = portraitSize;
+      portrait.anchor.set(0.5);
+
+      // Create circular mask
+      const mask = new PIXI.Graphics();
+      mask.beginFill(0xffffff);
+      mask.drawCircle(0, 0, portraitSize / 2);
+      mask.endFill();
+
+      portrait.mask = mask;
+      container.addChild(mask);
+      container.addChild(portrait);
+
+      // Store reference
+      const tokenData = this.tokens.get(creature.id);
+      if (tokenData) {
+        tokenData.portraitSprite = portrait;
+        // Hide the placeholder sprite
+        tokenData.sprite.alpha = 0;
+      }
+    } catch (error) {
+      console.warn('Failed to load portrait:', url, error);
+      // Keep placeholder visible
+    }
+  }
+
+  /**
+   * Get creature color based on type
+   */
+  private getCreatureColor(creature: Creature): number {
+    if (creature.tokenColor) {
+      return parseInt(creature.tokenColor.replace('#', '0x'));
+    }
+    return TOKEN_TYPE_COLORS[creature.type];
+  }
+
+  /**
+   * Create an enhanced placeholder circular token with gradient and rich styling
+   */
+  private createEnhancedPlaceholderToken(creature: Creature, size: number): PIXI.Graphics {
+    const graphics = new PIXI.Graphics();
+    const color = this.getCreatureColor(creature);
+
+    // Get gradient colors based on creature type
+    const gradientKey = creature.type === 'character' ? 'player' :
+                       creature.type === 'monster' ? 'enemy' : 'npc';
+    const [lightColor, darkColor] = this.gradientColors[gradientKey];
+
+    // Base circle with dark color
+    graphics.beginFill(darkColor, 1);
     graphics.drawCircle(0, 0, size / 2);
     graphics.endFill();
 
-    // Inner highlight
-    graphics.beginFill(0xffffff, 0.2);
-    graphics.drawCircle(-size / 6, -size / 6, size / 4);
+    // Lighter inner circle for gradient effect
+    graphics.beginFill(lightColor, 0.7);
+    graphics.drawCircle(0, -size * 0.05, size / 2 - 4);
     graphics.endFill();
 
-    // First letter of name
+    // Highlight on top-left for 3D effect
+    graphics.beginFill(0xffffff, 0.25);
+    graphics.drawEllipse(-size / 5, -size / 5, size / 4, size / 5);
+    graphics.endFill();
+
+    // Small specular highlight
+    graphics.beginFill(0xffffff, 0.5);
+    graphics.drawCircle(-size / 4, -size / 4, size / 10);
+    graphics.endFill();
+
+    // Inner shadow at bottom
+    graphics.beginFill(0x000000, 0.2);
+    graphics.drawEllipse(0, size / 5, size / 3, size / 8);
+    graphics.endFill();
+
+    // First letter of name with enhanced styling
     const initial = new PIXI.Text({
       text: creature.name.charAt(0).toUpperCase(),
       style: {
-        fontFamily: 'Arial',
-        fontSize: size * 0.5,
+        fontFamily: 'Cinzel, Georgia, serif',
+        fontSize: size * 0.45,
         fontWeight: 'bold',
         fill: 0xffffff,
-        stroke: { color: 0x000000, width: 2 },
+        stroke: { color: 0x000000, width: 3 },
+        dropShadow: {
+          alpha: 0.6,
+          angle: Math.PI / 4,
+          blur: 3,
+          color: 0x000000,
+          distance: 2,
+        },
       },
     });
     initial.anchor.set(0.5);
@@ -182,34 +399,249 @@ export class TokenManager {
   }
 
   /**
-   * Create health bar graphics
+   * Create enhanced health bar with gradient and animations
    */
-  private createHealthBar(creature: Creature, tokenSize: number): PIXI.Graphics {
+  private createEnhancedHealthBar(creature: Creature, tokenSize: number): PIXI.Graphics {
     const graphics = new PIXI.Graphics();
-    const width = tokenSize * 0.8;
+    const width = tokenSize * 0.8 - 4;
     const height = 6;
     const hpPercent = creature.currentHitPoints / creature.maxHitPoints;
+    const x = -tokenSize * 0.4 + 2;
+    const y = -tokenSize / 2 - 12;
 
-    // Background
-    graphics.beginFill(0x000000, 0.7);
-    graphics.drawRoundedRect(-width / 2, 0, width, height, 2);
-    graphics.endFill();
+    // Health fill with gradient effect
+    if (hpPercent > 0) {
+      const healthColor = hpPercent > 0.5 ? 0x22c55e :
+                         hpPercent > 0.25 ? 0xf59e0b : 0xef4444;
+      const darkHealthColor = hpPercent > 0.5 ? 0x16a34a :
+                             hpPercent > 0.25 ? 0xd97706 : 0xb91c1c;
 
-    // Health fill
-    const healthColor = hpPercent > 0.5 ? 0x22c55e : hpPercent > 0.25 ? 0xf59e0b : 0xef4444;
-    graphics.beginFill(healthColor);
-    graphics.drawRoundedRect(-width / 2 + 1, 1, (width - 2) * Math.max(0, hpPercent), height - 2, 1);
-    graphics.endFill();
+      // Dark base
+      graphics.beginFill(darkHealthColor);
+      graphics.drawRoundedRect(x, y, width * Math.max(0, hpPercent), height, 2);
+      graphics.endFill();
 
-    // Temp HP indicator (blue bar above)
+      // Lighter top for gradient effect
+      graphics.beginFill(healthColor, 0.9);
+      graphics.drawRoundedRect(x, y, width * Math.max(0, hpPercent), height / 2, 2);
+      graphics.endFill();
+
+      // Shine effect
+      graphics.beginFill(0xffffff, 0.3);
+      graphics.drawRoundedRect(x + 2, y + 1, Math.max(0, width * hpPercent - 4), 2, 1);
+      graphics.endFill();
+    }
+
+    // Temp HP indicator (cyan bar)
     if (creature.tempHitPoints > 0) {
       const tempPercent = Math.min(1, creature.tempHitPoints / creature.maxHitPoints);
-      graphics.beginFill(0x3b82f6, 0.8);
-      graphics.drawRoundedRect(-width / 2, -3, width * tempPercent, 2, 1);
+      graphics.beginFill(0x06b6d4, 0.9);
+      graphics.drawRoundedRect(x, y - 4, width * tempPercent, 3, 1);
+      graphics.endFill();
+      // Shine
+      graphics.beginFill(0xffffff, 0.4);
+      graphics.drawRoundedRect(x + 1, y - 4, Math.max(0, width * tempPercent - 2), 1, 1);
       graphics.endFill();
     }
 
     return graphics;
+  }
+
+  /**
+   * Create a placeholder circular token (legacy - kept for compatibility)
+   */
+  private createPlaceholderToken(creature: Creature, size: number): PIXI.Graphics {
+    return this.createEnhancedPlaceholderToken(creature, size);
+  }
+
+  /**
+   * Create health bar graphics (legacy - uses enhanced version)
+   */
+  private createHealthBar(creature: Creature, tokenSize: number): PIXI.Graphics {
+    return this.createEnhancedHealthBar(creature, tokenSize);
+  }
+
+  /**
+   * Show floating damage number
+   */
+  public showFloatingDamage(creatureId: string, amount: number, isCritical: boolean = false): void {
+    const tokenData = this.tokens.get(creatureId);
+    if (!tokenData) return;
+
+    const container = new PIXI.Container();
+    container.x = tokenData.container.x;
+    container.y = tokenData.container.y - this.getTokenSize(tokenData.creature.size) / 2 - 20;
+
+    // Create damage text
+    const text = new PIXI.Text({
+      text: `-${amount}`,
+      style: {
+        fontFamily: 'JetBrains Mono, monospace',
+        fontSize: isCritical ? 28 : 20,
+        fontWeight: 'bold',
+        fill: isCritical ? 0xffd700 : 0xef4444, // Gold for crit, red for normal
+        stroke: { color: 0x000000, width: 4 },
+        dropShadow: {
+          alpha: 0.8,
+          angle: Math.PI / 2,
+          blur: 4,
+          color: isCritical ? 0xff6600 : 0x8b0000,
+          distance: 3,
+        },
+      },
+    });
+    text.anchor.set(0.5);
+
+    // Add "CRIT!" text for critical hits
+    if (isCritical) {
+      const critText = new PIXI.Text({
+        text: 'CRIT!',
+        style: {
+          fontFamily: 'Cinzel, Georgia, serif',
+          fontSize: 14,
+          fontWeight: 'bold',
+          fill: 0xffd700,
+          stroke: { color: 0x000000, width: 3 },
+        },
+      });
+      critText.anchor.set(0.5);
+      critText.y = -20;
+      container.addChild(critText);
+    }
+
+    container.addChild(text);
+    this.floatingNumbersContainer.addChild(container);
+
+    this.floatingNumbers.push({
+      container,
+      startY: container.y,
+      progress: 0,
+      duration: isCritical ? this.floatingNumberDuration * 1.5 : this.floatingNumberDuration,
+    });
+  }
+
+  /**
+   * Show floating healing number
+   */
+  public showFloatingHealing(creatureId: string, amount: number): void {
+    const tokenData = this.tokens.get(creatureId);
+    if (!tokenData) return;
+
+    const container = new PIXI.Container();
+    container.x = tokenData.container.x;
+    container.y = tokenData.container.y - this.getTokenSize(tokenData.creature.size) / 2 - 20;
+
+    // Create healing text
+    const text = new PIXI.Text({
+      text: `+${amount}`,
+      style: {
+        fontFamily: 'JetBrains Mono, monospace',
+        fontSize: 20,
+        fontWeight: 'bold',
+        fill: 0x22c55e, // Green
+        stroke: { color: 0x000000, width: 4 },
+        dropShadow: {
+          alpha: 0.8,
+          angle: Math.PI / 2,
+          blur: 4,
+          color: 0x166534,
+          distance: 3,
+        },
+      },
+    });
+    text.anchor.set(0.5);
+    container.addChild(text);
+    this.floatingNumbersContainer.addChild(container);
+
+    this.floatingNumbers.push({
+      container,
+      startY: container.y,
+      progress: 0,
+      duration: this.floatingNumberDuration,
+    });
+  }
+
+  /**
+   * Spawn condition particles for visual effects
+   */
+  private spawnConditionParticles(tokenData: TokenData): void {
+    const conditions = tokenData.creature.conditions;
+    if (conditions.length === 0) return;
+
+    const size = this.getTokenSize(tokenData.creature.size);
+
+    // Particle colors for different conditions
+    const conditionParticleColors: Record<string, number> = {
+      POISONED: 0x32cd32,
+      BURNING: 0xff4500,
+      FROZEN: 0x87ceeb,
+      BLESSED: 0xffd700,
+      CURSED: 0x800080,
+      FRIGHTENED: 0x9400d3,
+      CONCENTRATING: 0x8b5cf6,
+    };
+
+    for (const condition of conditions) {
+      const color = conditionParticleColors[condition] || 0xffffff;
+
+      // Spawn a few particles per condition
+      if (Math.random() < 0.1) { // Spawn rate
+        const particle: Particle = {
+          graphics: new PIXI.Graphics(),
+          x: (Math.random() - 0.5) * size,
+          y: (Math.random() - 0.5) * size,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: -Math.random() * 1 - 0.5,
+          life: 1,
+          maxLife: 60 + Math.random() * 30,
+          size: 2 + Math.random() * 2,
+          color,
+          alpha: 0.8,
+        };
+
+        particle.graphics.beginFill(color, particle.alpha);
+        particle.graphics.drawCircle(0, 0, particle.size);
+        particle.graphics.endFill();
+        particle.graphics.x = particle.x;
+        particle.graphics.y = particle.y;
+
+        tokenData.conditionParticles.addChild(particle.graphics);
+        tokenData.conditionParticleList.push(particle);
+      }
+    }
+  }
+
+  /**
+   * Update condition particles
+   */
+  private updateConditionParticles(tokenData: TokenData): void {
+    const particlesToRemove: Particle[] = [];
+
+    for (const particle of tokenData.conditionParticleList) {
+      particle.life--;
+      particle.x += particle.vx;
+      particle.y += particle.vy;
+      particle.vy *= 0.98; // Slow down
+      particle.alpha = particle.life / particle.maxLife;
+
+      particle.graphics.x = particle.x;
+      particle.graphics.y = particle.y;
+      particle.graphics.alpha = particle.alpha;
+
+      if (particle.life <= 0) {
+        particlesToRemove.push(particle);
+      }
+    }
+
+    // Remove dead particles
+    for (const particle of particlesToRemove) {
+      tokenData.conditionParticles.removeChild(particle.graphics);
+      particle.graphics.destroy();
+      const index = tokenData.conditionParticleList.indexOf(particle);
+      if (index > -1) {
+        tokenData.conditionParticleList.splice(index, 1);
+      }
+    }
   }
 
   /**
@@ -501,6 +933,9 @@ export class TokenManager {
    * Update animations (called each frame)
    */
   public update(_delta: number): void {
+    // Update floating numbers
+    this.updateFloatingNumbers();
+
     for (const tokenData of this.tokens.values()) {
       // Skip animation updates for dying tokens that are complete
       if (tokenData.isDying && tokenData.deathProgress >= 1) {
@@ -575,11 +1010,19 @@ export class TokenManager {
         tokenData.container.y = tokenData.baseY + floatOffset;
       }
 
-      // Selection pulse animation
+      // Animated border rotation
+      tokenData.borderRotation += this.borderRotationSpeed;
+      tokenData.borderRing.rotation = tokenData.borderRotation;
+
+      // Selection animations
       if (tokenData.state.isSelected) {
         tokenData.selectionPulsePhase += this.selectionPulseSpeed;
         const pulseScale = 1 + Math.sin(tokenData.selectionPulsePhase) * 0.05;
         tokenData.sprite.scale.set(pulseScale);
+
+        // Update glow ring visibility and intensity
+        tokenData.glowIntensity = Math.min(tokenData.glowIntensity + 0.1, 1);
+        tokenData.glowRing.alpha = 0.6 + Math.sin(tokenData.selectionPulsePhase * 2) * 0.3;
 
         // Update selection ring glow
         const ring = tokenData.container.getChildByName('selectionRing') as PIXI.Graphics;
@@ -588,6 +1031,10 @@ export class TokenManager {
           ring.alpha = glowAlpha;
         }
       } else {
+        // Fade out glow when not selected
+        tokenData.glowIntensity = Math.max(tokenData.glowIntensity - 0.1, 0);
+        tokenData.glowRing.alpha = tokenData.glowIntensity * 0.5;
+
         // Reset scale when not selected
         tokenData.sprite.scale.set(1);
       }
@@ -607,6 +1054,56 @@ export class TokenManager {
           tokenData.sprite.tint = 0xffffff;
           tokenData.flashColor = null;
         }
+      }
+
+      // Update condition particles
+      this.spawnConditionParticles(tokenData);
+      this.updateConditionParticles(tokenData);
+    }
+  }
+
+  /**
+   * Update floating damage/healing numbers
+   */
+  private updateFloatingNumbers(): void {
+    const numbersToRemove: FloatingNumber[] = [];
+
+    for (const floatingNum of this.floatingNumbers) {
+      floatingNum.progress++;
+      const t = floatingNum.progress / floatingNum.duration;
+
+      // Float upward with easing
+      const floatDistance = 40; // pixels to float up
+      const easeOut = 1 - Math.pow(1 - t, 3);
+      floatingNum.container.y = floatingNum.startY - (floatDistance * easeOut);
+
+      // Fade out in the last 30%
+      if (t > 0.7) {
+        floatingNum.container.alpha = 1 - ((t - 0.7) / 0.3);
+      }
+
+      // Scale animation (pop in, then shrink slightly)
+      if (t < 0.1) {
+        const scaleT = t / 0.1;
+        floatingNum.container.scale.set(0.5 + scaleT * 0.7); // 0.5 -> 1.2
+      } else if (t < 0.2) {
+        const scaleT = (t - 0.1) / 0.1;
+        floatingNum.container.scale.set(1.2 - scaleT * 0.2); // 1.2 -> 1.0
+      }
+
+      // Remove when complete
+      if (floatingNum.progress >= floatingNum.duration) {
+        numbersToRemove.push(floatingNum);
+      }
+    }
+
+    // Clean up completed floating numbers
+    for (const num of numbersToRemove) {
+      this.floatingNumbersContainer.removeChild(num.container);
+      num.container.destroy({ children: true });
+      const index = this.floatingNumbers.indexOf(num);
+      if (index > -1) {
+        this.floatingNumbers.splice(index, 1);
       }
     }
   }

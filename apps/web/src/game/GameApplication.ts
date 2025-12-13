@@ -174,6 +174,7 @@ export class GameApplication {
   private update(ticker: PIXI.Ticker): void {
     const delta = ticker.deltaTime;
     this.cameraController.update(delta);
+    this.boardRenderer.update(delta);
     this.tokenManager.update(delta);
     this.aoeRenderer.update(delta);
   }
@@ -390,6 +391,36 @@ export class GameApplication {
    */
   public clearTargets(): void {
     this.tokenManager.setTargetedTokens([]);
+  }
+
+  /**
+   * Show floating damage number over a creature
+   */
+  public showDamage(creatureId: string, amount: number, isCritical: boolean = false): void {
+    this.tokenManager.showFloatingDamage(creatureId, amount, isCritical);
+    this.tokenManager.playDamageFlash(creatureId);
+  }
+
+  /**
+   * Show floating healing number over a creature
+   */
+  public showHealing(creatureId: string, amount: number): void {
+    this.tokenManager.showFloatingHealing(creatureId, amount);
+    this.tokenManager.playHealingFlash(creatureId);
+  }
+
+  /**
+   * Play death animation for a creature
+   */
+  public playDeathAnimation(creatureId: string): Promise<void> {
+    return this.tokenManager.playDeathAnimation(creatureId);
+  }
+
+  /**
+   * Play spawn animation for a creature
+   */
+  public playSpawnAnimation(creatureId: string): void {
+    this.tokenManager.playSpawnAnimation(creatureId);
   }
 
   /**

@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { GameApplication } from '@/game/GameApplication';
 import type { GameState, GridPosition, Creature, MapData, TileData } from '@/game/types';
 
-// Generate a sample map
+// Generate a sample map with enhanced terrain variety
 function generateSampleMap(): MapData {
   const width = 20;
   const height = 15;
@@ -16,7 +16,7 @@ function generateSampleMap(): MapData {
     for (let x = 0; x < width; x++) {
       let terrain: TileData['terrain'] = 'NORMAL';
 
-      // Add some terrain variety
+      // Add rich terrain variety for visual demo
       if (x === 0 || x === width - 1 || y === 0 || y === height - 1) {
         terrain = 'WALL';
       } else if ((x === 5 && y >= 3 && y <= 7) || (y === 5 && x >= 5 && x <= 8)) {
@@ -24,11 +24,18 @@ function generateSampleMap(): MapData {
       } else if (x === 10 && y === 5) {
         terrain = 'DOOR';
       } else if (x >= 12 && x <= 14 && y >= 3 && y <= 5) {
+        // Water pool
         terrain = 'WATER';
+      } else if (x >= 16 && x <= 18 && y >= 10 && y <= 12) {
+        // Lava pit for ember particles demo
+        terrain = 'LAVA';
       } else if (x === 15 && y === 10) {
         terrain = 'STAIRS';
       } else if (x >= 3 && x <= 4 && y >= 10 && y <= 12) {
         terrain = 'DIFFICULT';
+      } else if (x === 8 && y >= 10 && y <= 13) {
+        // Dark pit
+        terrain = 'PIT';
       }
 
       tiles.push({
@@ -38,7 +45,7 @@ function generateSampleMap(): MapData {
         elevation: 0,
         isExplored: true,
         isVisible: true,
-        lightLevel: terrain === 'WALL' ? 0.5 : 1,
+        lightLevel: terrain === 'WALL' ? 0.5 : terrain === 'PIT' ? 0.3 : 1,
         effects: [],
       });
     }
@@ -54,7 +61,7 @@ function generateSampleMap(): MapData {
   };
 }
 
-// Generate sample creatures
+// Generate sample creatures with various conditions for visual demo
 function generateSampleCreatures(): Creature[] {
   return [
     {
@@ -94,16 +101,16 @@ function generateSampleCreatures(): Creature[] {
     },
     {
       id: 'goblin-1',
-      name: 'Goblin',
+      name: 'Goblin Scout',
       type: 'monster',
       position: { x: 15, y: 8 },
       size: 'small',
-      currentHitPoints: 7,
+      currentHitPoints: 5,
       maxHitPoints: 7,
       tempHitPoints: 0,
       armorClass: 15,
       speed: 30,
-      conditions: [],
+      conditions: ['FRIGHTENED'],
       isConcentrating: false,
       isVisible: true,
       isHidden: false,
@@ -119,7 +126,7 @@ function generateSampleCreatures(): Creature[] {
       tempHitPoints: 0,
       armorClass: 17,
       speed: 30,
-      conditions: ['POISONED'],
+      conditions: ['POISONED', 'CHARMED'],
       isConcentrating: false,
       isVisible: true,
       isHidden: false,
@@ -135,7 +142,23 @@ function generateSampleCreatures(): Creature[] {
       tempHitPoints: 0,
       armorClass: 11,
       speed: 40,
-      conditions: [],
+      conditions: ['RESTRAINED'],
+      isConcentrating: false,
+      isVisible: true,
+      isHidden: false,
+    },
+    {
+      id: 'skeleton-1',
+      name: 'Skeleton',
+      type: 'monster',
+      position: { x: 14, y: 11 },
+      size: 'medium',
+      currentHitPoints: 8,
+      maxHitPoints: 13,
+      tempHitPoints: 0,
+      armorClass: 13,
+      speed: 30,
+      conditions: ['BLINDED'],
       isConcentrating: false,
       isVisible: true,
       isHidden: false,
@@ -299,7 +322,9 @@ export function GameBoardTest() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs text-text-muted">Phase 3 Demo</span>
+              <span className="text-xs text-primary/80 font-medium px-2 py-1 bg-primary/10 rounded">
+                Enhanced Visuals Demo
+              </span>
             </div>
           </div>
         </div>
@@ -393,6 +418,53 @@ export function GameBoardTest() {
             </button>
           </div>
 
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-text-secondary">Combat Demo</h3>
+            <button
+              onClick={() => {
+                if (!gameRef.current || !selectedCreature) return;
+                const damage = Math.floor(Math.random() * 15) + 5;
+                const isCrit = Math.random() < 0.2;
+                gameRef.current.showDamage(selectedCreature, damage, isCrit);
+              }}
+              disabled={!selectedCreature}
+              className="w-full px-3 py-2 bg-red-900/50 rounded hover:bg-red-800/50 text-sm disabled:opacity-50"
+            >
+              Deal Damage
+            </button>
+            <button
+              onClick={() => {
+                if (!gameRef.current || !selectedCreature) return;
+                const healing = Math.floor(Math.random() * 10) + 3;
+                gameRef.current.showHealing(selectedCreature, healing);
+              }}
+              disabled={!selectedCreature}
+              className="w-full px-3 py-2 bg-green-900/50 rounded hover:bg-green-800/50 text-sm disabled:opacity-50"
+            >
+              Heal
+            </button>
+            <button
+              onClick={async () => {
+                if (!gameRef.current || !selectedCreature) return;
+                await gameRef.current.playDeathAnimation(selectedCreature);
+              }}
+              disabled={!selectedCreature}
+              className="w-full px-3 py-2 bg-purple-900/50 rounded hover:bg-purple-800/50 text-sm disabled:opacity-50"
+            >
+              Death Animation
+            </button>
+            <button
+              onClick={() => {
+                if (!gameRef.current || !selectedCreature) return;
+                gameRef.current.playSpawnAnimation(selectedCreature);
+              }}
+              disabled={!selectedCreature}
+              className="w-full px-3 py-2 bg-cyan-900/50 rounded hover:bg-cyan-800/50 text-sm disabled:opacity-50"
+            >
+              Respawn
+            </button>
+          </div>
+
           <div className="pt-4 border-t border-border/50">
             <h3 className="text-sm font-semibold text-text-secondary mb-2">Instructions</h3>
             <ul className="text-xs text-text-muted space-y-1">
@@ -406,7 +478,7 @@ export function GameBoardTest() {
           </div>
 
           <div className="pt-4 border-t border-border/50">
-            <h3 className="text-sm font-semibold text-text-secondary mb-2">Legend</h3>
+            <h3 className="text-sm font-semibold text-text-secondary mb-2">Terrain Legend</h3>
             <ul className="text-xs text-text-muted space-y-1">
               <li>
                 <span className="inline-block w-3 h-3 bg-[#3d3d3d] rounded mr-2" />
@@ -421,25 +493,56 @@ export function GameBoardTest() {
                 Difficult
               </li>
               <li>
-                <span className="inline-block w-3 h-3 bg-[#1a4a6e] rounded mr-2" />
-                Water
+                <span className="inline-block w-3 h-3 bg-[#2196f3] rounded mr-2" />
+                Water (animated)
+              </li>
+              <li>
+                <span className="inline-block w-3 h-3 bg-[#ff5722] rounded mr-2" />
+                Lava (animated)
+              </li>
+              <li>
+                <span className="inline-block w-3 h-3 bg-[#1a1a1a] rounded mr-2" />
+                Pit
               </li>
               <li>
                 <span className="inline-block w-3 h-3 bg-[#6b4423] rounded mr-2" />
                 Door
               </li>
               <li>
-                <span className="inline-block w-3 h-3 bg-green-500 rounded mr-2" />
+                <span className="inline-block w-3 h-3 bg-[#757575] rounded mr-2" />
+                Stairs
+              </li>
+            </ul>
+          </div>
+
+          <div className="pt-4 border-t border-border/50">
+            <h3 className="text-sm font-semibold text-text-secondary mb-2">Token Legend</h3>
+            <ul className="text-xs text-text-muted space-y-1">
+              <li>
+                <span className="inline-block w-3 h-3 bg-green-500 rounded-full mr-2" />
                 Player
               </li>
               <li>
-                <span className="inline-block w-3 h-3 bg-red-500 rounded mr-2" />
+                <span className="inline-block w-3 h-3 bg-red-500 rounded-full mr-2" />
                 Monster
               </li>
               <li>
-                <span className="inline-block w-3 h-3 bg-blue-500 rounded mr-2" />
+                <span className="inline-block w-3 h-3 bg-blue-500 rounded-full mr-2" />
                 NPC
               </li>
+            </ul>
+          </div>
+
+          <div className="pt-4 border-t border-border/50">
+            <h3 className="text-sm font-semibold text-text-secondary mb-2">Visual Features</h3>
+            <ul className="text-xs text-text-muted space-y-1">
+              <li>• Animated token borders</li>
+              <li>• Glow effects on selection</li>
+              <li>• Floating damage numbers</li>
+              <li>• Condition particles</li>
+              <li>• Water/Lava animations</li>
+              <li>• Ambient dust particles</li>
+              <li>• Death/spawn animations</li>
             </ul>
           </div>
         </div>

@@ -42,19 +42,29 @@ vi.mock('pixi.js', () => ({
     tint = 0xffffff;
     scale = { x: 1, y: 1, set: vi.fn() };
     alpha = 1;
+    rotation = 0;
     name?: string;
+    x = 0;
+    y = 0;
     lineStyle = vi.fn().mockReturnThis();
     beginFill = vi.fn().mockReturnThis();
     endFill = vi.fn().mockReturnThis();
     drawRect = vi.fn().mockReturnThis();
     drawCircle = vi.fn().mockReturnThis();
     drawRoundedRect = vi.fn().mockReturnThis();
+    drawEllipse = vi.fn().mockReturnThis();
+    quadraticCurveTo = vi.fn().mockReturnThis();
     moveTo = vi.fn().mockReturnThis();
     lineTo = vi.fn().mockReturnThis();
     clear = vi.fn().mockReturnThis();
     destroy = vi.fn();
     addChild(child: unknown) {
       this.children.push(child);
+      return child;
+    }
+    removeChild(child: unknown) {
+      const idx = this.children.indexOf(child);
+      if (idx >= 0) this.children.splice(idx, 1);
       return child;
     }
   },
@@ -83,6 +93,10 @@ describe('TokenManager', () => {
       y: 0,
       addChild(child: unknown) {
         this.children.push(child);
+        return child;
+      },
+      addChildAt(child: unknown, index: number) {
+        this.children.splice(index, 0, child);
         return child;
       },
       removeChild(child: unknown) {
