@@ -224,7 +224,8 @@ export class BoardRenderer {
    */
   private drawGrid(): void {
     this.gridLayer.clear();
-    this.gridLayer.lineStyle(1, GRID_COLORS.line, 0.3);
+    // Very subtle grid lines - 0.15 alpha for seamless tile appearance
+    this.gridLayer.lineStyle(1, GRID_COLORS.line, 0.15);
 
     // Vertical lines
     for (let x = 0; x <= this.gridWidth; x++) {
@@ -319,10 +320,12 @@ export class BoardRenderer {
         this.tileSize
       );
       graphics.endFill();
-    }
 
-    // Add terrain indicators (special effects overlay)
-    this.addTerrainIndicator(graphics, tile);
+      // Only add terrain indicators for tiles WITHOUT textures
+      // This gives textured tiles a clean, seamless appearance
+      this.addTerrainIndicator(graphics, tile);
+    }
+    // When textures ARE available, skip terrain indicators for a seamless look
 
     this.tileLayer.addChild(graphics);
     this.tileGraphics.set(key, graphics);

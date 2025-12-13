@@ -299,9 +299,9 @@ Interactive demo featuring:
 
 ---
 
-## Phase 7: Media Pipeline - PARTIAL (30%)
+## Phase 7: Media Pipeline - PARTIAL (50%)
 
-**Implemented Early:** AI character portrait generation
+**Implemented Early:** AI character portrait generation + Static asset library
 
 ### Features Implemented
 - NanoBanana API integration (Google Gemini-powered)
@@ -309,6 +309,27 @@ Interactive demo featuring:
 - User generation limits (5 characters = 15 images max)
 - DiceBear fallback for failures
 - Async webhook-based generation
+- **Self-hosted AI image library (40 images)**:
+  - 9 race preview images (Human, Elf, Dwarf, Halfling, etc.)
+  - 12 class preview images (Fighter, Wizard, Rogue, etc.)
+  - 8 background images (Acolyte, Criminal, Noble, etc.)
+  - 8 terrain textures (stone, grass, water, lava, etc.)
+  - 3 hero banner images (Epic Battle, Tavern Gathering, Dungeon Entrance)
+- Image proxy endpoint for CORS bypass
+- Homepage hero image showcase
+
+### Static Image System
+```
+apps/web/public/images/
+├── races/         (9 images)
+├── classes/       (12 images)
+├── backgrounds/   (8 images)
+├── terrain/       (8 images)
+└── heroes/        (3 images)
+
+apps/web/src/data/staticImages.ts  (image path exports)
+scripts/download-images.mjs        (image download script)
+```
 
 ### Not Yet Implemented
 - Scene generation
@@ -331,17 +352,116 @@ Interactive demo featuring:
 - Condition management
 - Initiative tracking
 
-### Tech Stack
-- Rust + Tonic (gRPC)
-- Golden test fixtures for RAW compliance
+### Tech Stack Options
 
-### Key Features
-- Deterministic dice with seeding
-- All 13 damage types
-- All 15 conditions
-- Advantage/disadvantage
-- Spell slot tracking
-- Concentration checks
+**Option A: Rust + Tonic (gRPC)** - Original specification
+- Pros: Maximum performance, deterministic, matches spec
+- Cons: Requires Rust setup, longer implementation
+
+**Option B: TypeScript Rules Engine** - Pragmatic alternative
+- Pros: Faster implementation, shared types with frontend
+- Cons: Slightly less performant (still fine for turn-based)
+
+**Recommended:** Start with TypeScript, port to Rust later if needed.
+
+### Key Features to Implement
+1. **Dice System**
+   - Deterministic dice with seeding (for testing)
+   - d4, d6, d8, d10, d12, d20 support
+   - Advantage/disadvantage handling
+   - Critical hit detection (natural 20)
+   - Critical miss detection (natural 1)
+
+2. **Ability Checks & Saves**
+   - All 6 abilities (STR, DEX, CON, INT, WIS, CHA)
+   - Modifier calculation
+   - DC comparison
+   - Proficiency bonuses
+
+3. **Attack Resolution**
+   - Attack bonus vs AC
+   - Hit/miss determination
+   - Critical hit double dice
+   - Damage type application
+
+4. **Damage Types (13)**
+   - Acid, Bludgeoning, Cold, Fire, Force
+   - Lightning, Necrotic, Piercing, Poison
+   - Psychic, Radiant, Slashing, Thunder
+
+5. **Resistances & Vulnerabilities**
+   - Half damage (resistance)
+   - Double damage (vulnerability)
+   - Zero damage (immunity)
+
+6. **Conditions (15)**
+   - Blinded, Charmed, Deafened, Exhaustion
+   - Frightened, Grappled, Incapacitated
+   - Invisible, Paralyzed, Petrified
+   - Poisoned, Prone, Restrained
+   - Stunned, Unconscious
+
+7. **Spell System**
+   - Spell slot tracking by level
+   - Cantrip vs leveled spells
+   - Spell save DC calculation
+   - Concentration tracking
+   - Concentration checks on damage
+
+8. **Combat Flow**
+   - Initiative rolling
+   - Turn order management
+   - Action economy (action, bonus, reaction)
+   - Movement tracking
+
+### Files to Create
+
+```
+services/rules-engine/                  # Or packages/rules-engine/
+├── src/
+│   ├── index.ts                       # Main exports
+│   ├── dice.ts                        # Dice rolling
+│   ├── abilities.ts                   # Ability checks & saves
+│   ├── combat.ts                      # Attack resolution
+│   ├── damage.ts                      # Damage calculation
+│   ├── conditions.ts                  # Condition effects
+│   ├── spells.ts                      # Spell resolution
+│   ├── initiative.ts                  # Combat order
+│   └── types.ts                       # Type definitions
+├── tests/
+│   ├── dice.test.ts
+│   ├── abilities.test.ts
+│   ├── combat.test.ts
+│   ├── damage.test.ts
+│   ├── conditions.test.ts
+│   ├── spells.test.ts
+│   └── golden.test.ts                 # RAW compliance tests
+└── package.json
+```
+
+### Golden Tests (RAW Compliance)
+Tests to ensure D&D 5e rules are correct:
+- Ability check with modifier vs DC
+- Advantage takes higher of two rolls
+- Natural 20 always hits regardless of AC
+- Natural 1 always misses regardless of bonus
+- Fire damage halved with fire resistance
+- Paralyzed auto-fails STR/DEX saves
+- Concentration check DC = max(10, damage/2)
+- Spell save DC = 8 + proficiency + spellcasting mod
+
+### Integration Points
+- **Frontend:** Call rules engine for rolls, damage, saves
+- **Game Board:** Apply damage, conditions to tokens
+- **WebSocket:** Broadcast roll results to all players
+
+### Estimated Effort
+- Core dice system: 1-2 days
+- Combat resolution: 2-3 days
+- Conditions & effects: 2 days
+- Spell system: 2-3 days
+- Testing & polish: 2 days
+- **Total: 7-10 days**
 
 ---
 
@@ -382,12 +502,13 @@ Interactive demo featuring:
 
 | Metric | Value |
 |--------|-------|
-| Total Commits | 65+ |
-| Lines of Code (game module) | 3,557 |
-| Lines of Code (total) | 16,000+ |
+| Total Commits | 70+ |
+| Lines of Code (game module) | 3,689 |
+| Lines of Code (total) | 18,000+ |
 | Documentation Files | 45 |
-| Test Files | 9 |
-| Total Tests | 152 |
+| Test Files | 11 (9 web + 2 API) |
+| Total Tests | 184 (152 web + 32 API) |
+| AI Images Hosted | 40 |
 
 ---
 

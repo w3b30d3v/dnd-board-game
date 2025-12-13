@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { EnchantedCard } from '@/components/dnd/EnchantedCard';
 import { OrnateCorners } from '@/components/dnd/OrnateCorners';
 import { D20Icon, SwordIcon, ShieldIcon } from '@/components/dnd/DnDIcons';
+import { HERO_IMAGES } from '@/data/staticImages';
 
 // Dynamic import for particles to avoid SSR issues
 const AmbientParticles = dynamic(
@@ -348,6 +350,52 @@ export default function Home() {
             </motion.div>
           </motion.div>
 
+          {/* AI-Generated Hero Showcase */}
+          <motion.div
+            variants={fadeInUp}
+            className="mt-16"
+          >
+            <h2 className="dnd-heading-section text-2xl mb-8 text-center">
+              Enter a World of Adventure
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                { src: HERO_IMAGES.epic_battle, title: 'Epic Battles', desc: 'Engage in tactical combat with stunning visuals' },
+                { src: HERO_IMAGES.tavern_gathering, title: 'Gather Your Party', desc: 'Assemble adventurers for your quest' },
+                { src: HERO_IMAGES.dungeon_entrance, title: 'Explore Dungeons', desc: 'Delve into mysterious depths' },
+              ].map((hero, idx) => (
+                <motion.div
+                  key={hero.title}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 + idx * 0.2 }}
+                  whileHover={{ scale: 1.03, y: -5 }}
+                  className="group"
+                >
+                  <EnchantedCard hover showCorners className="overflow-hidden">
+                    <div className="relative aspect-video overflow-hidden rounded-lg">
+                      <Image
+                        src={hero.src}
+                        alt={hero.title}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-110"
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      <motion.div
+                        className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <h3 className="dnd-heading-section text-lg mb-1">{hero.title}</h3>
+                        <p className="text-text-secondary text-sm">{hero.desc}</p>
+                      </div>
+                    </div>
+                  </EnchantedCard>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+
           {/* Status Badge */}
           <motion.div
             variants={fadeInUp}
@@ -367,7 +415,7 @@ export default function Home() {
                   <D20Icon size={20} color="#F59E0B" />
                 </motion.div>
                 <p className="text-sm text-primary font-medium">
-                  Phase 2 Complete — Character Builder with AI Art Generation
+                  Phase 3 Complete — Game Board with PixiJS & AI Terrain
                 </p>
                 <motion.span
                   animate={{ opacity: [0.5, 1, 0.5] }}
@@ -380,6 +428,24 @@ export default function Home() {
             </motion.div>
           </motion.div>
 
+          {/* Try Game Board CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.2 }}
+            className="mt-8"
+          >
+            <Link href="/game/test">
+              <motion.button
+                whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(139, 92, 246, 0.5)' }}
+                whileTap={{ scale: 0.98 }}
+                className="btn-stone text-base px-6 py-3 border-secondary/50 hover:border-secondary"
+              >
+                🗺️ Try the Game Board Demo
+              </motion.button>
+            </Link>
+          </motion.div>
+
           {/* Coming Soon Section */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -388,7 +454,7 @@ export default function Home() {
             className="mt-8 text-center"
           >
             <p className="text-text-muted text-sm">
-              Coming Soon: Game Board • Combat System • Multiplayer • Campaign Builder
+              Coming Soon: Rules Engine • Multiplayer • Campaign Builder
             </p>
           </motion.div>
         </motion.div>
