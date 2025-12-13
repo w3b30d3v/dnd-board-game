@@ -132,7 +132,7 @@ export default function MultiplayerTestPage() {
                     onChange={(e) => setSessionName(e.target.value)}
                     placeholder="Session name"
                     className="flex-1 px-3 py-2 bg-bg-elevated rounded border border-border
-                             focus:border-primary focus:outline-none text-sm"
+                             focus:border-primary focus:outline-none text-sm text-text-primary"
                   />
                   <motion.button
                     onClick={handleCreateSession}
@@ -156,7 +156,7 @@ export default function MultiplayerTestPage() {
                     placeholder="Invite code (e.g., ABC123)"
                     maxLength={6}
                     className="flex-1 px-3 py-2 bg-bg-elevated rounded border border-border
-                             focus:border-primary focus:outline-none text-sm uppercase"
+                             focus:border-primary focus:outline-none text-sm uppercase text-text-primary"
                   />
                   <motion.button
                     onClick={handleJoinSession}
@@ -231,7 +231,7 @@ export default function MultiplayerTestPage() {
                     onChange={(e) => setDiceExpression(e.target.value)}
                     placeholder="e.g., 2d6+4"
                     className="flex-1 px-3 py-2 bg-bg-elevated rounded border border-border
-                             focus:border-primary focus:outline-none text-sm font-mono"
+                             focus:border-primary focus:outline-none text-sm font-mono text-text-primary"
                   />
                   <motion.button
                     onClick={handleRollDice}
