@@ -117,7 +117,10 @@ jobs:
           DATABASE_URL: "postgresql://placeholder:placeholder@localhost:5432/placeholder"
 
       - name: Run unit tests
-        run: pnpm test:unit
+        run: |
+          pnpm --filter @dnd/rules-engine test
+          pnpm --filter @dnd/web test:unit
+          pnpm --filter @dnd/api-gateway test
         env:
           DATABASE_URL: "postgresql://placeholder:placeholder@localhost:5432/placeholder"
           JWT_SECRET: "ci-test-secret-key-minimum-32-characters"
