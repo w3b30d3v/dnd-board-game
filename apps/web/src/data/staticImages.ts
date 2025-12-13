@@ -20,44 +20,17 @@ function getDiceBearUrl(style: string, seed: string, options: Record<string, str
 }
 
 // ===== RACE IMAGES =====
-// Each race gets a unique visual identity
+// AI-generated via NanoBanana API
 export const RACE_IMAGES: Record<string, string> = {
-  human: getDiceBearUrl('adventurer-neutral', 'human-warrior', {
-    backgroundType: 'gradientLinear',
-    backgroundRotation: '45',
-  }),
-  elf: getDiceBearUrl('adventurer-neutral', 'high-elf-archer', {
-    backgroundType: 'gradientLinear',
-    backgroundRotation: '135',
-  }),
-  dwarf: getDiceBearUrl('adventurer-neutral', 'mountain-dwarf', {
-    backgroundType: 'gradientLinear',
-    backgroundRotation: '90',
-  }),
-  halfling: getDiceBearUrl('adventurer-neutral', 'lightfoot-halfling', {
-    backgroundType: 'gradientLinear',
-    backgroundRotation: '180',
-  }),
-  dragonborn: getDiceBearUrl('bottts', 'brass-dragonborn', {
-    backgroundType: 'gradientLinear',
-    backgroundRotation: '45',
-  }),
-  gnome: getDiceBearUrl('adventurer-neutral', 'rock-gnome-inventor', {
-    backgroundType: 'gradientLinear',
-    backgroundRotation: '270',
-  }),
-  'half-elf': getDiceBearUrl('adventurer-neutral', 'graceful-half-elf', {
-    backgroundType: 'gradientLinear',
-    backgroundRotation: '120',
-  }),
-  'half-orc': getDiceBearUrl('adventurer-neutral', 'fierce-half-orc', {
-    backgroundType: 'gradientLinear',
-    backgroundRotation: '200',
-  }),
-  tiefling: getDiceBearUrl('bottts', 'infernal-tiefling', {
-    backgroundType: 'gradientLinear',
-    backgroundRotation: '315',
-  }),
+  human: 'https://tempfile.aiquickdraw.com/workers/nano/image_1765629806097_kvaqyx_1x1_1024x1024.png',
+  elf: 'https://tempfile.aiquickdraw.com/workers/nano/image_1765629873281_qo1dzl_1x1_1024x1024.png',
+  dwarf: 'https://tempfile.aiquickdraw.com/workers/nano/image_1765629943400_onby6u_1x1_1024x1024.png',
+  halfling: 'https://tempfile.aiquickdraw.com/workers/nano/image_1765630011986_q6trwo_1x1_1024x1024.png',
+  dragonborn: 'https://tempfile.aiquickdraw.com/workers/nano/image_1765630077852_wcqmfa_1x1_1024x1024.png',
+  gnome: 'https://tempfile.aiquickdraw.com/workers/nano/image_1765630145060_br6m0n_1x1_1024x1024.png',
+  'half-elf': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765630212562_y5vjby_1x1_1024x1024.png',
+  'half-orc': 'https://tempfile.aiquickdraw.com/workers/nano/image_1765630282633_1kc61y_1x1_1024x1024.png',
+  tiefling: 'https://tempfile.aiquickdraw.com/workers/nano/image_1765630346862_5cbbyk_1x1_1024x1024.png',
 };
 
 // ===== CLASS IMAGES =====
