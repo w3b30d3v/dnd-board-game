@@ -8,9 +8,11 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "test": "vitest run",
+    "test:unit": "vitest run",
     "test:watch": "vitest",
     "test:golden": "vitest run --testNamePattern='RAW 5e'",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "echo 'No lint configured'"
   },
   "keywords": ["dnd", "5e", "rules", "dice", "combat"],
   "license": "MIT",

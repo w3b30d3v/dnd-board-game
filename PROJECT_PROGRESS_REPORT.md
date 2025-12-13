@@ -586,8 +586,8 @@ type ClientMessage =
 | Lines of Code (rules engine) | 2,600+ |
 | Lines of Code (total) | 22,000+ |
 | Documentation Files | 45 |
-| Test Files | 12 (9 web + 2 API + 1 rules) |
-| Total Tests | 238 (152 web + 32 API + 54 rules) |
+| Test Files | 13 (10 web + 2 API + 1 rules) |
+| Total Tests | 276 (190 web + 32 API + 54 rules) |
 | AI Images Hosted | 40 |
 
 ---
