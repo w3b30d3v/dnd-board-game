@@ -13,10 +13,11 @@ export default function MultiplayerTestPage() {
   const [inviteCode, setInviteCode] = useState('');
   const [diceExpression, setDiceExpression] = useState('1d20');
 
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, token } = useAuthStore();
+  const isAuthenticated = !!user && !!token;
   const {
     connectionStatus,
-    session,
+    currentSession: session,
     players,
     diceResults,
   } = useMultiplayerStore();
@@ -188,7 +189,7 @@ export default function MultiplayerTestPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-text-secondary">Status:</span>
-                    <span className={session.status === 'playing' ? 'text-green-400' : 'text-yellow-400'}>
+                    <span className={session.status === 'active' ? 'text-green-400' : 'text-yellow-400'}>
                       {session.status}
                     </span>
                   </div>
