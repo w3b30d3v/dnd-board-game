@@ -1,0 +1,10 @@
+[build]
+builder = "nixpacks"
+
+[build.nixpacks]
+nixPkgs = ["nodejs_20", "pnpm"]
+installCmd = "pnpm install --frozen-lockfile"
+buildCmd = "pnpm build"
+
+[deploy]
+startCommand = "node dist/index.js"
