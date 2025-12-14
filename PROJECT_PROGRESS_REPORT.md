@@ -744,15 +744,15 @@ apps/web/src/app/dm/
 
 | Metric | Value |
 |--------|-------|
-| Total Commits | 95+ |
+| Total Commits | 100+ |
 | Lines of Code (game module) | 4,500+ |
 | Lines of Code (rules engine) | 2,600+ |
 | Lines of Code (ws-gateway) | 1,500+ |
 | Lines of Code (dm-tools) | 1,500+ |
-| Lines of Code (total) | 30,000+ |
+| Lines of Code (total) | 32,000+ |
 | Documentation Files | 50+ |
-| Test Files | 14 (10 web + 2 API + 1 rules + 1 ws) |
-| Total Tests | 293 (190 web + 32 API + 54 rules + 17 ws) |
+| Test Files | 15 (10 web + 3 API + 1 rules + 1 ws) |
+| Total Tests | 330 (190 web + 69 API + 54 rules + 17 ws) |
 | AI Images Hosted | 40 |
 
 ---
@@ -803,4 +803,25 @@ See `CLAUDE.md` for implementation guidelines and coding standards.
 
 ---
 
-**Report Generated:** December 13, 2025
+**Report Generated:** December 14, 2025
+
+---
+
+## Recent Bug Fixes (December 14, 2025)
+
+### Multiplayer Ready Status Fix
+- Fixed: "Toggle Ready" button had no effect
+- Fixed: Player ready status not updating in UI
+- Root cause: PLAYER_LIST handler wasn't updating Zustand store
+- Solution: Added `setIsHost` and `setIsReady` calls on PLAYER_LIST message
+
+### DM Dashboard API Hardening
+- Added defensive try-catch for database queries
+- Handle missing `maxActiveSessions` column gracefully
+- Handle missing `game_session_participants` table
+- Better error logging with detailed messages
+
+### Database Migration Safety
+- Added startup verification for required columns
+- Fallback to default values when columns missing
+- Prisma client generation added to build script
