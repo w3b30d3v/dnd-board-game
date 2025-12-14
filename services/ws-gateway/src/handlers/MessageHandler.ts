@@ -169,14 +169,14 @@ async function handleAuthenticate(
     return;
   }
 
-  // TODO: Fetch full user info from database
+  // Send authenticated message with displayName from JWT token
   connectionManager.send(connection.id, {
     type: WSMessageType.AUTHENTICATED,
     timestamp: Date.now(),
     payload: {
-      odId: user.userId,
-      username: 'user', // TODO: Fetch from DB
-      displayName: 'User', // TODO: Fetch from DB
+      userId: user.userId,
+      username: user.displayName.toLowerCase().replace(/\s+/g, '_'),
+      displayName: user.displayName,
     },
   });
 
@@ -197,8 +197,8 @@ async function handleCreateSession(
 
   const session = await sessionManager.createSession(
     connection.user.userId,
-    'user', // TODO: Get from DB
-    'User', // TODO: Get from DB
+    connection.user.displayName.toLowerCase().replace(/\s+/g, '_'),
+    connection.user.displayName,
     { name, campaignId, maxPlayers, isPrivate }
   );
 
@@ -248,8 +248,8 @@ async function handleJoinSession(
   const result = await sessionManager.joinSession(
     sessionIdentifier,
     connection.user.userId,
-    'user', // TODO: Get from DB
-    'User', // TODO: Get from DB
+    connection.user.displayName.toLowerCase().replace(/\s+/g, '_'),
+    connection.user.displayName,
     characterId
   );
 

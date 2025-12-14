@@ -15,6 +15,7 @@ export interface AuthResult {
 
 interface JwtPayload {
   userId: string;
+  displayName?: string; // Public display name only, no PII like email
   type: 'access' | 'refresh';
 }
 
@@ -74,7 +75,7 @@ export class AuthService {
     });
 
     // Generate tokens
-    const token = this.generateAccessToken(user.id);
+    const token = this.generateAccessToken(user.id, user.displayName || user.username);
     const refreshToken = this.generateRefreshToken(user.id);
 
     // Store refresh token in session
@@ -112,7 +113,7 @@ export class AuthService {
     });
 
     // Generate tokens
-    const token = this.generateAccessToken(user.id);
+    const token = this.generateAccessToken(user.id, user.displayName || user.username);
     const refreshToken = this.generateRefreshToken(user.id);
 
     // Store refresh token in session
@@ -141,14 +142,16 @@ export class AuthService {
     // Check if session exists
     const session = await prisma.session.findUnique({
       where: { token: refreshToken },
+      include: { user: true },
     });
 
     if (!session || session.expiresAt < new Date()) {
       throw new Error('Session expired');
     }
 
-    // Generate new access token
-    const token = this.generateAccessToken(payload.userId);
+    // Generate new access token with user info (displayName only, no PII)
+    const user = session.user;
+    const token = this.generateAccessToken(payload.userId, user.displayName || user.username);
 
     return { token };
   }
@@ -180,9 +183,10 @@ export class AuthService {
     return user ? this.sanitizeUser(user) : null;
   }
 
-  private generateAccessToken(userId: string): string {
+  private generateAccessToken(userId: string, displayName: string): string {
     const options: SignOptions = { expiresIn: this.accessTokenExpiry };
-    return jwt.sign({ userId, type: 'access' } as JwtPayload, this.jwtSecret, options);
+    // Only include displayName (public), never email (PII)
+    return jwt.sign({ userId, displayName, type: 'access' } as JwtPayload, this.jwtSecret, options);
   }
 
   private generateRefreshToken(userId: string): string {

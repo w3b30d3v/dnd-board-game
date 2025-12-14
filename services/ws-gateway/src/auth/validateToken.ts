@@ -4,6 +4,7 @@ import { logger } from '../lib/logger.js';
 
 interface JwtPayload {
   userId: string;
+  displayName?: string;
   type: 'access' | 'refresh';
   iat: number;
   exp: number;
@@ -11,7 +12,7 @@ interface JwtPayload {
 
 export interface AuthenticatedUser {
   userId: string;
-  // Additional user info can be fetched from DB if needed
+  displayName: string;
 }
 
 /**
@@ -30,6 +31,7 @@ export function validateToken(token: string): AuthenticatedUser | null {
 
     return {
       userId: payload.userId,
+      displayName: payload.displayName || 'User',
     };
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {

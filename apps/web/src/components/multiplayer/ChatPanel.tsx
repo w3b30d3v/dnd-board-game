@@ -105,42 +105,48 @@ export function ChatPanel({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <form onSubmit={handleSubmit} className="p-3 border-t border-border">
-        <div className="flex gap-2">
-          <input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={isInCharacter ? 'Speak in character...' : 'Type a message...'}
-            className="flex-1 px-3 py-2 bg-white rounded-lg border border-border
-                     focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary
-                     text-sm text-gray-900 placeholder:text-gray-400"
-            maxLength={1000}
-          />
-          <button
-            type="button"
-            onClick={() => setIsInCharacter(!isInCharacter)}
-            className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap
-                      ${isInCharacter
-                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50'
-                        : 'bg-bg-elevated text-text-secondary border border-border hover:border-text-muted'
-                      }`}
-            title={isInCharacter ? 'Speaking as your character (in-character)' : 'Speaking as yourself (out-of-character). Click to toggle.'}
-          >
-            {isInCharacter ? 'In-Char' : 'OOC'}
-          </button>
-          <motion.button
-            type="submit"
-            disabled={!input.trim()}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="px-4 py-2 bg-primary text-bg-dark rounded-lg font-medium
-                     disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Send
-          </motion.button>
+      {/* Input - mobile-friendly layout */}
+      <form onSubmit={handleSubmit} className="p-2 sm:p-3 border-t border-border">
+        <div className="flex flex-col sm:flex-row gap-2">
+          {/* Input row */}
+          <div className="flex gap-2 flex-1">
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={isInCharacter ? 'In-character...' : 'Message...'}
+              className="flex-1 min-w-0 px-3 py-2 bg-white rounded-lg border border-border
+                       focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary
+                       text-sm text-gray-900 placeholder:text-gray-400"
+              maxLength={1000}
+            />
+            {/* IC toggle - compact on mobile */}
+            <button
+              type="button"
+              onClick={() => setIsInCharacter(!isInCharacter)}
+              className={`px-2 sm:px-3 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap shrink-0
+                        ${isInCharacter
+                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50'
+                          : 'bg-bg-elevated text-text-secondary border border-border hover:border-text-muted'
+                        }`}
+              title={isInCharacter ? 'Speaking as your character (in-character)' : 'Speaking as yourself (out-of-character). Click to toggle.'}
+            >
+              <span className="hidden sm:inline">{isInCharacter ? 'In-Char' : 'OOC'}</span>
+              <span className="sm:hidden">{isInCharacter ? 'IC' : 'OC'}</span>
+            </button>
+            {/* Send button */}
+            <motion.button
+              type="submit"
+              disabled={!input.trim()}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="px-3 sm:px-4 py-2 bg-primary text-bg-dark rounded-lg font-medium shrink-0
+                       disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            >
+              Send
+            </motion.button>
+          </div>
         </div>
       </form>
     </div>
