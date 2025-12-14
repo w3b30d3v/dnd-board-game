@@ -95,7 +95,14 @@ export class AuthService {
   }
 
   async login(email: string, password: string): Promise<AuthResult> {
-    const user = await prisma.user.findUnique({ where: { email } });
+    let user;
+    try {
+      user = await prisma.user.findUnique({ where: { email } });
+    } catch (dbError) {
+      // Log the actual database error for debugging
+      console.error('Database error during login:', dbError);
+      throw new Error(`Database error: ${dbError instanceof Error ? dbError.message : 'Unknown'}`);
+    }
 
     if (!user || !user.passwordHash) {
       throw new Error('Invalid credentials');

@@ -35,9 +35,9 @@ router.post('/login', validateBody(loginSchema), async (req: Request, res: Respo
     res.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Login failed';
-    // Check for Prisma connection errors
-    if (message.includes('connect') || message.includes('ECONNREFUSED') || message.includes('database')) {
-      res.status(503).json({ error: 'Database connection error', details: message });
+    // Check for database errors (including Prisma schema mismatches)
+    if (message.includes('connect') || message.includes('ECONNREFUSED') || message.includes('database') || message.includes('Database error') || message.includes('column') || message.includes('does not exist')) {
+      res.status(503).json({ error: 'Database error', details: message });
       return;
     }
     res.status(401).json({ error: message });
