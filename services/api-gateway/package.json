@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "prisma generate --schema=../../prisma/schema.prisma && tsc",
     "start": "prisma migrate deploy --schema=../../prisma/schema.prisma && node dist/index.js",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
