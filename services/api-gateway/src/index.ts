@@ -127,7 +127,16 @@ app.use(
     _next: express.NextFunction
   ) => {
     logger.error({ err }, 'Unhandled error');
-    res.status(500).json({ error: 'Internal server error' });
+    // In non-production, include error details for debugging
+    const isDev = config.nodeEnv !== 'production';
+    const errorResponse: { error: string; details?: string; stack?: string } = {
+      error: 'Internal server error',
+    };
+    if (isDev || process.env.DEBUG_ERRORS === 'true') {
+      errorResponse.details = err.message;
+      errorResponse.stack = err.stack;
+    }
+    res.status(500).json(errorResponse);
   }
 );
 

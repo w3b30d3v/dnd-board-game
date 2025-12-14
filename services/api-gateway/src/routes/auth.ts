@@ -15,10 +15,13 @@ router.post('/register', validateBody(registerSchema), async (req: Request, res:
     const result = await authService.register(req.body);
     res.status(201).json(result);
   } catch (error) {
+    console.error('Register error:', error);
     const message = error instanceof Error ? error.message : 'Registration failed';
-    // Check for Prisma connection errors
-    if (message.includes('connect') || message.includes('ECONNREFUSED') || message.includes('database')) {
-      res.status(503).json({ error: 'Database connection error', details: message });
+    // Check for Prisma/database errors
+    if (message.includes('connect') || message.includes('ECONNREFUSED') || message.includes('database') ||
+        message.includes('column') || message.includes('does not exist') || message.includes('P2022') ||
+        message.includes('P2025') || message.includes('P3000')) {
+      res.status(503).json({ error: 'Database error', details: message });
       return;
     }
     res.status(400).json({ error: message });
@@ -34,9 +37,12 @@ router.post('/login', validateBody(loginSchema), async (req: Request, res: Respo
     const result = await authService.login(req.body.email, req.body.password);
     res.json(result);
   } catch (error) {
+    console.error('Login error:', error);
     const message = error instanceof Error ? error.message : 'Login failed';
     // Check for database errors (including Prisma schema mismatches)
-    if (message.includes('connect') || message.includes('ECONNREFUSED') || message.includes('database') || message.includes('Database error') || message.includes('column') || message.includes('does not exist')) {
+    if (message.includes('connect') || message.includes('ECONNREFUSED') || message.includes('database') ||
+        message.includes('Database error') || message.includes('column') || message.includes('does not exist') ||
+        message.includes('P2022') || message.includes('P2025') || message.includes('P3000')) {
       res.status(503).json({ error: 'Database error', details: message });
       return;
     }
