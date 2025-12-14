@@ -38,8 +38,13 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     addDiceResult,
     setCurrentTurn,
     setIsInCombat,
+    setIsHost,
+    setIsReady,
     reset,
   } = useMultiplayerStore();
+
+  // Get current user from auth store
+  const { user } = useAuthStore();
 
   /**
    * Send a message through the WebSocket
@@ -138,6 +143,16 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
           case WSMessageType.PLAYER_LIST:
             setPlayers(payload.players);
+            // Update isHost and isReady for current user
+            if (user && payload.players) {
+              const currentPlayer = payload.players.find(
+                (p: { userId: string }) => p.userId === user.id
+              );
+              if (currentPlayer) {
+                setIsHost(currentPlayer.isDM || false);
+                setIsReady(currentPlayer.isReady || false);
+              }
+            }
             break;
 
           case WSMessageType.PLAYER_JOINED:
@@ -315,6 +330,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     },
     [
       token,
+      user,
       sendMessage,
       setConnectionId,
       setConnectionStatus,
@@ -326,6 +342,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       addDiceResult,
       setCurrentTurn,
       setIsInCombat,
+      setIsHost,
+      setIsReady,
       setSession,
     ]
   );
