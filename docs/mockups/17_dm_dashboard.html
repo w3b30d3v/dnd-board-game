@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DM Dashboard - D&D Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0F0D13;
+      --bg-card: #1E1B26;
+      --bg-elevated: #2A2735;
+      --border: #3F3B4A;
+      --primary: #F59E0B;
+      --text-primary: #F4F4F5;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+    .font-cinzel { font-family: 'Cinzel', serif; }
+    .bg-bg-dark { background-color: var(--bg-dark); }
+    .bg-bg-card { background-color: var(--bg-card); }
+    .bg-bg-elevated { background-color: var(--bg-elevated); }
+    .border-border { border-color: var(--border); }
+    .text-primary { color: var(--primary); }
+    .text-text-primary { color: var(--text-primary); }
+    .text-text-secondary { color: var(--text-secondary); }
+    .text-text-muted { color: var(--text-muted); }
+    .bg-primary { background-color: var(--primary); }
+
+    .btn-magic {
+      background: linear-gradient(135deg, var(--primary), #D97706);
+      color: var(--bg-dark);
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      transition: all 0.2s;
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+    }
+    .btn-magic:hover {
+      transform: scale(1.02);
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.5);
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      transition: all 0.2s;
+    }
+    .stat-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.1);
+    }
+
+    .session-card, .campaign-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      transition: all 0.2s;
+    }
+    .session-card:hover, .campaign-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    .progress-bar {
+      height: 0.5rem;
+      background: var(--bg-elevated);
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), #D97706);
+      transition: width 0.5s ease;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      border: 1px solid;
+    }
+    .status-active { background: rgba(34, 197, 94, 0.2); color: #4ADE80; border-color: rgba(34, 197, 94, 0.3); }
+    .status-lobby { background: rgba(59, 130, 246, 0.2); color: #60A5FA; border-color: rgba(59, 130, 246, 0.3); }
+    .status-paused { background: rgba(234, 179, 8, 0.2); color: #FCD34D; border-color: rgba(234, 179, 8, 0.3); }
+    .status-draft { background: rgba(139, 92, 246, 0.2); color: #A78BFA; border-color: rgba(139, 92, 246, 0.3); }
+
+    .player-avatar {
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: 9999px;
+      background: var(--bg-elevated);
+      border: 2px solid var(--bg-card);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .quick-action {
+      background: var(--bg-elevated);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .quick-action:hover {
+      background: var(--border);
+      transform: scale(1.02);
+    }
+  </style>
+</head>
+<body class="bg-bg-dark">
+  <!-- Header -->
+  <header class="bg-bg-card border-b border-border">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-cinzel font-bold text-text-primary">
+            Dungeon Master Dashboard
+          </h1>
+          <p class="text-text-secondary mt-1">Welcome back, DM_Master</p>
+        </div>
+        <button class="btn-magic">Campaign Builder</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+      <div class="stat-card">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-lg">&#x1F4DA;</span>
+          <span class="text-text-muted text-sm">Campaigns</span>
+        </div>
+        <span class="text-2xl font-bold">4</span>
+      </div>
+      <div class="stat-card">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-lg">&#x1F3AE;</span>
+          <span class="text-text-muted text-sm">Active</span>
+        </div>
+        <span class="text-2xl font-bold text-green-400">2</span>
+      </div>
+      <div class="stat-card">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-lg">&#x1F4DD;</span>
+          <span class="text-text-muted text-sm">Drafts</span>
+        </div>
+        <span class="text-2xl font-bold text-purple-400">1</span>
+      </div>
+      <div class="stat-card">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-lg">&#x1F465;</span>
+          <span class="text-text-muted text-sm">Players</span>
+        </div>
+        <span class="text-2xl font-bold text-blue-400">8</span>
+      </div>
+      <div class="stat-card">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-lg">&#x1F3B2;</span>
+          <span class="text-text-muted text-sm">Sessions</span>
+        </div>
+        <span class="text-2xl font-bold text-yellow-400">2/3</span>
+      </div>
+      <div class="stat-card">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-lg">&#x1F5FA;&#xFE0F;</span>
+          <span class="text-text-muted text-sm">Content</span>
+        </div>
+        <span class="text-2xl font-bold">24</span>
+      </div>
+    </div>
+
+    <!-- Active Sessions -->
+    <section class="mb-8">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-cinzel font-bold">Active Sessions (2)</h2>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <!-- Session 1 -->
+        <div class="session-card p-4">
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <h3 class="font-medium text-text-primary">Lost Mines - Session 5</h3>
+              <p class="text-sm text-text-secondary">Lost Mines of Phandelver</p>
+            </div>
+            <span class="status-badge status-active">active</span>
+          </div>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-text-muted">Invite Code:</span>
+              <code class="px-2 py-0.5 bg-bg-elevated rounded text-primary font-mono">ABC123</code>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-text-muted">Players:</span>
+              <span>4/4 online</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-text-muted">Combat:</span>
+              <span class="text-red-400">Round 3</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-text-muted">Last activity:</span>
+              <span class="text-text-secondary">2m ago</span>
+            </div>
+          </div>
+          <div class="flex gap-2 mt-4 pt-3 border-t border-border">
+            <button class="flex-1 px-3 py-2 bg-primary text-bg-dark rounded text-sm font-medium">Resume</button>
+            <button class="px-3 py-2 bg-yellow-500/20 text-yellow-400 rounded text-sm">Pause</button>
+            <button class="px-3 py-2 bg-red-500/20 text-red-400 rounded text-sm">End</button>
+          </div>
+        </div>
+
+        <!-- Session 2 -->
+        <div class="session-card p-4">
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <h3 class="font-medium text-text-primary">Curse - Session 2</h3>
+              <p class="text-sm text-text-secondary">Curse of Strahd</p>
+            </div>
+            <span class="status-badge status-lobby">lobby</span>
+          </div>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-text-muted">Invite Code:</span>
+              <code class="px-2 py-0.5 bg-bg-elevated rounded text-primary font-mono">XYZ789</code>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-text-muted">Players:</span>
+              <span>2/5 online</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-text-muted">Last activity:</span>
+              <span class="text-text-secondary">15m ago</span>
+            </div>
+          </div>
+          <div class="flex gap-2 mt-4 pt-3 border-t border-border">
+            <button class="flex-1 px-3 py-2 bg-primary text-bg-dark rounded text-sm font-medium">Resume</button>
+            <button class="px-3 py-2 bg-red-500/20 text-red-400 rounded text-sm">End</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Campaigns -->
+    <section class="mb-8">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-cinzel font-bold">My Campaigns (4)</h2>
+        <button class="text-primary text-sm hover:underline">View All &rarr;</button>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <!-- Campaign 1 -->
+        <div class="campaign-card overflow-hidden">
+          <div class="h-32 bg-gradient-to-br from-purple-900/50 to-bg-elevated relative">
+            <div class="absolute top-2 right-2">
+              <span class="status-badge status-active">active</span>
+            </div>
+          </div>
+          <div class="p-4">
+            <h3 class="font-medium mb-1">Lost Mines of Phandelver</h3>
+            <p class="text-sm text-text-secondary line-clamp-2 mb-3">A classic introductory adventure for new players...</p>
+            <div class="mb-3">
+              <div class="flex justify-between text-xs text-text-muted mb-1">
+                <span>Content Progress</span>
+                <span>75%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: 75%"></div>
+              </div>
+            </div>
+            <div class="grid grid-cols-4 gap-2 text-center text-xs mb-3">
+              <div>
+                <span class="block font-medium">3</span>
+                <span class="text-text-muted">Maps</span>
+              </div>
+              <div>
+                <span class="block font-medium">8</span>
+                <span class="text-text-muted">Encounters</span>
+              </div>
+              <div>
+                <span class="block font-medium">12</span>
+                <span class="text-text-muted">NPCs</span>
+              </div>
+              <div>
+                <span class="block font-medium">5</span>
+                <span class="text-text-muted">Quests</span>
+              </div>
+            </div>
+            <div class="mb-3">
+              <span class="text-xs text-text-muted block mb-1">Players (4)</span>
+              <div class="flex -space-x-2">
+                <div class="player-avatar" title="Alice">A</div>
+                <div class="player-avatar" title="Bob">B</div>
+                <div class="player-avatar" title="Charlie">C</div>
+                <div class="player-avatar" title="Diana">D</div>
+              </div>
+            </div>
+            <div class="flex gap-2 pt-3 border-t border-border">
+              <button class="flex-1 px-3 py-2 bg-bg-elevated rounded text-sm hover:bg-border">Edit</button>
+              <button class="flex-1 px-3 py-2 bg-primary text-bg-dark rounded text-sm font-medium">Start Session</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Campaign 2 -->
+        <div class="campaign-card overflow-hidden">
+          <div class="h-32 bg-gradient-to-br from-red-900/50 to-bg-elevated relative">
+            <div class="absolute top-2 right-2">
+              <span class="status-badge status-active">active</span>
+            </div>
+          </div>
+          <div class="p-4">
+            <h3 class="font-medium mb-1">Curse of Strahd</h3>
+            <p class="text-sm text-text-secondary line-clamp-2 mb-3">A gothic horror adventure in the realm of Barovia...</p>
+            <div class="mb-3">
+              <div class="flex justify-between text-xs text-text-muted mb-1">
+                <span>Content Progress</span>
+                <span>50%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: 50%"></div>
+              </div>
+            </div>
+            <div class="grid grid-cols-4 gap-2 text-center text-xs mb-3">
+              <div>
+                <span class="block font-medium">2</span>
+                <span class="text-text-muted">Maps</span>
+              </div>
+              <div>
+                <span class="block font-medium">4</span>
+                <span class="text-text-muted">Encounters</span>
+              </div>
+              <div>
+                <span class="block font-medium">8</span>
+                <span class="text-text-muted">NPCs</span>
+              </div>
+              <div>
+                <span class="block font-medium">3</span>
+                <span class="text-text-muted">Quests</span>
+              </div>
+            </div>
+            <div class="mb-3">
+              <span class="text-xs text-text-muted block mb-1">Players (5)</span>
+              <div class="flex -space-x-2">
+                <div class="player-avatar" title="Eve">E</div>
+                <div class="player-avatar" title="Frank">F</div>
+                <div class="player-avatar" title="Grace">G</div>
+                <div class="player-avatar" title="Henry">H</div>
+                <div class="player-avatar text-text-muted">+1</div>
+              </div>
+            </div>
+            <div class="flex gap-2 pt-3 border-t border-border">
+              <button class="flex-1 px-3 py-2 bg-bg-elevated rounded text-sm hover:bg-border">Edit</button>
+              <button class="flex-1 px-3 py-2 bg-primary/50 text-text-muted rounded text-sm cursor-not-allowed" disabled>Max Sessions</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Campaign 3 (Draft) -->
+        <div class="campaign-card overflow-hidden">
+          <div class="h-32 bg-gradient-to-br from-blue-900/50 to-bg-elevated relative">
+            <div class="absolute top-2 right-2">
+              <span class="status-badge status-draft">draft</span>
+            </div>
+          </div>
+          <div class="p-4">
+            <h3 class="font-medium mb-1">Homebrew Campaign</h3>
+            <p class="text-sm text-text-secondary line-clamp-2 mb-3">My custom world with unique lore and adventures...</p>
+            <div class="mb-3">
+              <div class="flex justify-between text-xs text-text-muted mb-1">
+                <span>Content Progress</span>
+                <span>25%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: 25%"></div>
+              </div>
+            </div>
+            <div class="grid grid-cols-4 gap-2 text-center text-xs mb-3">
+              <div>
+                <span class="block font-medium">1</span>
+                <span class="text-text-muted">Maps</span>
+              </div>
+              <div>
+                <span class="block font-medium">0</span>
+                <span class="text-text-muted">Encounters</span>
+              </div>
+              <div>
+                <span class="block font-medium">2</span>
+                <span class="text-text-muted">NPCs</span>
+              </div>
+              <div>
+                <span class="block font-medium">0</span>
+                <span class="text-text-muted">Quests</span>
+              </div>
+            </div>
+            <div class="flex gap-2 pt-3 border-t border-border">
+              <button class="flex-1 px-3 py-2 bg-bg-elevated rounded text-sm hover:bg-border">Edit</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="p-6 bg-bg-card rounded-lg border border-border">
+      <h3 class="font-medium mb-4">Quick Actions</h3>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="quick-action">
+          <span class="text-2xl block mb-2">&#x1F4DA;</span>
+          <span class="text-sm">Manage Campaigns</span>
+        </div>
+        <div class="quick-action">
+          <span class="text-2xl block mb-2">&#x1F9D9;</span>
+          <span class="text-sm">Create NPC</span>
+        </div>
+        <div class="quick-action">
+          <span class="text-2xl block mb-2">&#x1F3AE;</span>
+          <span class="text-sm">Multiplayer Test</span>
+        </div>
+        <div class="quick-action">
+          <span class="text-2xl block mb-2">&#x1F5FA;&#xFE0F;</span>
+          <span class="text-sm">Game Board Test</span>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

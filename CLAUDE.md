@@ -122,6 +122,7 @@ All specifications are in the `/docs/` directory. **Read in this order:**
 | `mockups/14_cutscene_dialogue_prototype.html` | Visual novel style dialogue, choices |
 | `mockups/15_victory_defeat_prototype.html` | Combat end sequences |
 | `mockups/16_character_trading_card.html` | **Printable character trading card** |
+| `mockups/17_dm_dashboard.html` | **DM Dashboard with sessions, campaigns, stats** |
 
 ### Testing & DevOps
 | Document | Purpose |
@@ -392,6 +393,40 @@ CALLBACK_BASE_URL=https://your-api-domain.com
 ```
 
 See `docs/44_NanoBanana_API_Integration.md` for complete implementation details.
+
+---
+
+## DM Dashboard & Session Management (Phase 6)
+
+The platform includes a comprehensive DM Dashboard for managing campaigns and game sessions.
+
+### Features
+- **Stats Overview**: Campaigns, players, active sessions, content counts
+- **Session Management**: Create, pause, resume, end game sessions
+- **Campaign Progress**: Visual progress bars based on content (maps, encounters, NPCs, quests)
+- **Session Limits**: Default 3 active sessions per DM
+- **Persistent State**: Token positions, fog of war, and journal survive disconnects
+
+### DM API Endpoints
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/dm/dashboard` | GET | Get full dashboard with stats, campaigns, sessions |
+| `/dm/sessions` | GET | List all DM's game sessions |
+| `/dm/sessions` | POST | Create new game session for a campaign |
+| `/dm/sessions/:id` | PATCH | Update session status (pause, resume, complete) |
+| `/dm/sessions/:id` | DELETE | Delete/archive a session |
+
+### Frontend Pages
+- `/dm` - DM Dashboard overview
+- `/dm/campaigns` - Campaign management
+- `/dm/campaigns/:id` - Campaign editor
+
+### Session Lifecycle
+1. DM creates session from active campaign
+2. Players join via invite code
+3. Session can be paused/resumed
+4. Session completed when DM ends it
+5. All game state persisted to database
 
 ---
 
