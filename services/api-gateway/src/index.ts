@@ -9,6 +9,7 @@ import authRoutes from './routes/auth.js';
 import characterRoutes from './routes/characters.js';
 import mediaRoutes from './routes/media.js';
 import campaignRoutes from './routes/campaigns.js';
+import dmRoutes from './routes/dm.js';
 
 const app: Express = express();
 
@@ -89,6 +90,7 @@ app.use('/auth', authRoutes);
 app.use('/characters', characterRoutes);
 app.use('/media', mediaRoutes);
 app.use('/campaigns', campaignRoutes);
+app.use('/dm', dmRoutes);
 
 // Error handling middleware
 app.use(

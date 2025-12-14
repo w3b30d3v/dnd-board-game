@@ -1,0 +1,631 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/stores/authStore';
+
+interface CampaignPlayer {
+  userId: string;
+  role: string;
+  displayName: string;
+  avatarUrl?: string;
+}
+
+interface Campaign {
+  id: string;
+  name: string;
+  description?: string;
+  status: string;
+  coverImageUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+  counts: {
+    maps: number;
+    encounters: number;
+    npcs: number;
+    quests: number;
+    players: number;
+    gameSessions: number;
+  };
+  players: CampaignPlayer[];
+  progress: number;
+}
+
+interface SessionParticipant {
+  userId: string;
+  role: string;
+  isConnected: boolean;
+  lastSeenAt: string;
+}
+
+interface GameSession {
+  id: string;
+  name: string;
+  status: string;
+  inviteCode: string;
+  campaignId: string;
+  campaignName: string;
+  inCombat: boolean;
+  round: number;
+  lastActivityAt: string;
+  createdAt: string;
+  playerCount: number;
+  connectedCount: number;
+  participants: SessionParticipant[];
+}
+
+interface DashboardStats {
+  totalCampaigns: number;
+  activeCampaigns: number;
+  draftCampaigns: number;
+  completedCampaigns: number;
+  totalPlayers: number;
+  activeSessions: number;
+  maxSessions: number;
+  totalMaps: number;
+  totalEncounters: number;
+  totalNpcs: number;
+  totalQuests: number;
+}
+
+interface DashboardData {
+  stats: DashboardStats;
+  campaigns: Campaign[];
+  activeSessions: GameSession[];
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+export default function DMDashboardContent() {
+  const router = useRouter();
+  const { token, user } = useAuthStore();
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [creatingSession, setCreatingSession] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    fetchDashboard();
+  }, [token, router]);
+
+  const fetchDashboard = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_URL}/dm/dashboard`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to fetch dashboard');
+      }
+
+      const dashboardData = await res.json();
+      setData(dashboardData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createSession = async (campaignId: string, campaignName: string) => {
+    try {
+      setCreatingSession(campaignId);
+      const res = await fetch(`${API_URL}/dm/sessions`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          campaignId,
+          name: `${campaignName} - Session`,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to create session');
+      }
+
+      // Refresh dashboard
+      await fetchDashboard();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to create session');
+    } finally {
+      setCreatingSession(null);
+    }
+  };
+
+  const updateSessionStatus = async (sessionId: string, status: string) => {
+    try {
+      const res = await fetch(`${API_URL}/dm/sessions/${sessionId}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to update session');
+      }
+
+      await fetchDashboard();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update session');
+    }
+  };
+
+  const deleteSession = async (sessionId: string) => {
+    if (!confirm('Are you sure you want to delete this session?')) return;
+
+    try {
+      const res = await fetch(`${API_URL}/dm/sessions/${sessionId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to delete session');
+      }
+
+      await fetchDashboard();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete session');
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case 'lobby': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      case 'paused': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      case 'completed': return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+      case 'draft': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+    }
+  };
+
+  const formatTimeAgo = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-bg-dark flex items-center justify-center">
+        <div className="w-12 h-12 spinner" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-bg-dark flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 mb-4">{error}</p>
+          <button onClick={fetchDashboard} className="btn-magic">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) return null;
+
+  const { stats, campaigns, activeSessions } = data;
+
+  return (
+    <div className="min-h-screen bg-bg-dark">
+      {/* Header */}
+      <div className="bg-bg-card border-b border-border">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-cinzel font-bold text-text-primary">
+                Dungeon Master Dashboard
+              </h1>
+              <p className="text-text-secondary mt-1">
+                Welcome back, {user?.displayName || 'DM'}
+              </p>
+            </div>
+            <Link href="/dm/campaigns">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="btn-magic"
+              >
+                Campaign Builder
+              </motion.button>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+          <StatCard label="Campaigns" value={stats.totalCampaigns} icon="📚" />
+          <StatCard label="Active" value={stats.activeCampaigns} icon="🎮" color="green" />
+          <StatCard label="Drafts" value={stats.draftCampaigns} icon="📝" color="purple" />
+          <StatCard label="Players" value={stats.totalPlayers} icon="👥" color="blue" />
+          <StatCard
+            label="Sessions"
+            value={`${stats.activeSessions}/${stats.maxSessions}`}
+            icon="🎲"
+            color="yellow"
+          />
+          <StatCard label="Content" value={stats.totalMaps + stats.totalEncounters + stats.totalNpcs} icon="🗺️" />
+        </div>
+
+        {/* Active Sessions */}
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-cinzel font-bold text-text-primary">
+              Active Sessions ({activeSessions.length})
+            </h2>
+          </div>
+
+          {activeSessions.length === 0 ? (
+            <div className="bg-bg-card rounded-lg border border-border p-8 text-center">
+              <p className="text-text-secondary mb-4">No active sessions</p>
+              <p className="text-text-muted text-sm">
+                Create a session from one of your campaigns below
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <AnimatePresence mode="popLayout">
+                {activeSessions.map((session) => (
+                  <motion.div
+                    key={session.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="bg-bg-card rounded-lg border border-border p-4"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="font-medium text-text-primary">{session.name}</h3>
+                        <p className="text-sm text-text-secondary">{session.campaignName}</p>
+                      </div>
+                      <span className={`px-2 py-1 text-xs rounded border ${getStatusColor(session.status)}`}>
+                        {session.status}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-text-muted">Invite Code:</span>
+                        <code className="px-2 py-0.5 bg-bg-elevated rounded text-primary font-mono">
+                          {session.inviteCode}
+                        </code>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-text-muted">Players:</span>
+                        <span className="text-text-primary">
+                          {session.connectedCount}/{session.playerCount} online
+                        </span>
+                      </div>
+                      {session.inCombat && (
+                        <div className="flex justify-between">
+                          <span className="text-text-muted">Combat:</span>
+                          <span className="text-red-400">Round {session.round}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-text-muted">Last activity:</span>
+                        <span className="text-text-secondary">{formatTimeAgo(session.lastActivityAt)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 mt-4 pt-3 border-t border-border">
+                      <Link href={`/multiplayer/test?session=${session.inviteCode}`} className="flex-1">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="w-full px-3 py-2 bg-primary text-bg-dark rounded text-sm font-medium"
+                        >
+                          Resume
+                        </motion.button>
+                      </Link>
+                      {session.status === 'active' && (
+                        <motion.button
+                          onClick={() => updateSessionStatus(session.id, 'paused')}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="px-3 py-2 bg-yellow-500/20 text-yellow-400 rounded text-sm"
+                        >
+                          Pause
+                        </motion.button>
+                      )}
+                      {session.status === 'paused' && (
+                        <motion.button
+                          onClick={() => updateSessionStatus(session.id, 'active')}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="px-3 py-2 bg-green-500/20 text-green-400 rounded text-sm"
+                        >
+                          Resume
+                        </motion.button>
+                      )}
+                      <motion.button
+                        onClick={() => deleteSession(session.id)}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="px-3 py-2 bg-red-500/20 text-red-400 rounded text-sm"
+                      >
+                        End
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+        </section>
+
+        {/* Campaigns */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-cinzel font-bold text-text-primary">
+              My Campaigns ({campaigns.length})
+            </h2>
+            <Link href="/dm/campaigns">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="text-primary text-sm hover:underline"
+              >
+                View All →
+              </motion.button>
+            </Link>
+          </div>
+
+          {campaigns.length === 0 ? (
+            <div className="bg-bg-card rounded-lg border border-border p-8 text-center">
+              <p className="text-text-secondary mb-4">No campaigns yet</p>
+              <Link href="/dm/campaigns">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="btn-magic"
+                >
+                  Create Your First Campaign
+                </motion.button>
+              </Link>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <AnimatePresence mode="popLayout">
+                {campaigns.map((campaign) => (
+                  <motion.div
+                    key={campaign.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="bg-bg-card rounded-lg border border-border overflow-hidden"
+                  >
+                    {/* Cover Image or Placeholder */}
+                    <div className="h-32 bg-gradient-to-br from-purple-900/50 to-bg-elevated relative">
+                      {campaign.coverImageUrl && (
+                        <img
+                          src={campaign.coverImageUrl}
+                          alt={campaign.name}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                      <div className="absolute top-2 right-2">
+                        <span className={`px-2 py-1 text-xs rounded border ${getStatusColor(campaign.status)}`}>
+                          {campaign.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-4">
+                      <h3 className="font-medium text-text-primary mb-1">{campaign.name}</h3>
+                      {campaign.description && (
+                        <p className="text-sm text-text-secondary line-clamp-2 mb-3">
+                          {campaign.description}
+                        </p>
+                      )}
+
+                      {/* Progress Bar */}
+                      <div className="mb-3">
+                        <div className="flex justify-between text-xs text-text-muted mb-1">
+                          <span>Content Progress</span>
+                          <span>{campaign.progress}%</span>
+                        </div>
+                        <div className="h-2 bg-bg-elevated rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary transition-all duration-500"
+                            style={{ width: `${campaign.progress}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Stats */}
+                      <div className="grid grid-cols-4 gap-2 text-center text-xs mb-3">
+                        <div>
+                          <span className="block text-text-primary font-medium">{campaign.counts.maps}</span>
+                          <span className="text-text-muted">Maps</span>
+                        </div>
+                        <div>
+                          <span className="block text-text-primary font-medium">{campaign.counts.encounters}</span>
+                          <span className="text-text-muted">Encounters</span>
+                        </div>
+                        <div>
+                          <span className="block text-text-primary font-medium">{campaign.counts.npcs}</span>
+                          <span className="text-text-muted">NPCs</span>
+                        </div>
+                        <div>
+                          <span className="block text-text-primary font-medium">{campaign.counts.quests}</span>
+                          <span className="text-text-muted">Quests</span>
+                        </div>
+                      </div>
+
+                      {/* Players */}
+                      {campaign.players.length > 0 && (
+                        <div className="mb-3">
+                          <span className="text-xs text-text-muted block mb-1">
+                            Players ({campaign.players.length})
+                          </span>
+                          <div className="flex -space-x-2">
+                            {campaign.players.slice(0, 5).map((player) => (
+                              <div
+                                key={player.userId}
+                                className="w-7 h-7 rounded-full bg-bg-elevated border-2 border-bg-card flex items-center justify-center text-xs font-medium text-text-primary"
+                                title={player.displayName}
+                              >
+                                {player.avatarUrl ? (
+                                  <img
+                                    src={player.avatarUrl}
+                                    alt={player.displayName}
+                                    className="w-full h-full rounded-full object-cover"
+                                  />
+                                ) : (
+                                  player.displayName.charAt(0).toUpperCase()
+                                )}
+                              </div>
+                            ))}
+                            {campaign.players.length > 5 && (
+                              <div className="w-7 h-7 rounded-full bg-bg-elevated border-2 border-bg-card flex items-center justify-center text-xs text-text-muted">
+                                +{campaign.players.length - 5}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="flex gap-2 pt-3 border-t border-border">
+                        <Link href={`/dm/campaigns/${campaign.id}`} className="flex-1">
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="w-full px-3 py-2 bg-bg-elevated text-text-primary rounded text-sm hover:bg-border"
+                          >
+                            Edit
+                          </motion.button>
+                        </Link>
+                        {campaign.status === 'active' && (
+                          <motion.button
+                            onClick={() => createSession(campaign.id, campaign.name)}
+                            disabled={creatingSession === campaign.id || stats.activeSessions >= stats.maxSessions}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="flex-1 px-3 py-2 bg-primary text-bg-dark rounded text-sm font-medium disabled:opacity-50"
+                          >
+                            {creatingSession === campaign.id ? 'Creating...' : 'Start Session'}
+                          </motion.button>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+        </section>
+
+        {/* Quick Links */}
+        <section className="mt-8 p-6 bg-bg-card rounded-lg border border-border">
+          <h3 className="font-medium text-text-primary mb-4">Quick Actions</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <Link href="/dm/campaigns">
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                className="p-4 bg-bg-elevated rounded-lg text-center cursor-pointer hover:bg-border transition-colors"
+              >
+                <span className="text-2xl block mb-2">📚</span>
+                <span className="text-sm text-text-primary">Manage Campaigns</span>
+              </motion.div>
+            </Link>
+            <Link href="/characters">
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                className="p-4 bg-bg-elevated rounded-lg text-center cursor-pointer hover:bg-border transition-colors"
+              >
+                <span className="text-2xl block mb-2">🧙</span>
+                <span className="text-sm text-text-primary">Create NPC</span>
+              </motion.div>
+            </Link>
+            <Link href="/multiplayer/test">
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                className="p-4 bg-bg-elevated rounded-lg text-center cursor-pointer hover:bg-border transition-colors"
+              >
+                <span className="text-2xl block mb-2">🎮</span>
+                <span className="text-sm text-text-primary">Multiplayer Test</span>
+              </motion.div>
+            </Link>
+            <Link href="/game/test">
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                className="p-4 bg-bg-elevated rounded-lg text-center cursor-pointer hover:bg-border transition-colors"
+              >
+                <span className="text-2xl block mb-2">🗺️</span>
+                <span className="text-sm text-text-primary">Game Board Test</span>
+              </motion.div>
+            </Link>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+// Stat Card Component
+function StatCard({
+  label,
+  value,
+  icon,
+  color,
+}: {
+  label: string;
+  value: number | string;
+  icon: string;
+  color?: 'green' | 'purple' | 'blue' | 'yellow';
+}) {
+  const colorClasses = {
+    green: 'text-green-400',
+    purple: 'text-purple-400',
+    blue: 'text-blue-400',
+    yellow: 'text-yellow-400',
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-bg-card rounded-lg border border-border p-4"
+    >
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-lg">{icon}</span>
+        <span className="text-text-muted text-sm">{label}</span>
+      </div>
+      <span className={`text-2xl font-bold ${color ? colorClasses[color] : 'text-text-primary'}`}>
+        {value}
+      </span>
+    </motion.div>
+  );
+}
