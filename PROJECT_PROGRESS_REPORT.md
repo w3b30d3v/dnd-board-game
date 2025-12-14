@@ -1,6 +1,6 @@
 # D&D Digital Board Game Platform - Progress Report
 
-**Last Updated:** December 13, 2025
+**Last Updated:** December 14, 2025
 
 ---
 
@@ -8,7 +8,7 @@
 
 The D&D Digital Board Game Platform is a cinematic, multiplayer, AI-powered D&D 5e digital board game. This report tracks implementation progress across 8 development phases.
 
-**Current Status:** Phase 5 Complete - Ready for Phase 6
+**Current Status:** Phase 6 In Progress - Campaign Builder & DM Tools
 
 ---
 
@@ -33,7 +33,7 @@ The D&D Digital Board Game Platform is a cinematic, multiplayer, AI-powered D&D 
 | 3 | Game Board Core | COMPLETE | 100% |
 | 4 | Rules Engine | COMPLETE | 100% |
 | 5 | Multiplayer | COMPLETE | 100% |
-| 6 | Campaign Builder | NOT STARTED | 0% |
+| 6 | Campaign Builder | IN PROGRESS | 60% |
 | 7 | Media Pipeline | PARTIAL | 50% |
 | 8 | Polish & Launch | NOT STARTED | 0% |
 
@@ -550,78 +550,64 @@ scripts/download-images.mjs        (image download script)
 
 ---
 
-## Next Phase: Phase 6 - Campaign Builder
+## Phase 6: Campaign Builder - IN PROGRESS
 
-### Objectives
-- DM campaign creation and management tools
-- Map/encounter editor
-- NPC and monster management
-- Story/dialogue system
-- Campaign progression tracking
+**Started:** December 2024
 
-### Key Features to Implement
+### Features Implemented
 
-1. **Campaign Management**
-   - Create/edit/delete campaigns
-   - Campaign settings and rules
-   - Player invitations
-   - Campaign sharing
+#### DM Dashboard (`/dm`)
+- **Stats Overview Grid:**
+  - Total campaigns count
+  - Active/Draft/Completed campaign counts
+  - Total unique players across campaigns
+  - Active sessions count (with max limit)
+  - Total content (maps + encounters + NPCs)
 
-2. **Map Editor**
-   - Tile-based map creation
-   - Terrain type placement
-   - Prop placement (doors, chests, etc.)
-   - Grid size configuration
-   - Save/load maps
+- **Active Sessions Panel:**
+  - Real-time session list with status badges
+  - Invite codes for easy sharing
+  - Connected/total player counts
+  - Combat status with round tracking
+  - Last activity timestamps
+  - Quick actions: Resume, Pause, End session
 
-3. **Encounter Builder**
-   - Monster placement on maps
-   - Encounter difficulty calculator
-   - Initiative order presets
-   - Environmental hazards
+- **Campaigns Overview:**
+  - Campaign cards with cover images
+  - Progress bars based on content
+  - Player avatars with counts
+  - Quick actions: Edit, Start Session
+  - Status indicators (draft, active, completed)
 
-4. **NPC/Monster Management**
-   - Custom NPC creation
-   - Monster stat block editor
-   - Import from SRD data
-   - NPC dialogue trees
+- **Quick Actions Panel:**
+  - Manage Campaigns
+  - Create NPC
+  - Multiplayer Test
+  - Game Board Test
 
-5. **Story System**
-   - Quest creation and tracking
-   - Branching dialogue
-   - Journal/notes system
-   - Read-aloud text boxes
+#### Campaign Management
+- Create/edit/delete campaigns
+- Campaign CRUD API endpoints
+- Player invitation system
+- Campaign status workflow (draft → active → completed)
 
-6. **Session Management**
-   - Schedule sessions
-   - Session notes
-   - Loot distribution
-   - XP tracking
+#### Session Management
+- Create game sessions from campaigns
+- Session limits per DM (default: 3 active)
+- Session status management (lobby, active, paused, completed)
+- Persistent game state (token positions, fog of war, journal)
+- Invite code generation for player joining
 
-### Files to Create
+### API Endpoints (DM)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/dm/dashboard` | GET | Get full dashboard with stats |
+| `/dm/sessions` | GET | List all DM sessions |
+| `/dm/sessions` | POST | Create new session |
+| `/dm/sessions/:id` | PATCH | Update session status |
+| `/dm/sessions/:id` | DELETE | Delete/archive session |
 
-```
-apps/web/src/
-├── components/dm-tools/
-│   ├── CampaignEditor.tsx
-│   ├── MapEditor.tsx
-│   ├── EncounterBuilder.tsx
-│   ├── NPCEditor.tsx
-│   ├── DialogueEditor.tsx
-│   └── QuestManager.tsx
-├── stores/
-│   └── campaignStore.ts
-
-services/api-gateway/src/routes/
-├── campaigns.ts
-├── maps.ts
-├── encounters.ts
-└── npcs.ts
-
-prisma/schema.prisma (updates for campaign tables)
-```
-
-### API Endpoints
+### API Endpoints (Campaigns)
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/campaigns` | POST | Create campaign |
@@ -630,8 +616,88 @@ prisma/schema.prisma (updates for campaign tables)
 | `/campaigns/:id/maps` | GET/POST | Campaign maps |
 | `/campaigns/:id/encounters` | GET/POST | Campaign encounters |
 | `/campaigns/:id/npcs` | GET/POST | Campaign NPCs |
-| `/maps/:id` | GET/PUT/DELETE | Map CRUD |
-| `/encounters/:id` | GET/PUT/DELETE | Encounter CRUD |
+
+### Database Schema Updates
+```prisma
+model GameSession {
+  tokenStates    Json    @default("{}")    // Token positions
+  revealedCells  Json    @default("{}")    // Fog of war state
+  journal        Json    @default("[]")    // Session history
+  lastActivityAt DateTime @default(now())
+  participants   GameSessionParticipant[]
+}
+
+model GameSessionParticipant {
+  sessionId    String
+  userId       String
+  characterId  String?
+  role         String     @default("player")
+  currentHp    Int?
+  tempHp       Int        @default(0)
+  conditions   String[]   @default([])
+  isConnected  Boolean    @default(false)
+  lastSeenAt   DateTime   @default(now())
+}
+
+model User {
+  maxActiveSessions Int @default(3)
+}
+```
+
+### Key Files
+```
+services/api-gateway/src/routes/
+├── dm.ts                           (370 lines - DM dashboard API)
+├── campaigns.ts                    (500 lines - Campaign CRUD)
+
+apps/web/src/app/dm/
+├── page.tsx                        (DM dashboard page)
+├── DMDashboardContent.tsx          (632 lines - Full dashboard UI)
+├── campaigns/
+│   ├── page.tsx                    (Campaign list page)
+│   ├── CampaignDashboardContent.tsx (Campaign management)
+│   └── [id]/
+│       ├── page.tsx                (Campaign editor page)
+│       └── CampaignEditorContent.tsx (Editor UI)
+```
+
+### Still To Implement
+- Map Editor (tile-based creation)
+- Encounter Builder
+- NPC/Monster Management
+- Dialogue Tree Editor
+- Quest System
+
+---
+
+## Next Steps: Complete Phase 6
+
+### Remaining Features
+
+1. **Map Editor**
+   - Tile-based map creation
+   - Terrain type placement
+   - Prop placement (doors, chests, etc.)
+   - Grid size configuration
+   - Save/load maps
+
+2. **Encounter Builder**
+   - Monster placement on maps
+   - Encounter difficulty calculator
+   - Initiative order presets
+   - Environmental hazards
+
+3. **NPC/Monster Management**
+   - Custom NPC creation
+   - Monster stat block editor
+   - Import from SRD data
+   - NPC dialogue trees
+
+4. **Story System**
+   - Quest creation and tracking
+   - Branching dialogue
+   - Journal/notes system
+   - Read-aloud text boxes
 
 ### Integration Points
 - **Game Board:** Load maps into play
@@ -678,12 +744,13 @@ prisma/schema.prisma (updates for campaign tables)
 
 | Metric | Value |
 |--------|-------|
-| Total Commits | 85+ |
+| Total Commits | 95+ |
 | Lines of Code (game module) | 4,500+ |
 | Lines of Code (rules engine) | 2,600+ |
 | Lines of Code (ws-gateway) | 1,500+ |
-| Lines of Code (total) | 26,000+ |
-| Documentation Files | 45 |
+| Lines of Code (dm-tools) | 1,500+ |
+| Lines of Code (total) | 30,000+ |
+| Documentation Files | 50+ |
 | Test Files | 14 (10 web + 2 API + 1 rules + 1 ws) |
 | Total Tests | 293 (190 web + 32 API + 54 rules + 17 ws) |
 | AI Images Hosted | 40 |
