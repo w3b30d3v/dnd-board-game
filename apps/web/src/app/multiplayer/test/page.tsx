@@ -131,8 +131,8 @@ export default function MultiplayerTestPage() {
                     value={sessionName}
                     onChange={(e) => setSessionName(e.target.value)}
                     placeholder="Session name"
-                    className="flex-1 px-3 py-2 bg-bg-elevated rounded border border-border
-                             focus:border-primary focus:outline-none text-sm text-text-primary"
+                    className="flex-1 px-3 py-2 bg-white rounded border border-border
+                             focus:border-primary focus:outline-none text-sm text-gray-900 placeholder:text-gray-400"
                   />
                   <motion.button
                     onClick={handleCreateSession}
@@ -155,8 +155,8 @@ export default function MultiplayerTestPage() {
                     onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                     placeholder="Invite code (e.g., ABC123)"
                     maxLength={6}
-                    className="flex-1 px-3 py-2 bg-bg-elevated rounded border border-border
-                             focus:border-primary focus:outline-none text-sm uppercase text-text-primary"
+                    className="flex-1 px-3 py-2 bg-white rounded border border-border
+                             focus:border-primary focus:outline-none text-sm uppercase text-gray-900 placeholder:text-gray-400"
                   />
                   <motion.button
                     onClick={handleJoinSession}
@@ -230,8 +230,8 @@ export default function MultiplayerTestPage() {
                     value={diceExpression}
                     onChange={(e) => setDiceExpression(e.target.value)}
                     placeholder="e.g., 2d6+4"
-                    className="flex-1 px-3 py-2 bg-bg-elevated rounded border border-border
-                             focus:border-primary focus:outline-none text-sm font-mono text-text-primary"
+                    className="flex-1 px-3 py-2 bg-white rounded border border-border
+                             focus:border-primary focus:outline-none text-sm font-mono text-gray-900 placeholder:text-gray-400"
                   />
                   <motion.button
                     onClick={handleRollDice}

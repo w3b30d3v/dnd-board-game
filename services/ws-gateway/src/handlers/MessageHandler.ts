@@ -321,7 +321,7 @@ async function handleLeaveSession(
 }
 
 /**
- * Handle player ready message
+ * Handle player ready message - toggles ready status
  */
 async function handlePlayerReady(
   connection: Connection,
@@ -331,10 +331,21 @@ async function handlePlayerReady(
   if (!connection.user || !connection.sessionId) return;
 
   const { characterId } = message.payload;
+
+  // Get current session to check player's ready state
+  const currentSession = await sessionManager.getSession(connection.sessionId);
+  if (!currentSession) return;
+
+  const player = currentSession.players.find(p => p.userId === connection.user!.userId);
+  if (!player) return;
+
+  // Toggle ready state
+  const newReadyState = !player.isReady;
+
   const session = await sessionManager.setPlayerReady(
     connection.sessionId,
     connection.user.userId,
-    true,
+    newReadyState,
     characterId
   );
 

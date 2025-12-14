@@ -114,22 +114,22 @@ export function ChatPanel({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={isInCharacter ? 'Speak in character...' : 'Type a message...'}
-            className="flex-1 px-3 py-2 bg-bg-elevated rounded-lg border border-border
+            className="flex-1 px-3 py-2 bg-white rounded-lg border border-border
                      focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary
-                     text-sm placeholder:text-text-muted"
+                     text-sm text-gray-900 placeholder:text-gray-400"
             maxLength={1000}
           />
           <button
             type="button"
             onClick={() => setIsInCharacter(!isInCharacter)}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors
+            className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap
                       ${isInCharacter
                         ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50'
                         : 'bg-bg-elevated text-text-secondary border border-border hover:border-text-muted'
                       }`}
-            title={isInCharacter ? 'Speaking in character' : 'Speaking out of character'}
+            title={isInCharacter ? 'Speaking as your character (in-character)' : 'Speaking as yourself (out-of-character). Click to toggle.'}
           >
-            IC
+            {isInCharacter ? 'In-Char' : 'OOC'}
           </button>
           <motion.button
             type="submit"
