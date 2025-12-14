@@ -867,7 +867,7 @@ export default function DashboardContent() {
               </EnchantedCard>
             </motion.div>
 
-            {/* Quick Play Card */}
+            {/* DM Dashboard Card */}
             <motion.div
               variants={cardVariants}
               initial="hidden"
@@ -884,20 +884,76 @@ export default function DashboardContent() {
                   </motion.div>
                   <div>
                     <h3 className="dnd-heading-section text-lg mb-0 border-none pb-0">
-                      Quick Play
+                      DM Dashboard
                     </h3>
-                    <p className="text-sm text-text-muted">Jump right in</p>
+                    <p className="text-sm text-text-muted">Manage your games</p>
                   </div>
                 </div>
                 <p className="text-text-secondary text-sm mb-4">
-                  Start a quick game session with pre-made characters and scenarios.
+                  View all your campaigns, active sessions, and manage your game sessions.
                 </p>
-                <button className="btn-stone w-full opacity-60" disabled>
-                  Coming in Phase 5
-                </button>
+                <Link href="/dm">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="btn-adventure w-full text-center"
+                  >
+                    Open Dashboard
+                  </motion.button>
+                </Link>
               </EnchantedCard>
             </motion.div>
           </div>
+
+          {/* Quick Links Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="mt-6"
+          >
+            <EnchantedCard className="p-4">
+              <h3 className="text-sm font-medium text-text-muted mb-3">Quick Links</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Link href="/multiplayer/test">
+                  <motion.div
+                    whileHover={{ scale: 1.02, backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
+                    className="p-3 rounded-lg text-center cursor-pointer border border-border/50 hover:border-primary/50 transition-colors"
+                  >
+                    <span className="text-xl block mb-1">🎮</span>
+                    <span className="text-xs text-text-secondary">Multiplayer</span>
+                  </motion.div>
+                </Link>
+                <Link href="/game/test">
+                  <motion.div
+                    whileHover={{ scale: 1.02, backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
+                    className="p-3 rounded-lg text-center cursor-pointer border border-border/50 hover:border-primary/50 transition-colors"
+                  >
+                    <span className="text-xl block mb-1">🗺️</span>
+                    <span className="text-xs text-text-secondary">Game Board</span>
+                  </motion.div>
+                </Link>
+                <Link href="/dm">
+                  <motion.div
+                    whileHover={{ scale: 1.02, backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
+                    className="p-3 rounded-lg text-center cursor-pointer border border-border/50 hover:border-primary/50 transition-colors"
+                  >
+                    <span className="text-xl block mb-1">📊</span>
+                    <span className="text-xs text-text-secondary">DM Dashboard</span>
+                  </motion.div>
+                </Link>
+                <Link href="/dm/campaigns">
+                  <motion.div
+                    whileHover={{ scale: 1.02, backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
+                    className="p-3 rounded-lg text-center cursor-pointer border border-border/50 hover:border-primary/50 transition-colors"
+                  >
+                    <span className="text-xl block mb-1">📚</span>
+                    <span className="text-xs text-text-secondary">Campaigns</span>
+                  </motion.div>
+                </Link>
+              </div>
+            </EnchantedCard>
+          </motion.div>
 
           {/* Character List Section */}
           <AnimatePresence>
