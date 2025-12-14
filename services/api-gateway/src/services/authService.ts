@@ -5,7 +5,48 @@ import { config } from '../config.js';
 import type { RegisterInput } from '../schemas/auth.js';
 import type { User } from '@prisma/client';
 
-export type SafeUser = Omit<User, 'passwordHash'>;
+// SafeUser type that excludes passwordHash and makes maxActiveSessions optional
+// This allows us to work with users even if maxActiveSessions column doesn't exist yet
+export type SafeUser = Omit<User, 'passwordHash' | 'maxActiveSessions'> & {
+  maxActiveSessions?: number;
+};
+
+// Type for user data returned from queries with explicit select
+type SelectedUser = {
+  id: string;
+  email: string;
+  username: string;
+  displayName: string;
+  passwordHash: string | null;
+  avatarUrl: string | null;
+  googleId: string | null;
+  discordId: string | null;
+  emailVerified: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  lastLoginAt: Date | null;
+  aiCharactersGenerated: number;
+  preferences: unknown;
+};
+
+// Select only the columns that are guaranteed to exist (excludes maxActiveSessions which may not exist yet)
+const userSelect = {
+  id: true,
+  email: true,
+  username: true,
+  displayName: true,
+  passwordHash: true,
+  avatarUrl: true,
+  googleId: true,
+  discordId: true,
+  emailVerified: true,
+  createdAt: true,
+  updatedAt: true,
+  lastLoginAt: true,
+  aiCharactersGenerated: true,
+  preferences: true,
+  // maxActiveSessions intentionally excluded - may not exist in DB yet
+} as const;
 
 export interface AuthResult {
   user: SafeUser;
@@ -48,11 +89,12 @@ export class AuthService {
   }
 
   async register(data: RegisterInput): Promise<AuthResult> {
-    // Check existing user
+    // Check existing user - use explicit select to avoid querying columns that may not exist
     const existing = await prisma.user.findFirst({
       where: {
         OR: [{ email: data.email }, { username: data.username }],
       },
+      select: { id: true, email: true, username: true },
     });
 
     if (existing) {
@@ -64,7 +106,7 @@ export class AuthService {
     // Hash password
     const passwordHash = await bcrypt.hash(data.password, 12);
 
-    // Create user
+    // Create user and select only safe columns
     const user = await prisma.user.create({
       data: {
         email: data.email,
@@ -72,6 +114,7 @@ export class AuthService {
         displayName: data.displayName || data.username,
         passwordHash,
       },
+      select: userSelect,
     });
 
     // Generate tokens
@@ -97,8 +140,11 @@ export class AuthService {
   async login(email: string, password: string): Promise<AuthResult> {
     let user;
     try {
-      // Fetch user with all fields - if DB schema mismatch, error will be caught
-      user = await prisma.user.findUnique({ where: { email } });
+      // Use explicit select to only fetch columns we need (avoids querying columns that may not exist)
+      user = await prisma.user.findUnique({
+        where: { email },
+        select: userSelect,
+      });
     } catch (dbError) {
       // Log the actual database error for debugging
       console.error('Database error during login:', dbError);
@@ -147,10 +193,14 @@ export class AuthService {
       throw new Error('Invalid refresh token');
     }
 
-    // Check if session exists
+    // Check if session exists - use select for user to avoid querying columns that may not exist
     const session = await prisma.session.findUnique({
       where: { token: refreshToken },
-      include: { user: true },
+      include: {
+        user: {
+          select: { id: true, displayName: true, username: true },
+        },
+      },
     });
 
     if (!session || session.expiresAt < new Date()) {
@@ -178,6 +228,7 @@ export class AuthService {
 
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
+      select: userSelect,
     });
 
     return user ? this.sanitizeUser(user) : null;
@@ -186,6 +237,7 @@ export class AuthService {
   async getUserById(userId: string): Promise<SafeUser | null> {
     const user = await prisma.user.findUnique({
       where: { id: userId },
+      select: userSelect,
     });
 
     return user ? this.sanitizeUser(user) : null;
@@ -210,10 +262,10 @@ export class AuthService {
     }
   }
 
-  private sanitizeUser(user: User): SafeUser {
+  private sanitizeUser(user: SelectedUser): SafeUser {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...safe } = user;
-    return safe;
+    return safe as SafeUser;
   }
 }
 
