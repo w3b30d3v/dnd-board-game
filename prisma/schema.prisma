@@ -32,8 +32,9 @@ model User {
   updatedAt     DateTime  @updatedAt
   lastLoginAt   DateTime?
 
-  // AI Generation limits
+  // Limits
   aiCharactersGenerated Int @default(0)  // Max 5 characters (15 images)
+  maxActiveSessions     Int @default(3)  // Max active game sessions as DM
 
   // Preferences
   preferences   Json      @default("{}")
@@ -190,29 +191,74 @@ model CampaignPlayer {
 }
 
 // ============================================
-// Game Session
+// Game Session (Persisted - survives disconnects)
 // ============================================
 
 model GameSession {
   id            String    @id @default(cuid())
   campaignId    String
   name          String
+  inviteCode    String    @unique @default(cuid()) // 6-char code for rejoining
   status        String    @default("lobby") // lobby, active, paused, completed
 
+  // Current map
+  currentMapId  String?
+
   // Combat state
+  inCombat      Boolean   @default(false)
   currentTurn   Int?
   round         Int       @default(0)
-  initiativeOrder Json?
+  initiativeOrder Json?   // Array of {creatureId, initiative, tieBreaker}
+
+  // Token positions - persisted for ALL tokens (players & monsters)
+  // Format: {creatureId: {x, y, conditions[], tempHp, currentHp}}
+  tokenStates   Json      @default("{}")
+
+  // Fog of war - which cells each player has revealed
+  // Format: {playerId: [[x,y], [x,y], ...]}
+  revealedCells Json      @default("{}")
+
+  // Session journal/history (for recap)
+  journal       Json      @default("[]") // Array of {timestamp, type, content}
 
   // Metadata
+  lastActivityAt DateTime @default(now()) // For cleanup of abandoned sessions
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   endedAt       DateTime?
 
   // Relations
   campaign      Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  participants  GameSessionParticipant[]
 
   @@map("game_sessions")
+}
+
+// Track which players are in which game session with their character
+model GameSessionParticipant {
+  id            String      @id @default(cuid())
+  sessionId     String
+
+  // Player info
+  userId        String
+  characterId   String?     // The character they're playing
+  role          String      @default("player") // dm, player
+
+  // Session-specific state (can differ from Character model)
+  currentHp     Int?        // Overrides character HP for this session
+  tempHp        Int         @default(0)
+  conditions    String[]    @default([]) // Active conditions
+  inspiration   Boolean     @default(false)
+
+  // Connection tracking
+  isConnected   Boolean     @default(false)
+  lastSeenAt    DateTime    @default(now())
+
+  // Relations
+  session       GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@map("game_session_participants")
 }
 
 // ============================================
