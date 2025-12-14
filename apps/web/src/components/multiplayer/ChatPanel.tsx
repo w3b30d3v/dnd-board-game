@@ -84,8 +84,8 @@ export function ChatPanel({
             >
               {!message.isSystem && (
                 <div className="flex items-baseline gap-2 mb-1">
-                  <span className="font-medium text-sm">
-                    {message.isInCharacter ? `"${message.senderName}"` : message.senderName}
+                  <span className={`font-medium text-sm ${message.isInCharacter ? 'italic' : ''}`}>
+                    {message.senderName}
                   </span>
                   <span className="text-xs text-text-muted">
                     {new Date(message.timestamp).toLocaleTimeString([], {

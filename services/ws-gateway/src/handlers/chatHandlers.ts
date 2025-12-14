@@ -34,9 +34,16 @@ export async function handleChatMessage(
   const session = await sessionManager.getSession(connection.sessionId);
   const player = session?.players.find((p) => p.userId === connection.user?.userId);
 
-  const senderName = isInCharacter && player?.characterName
-    ? player.characterName
-    : player?.displayName || 'Unknown';
+  const displayName = player?.displayName || 'Unknown';
+  const characterName = player?.characterName;
+
+  // For in-character: show "CharName (Player)" or just "Player" if no character
+  // For out-of-character: show "Player" or "Player [CharName]" if has character
+  const senderName = isInCharacter && characterName
+    ? `${characterName} (${displayName})`
+    : characterName
+      ? `${displayName} [${characterName}]`
+      : displayName;
 
   // Broadcast to all players in session
   sessionManager.broadcastToSession(connection.sessionId, {
@@ -46,6 +53,8 @@ export async function handleChatMessage(
       sessionId: connection.sessionId,
       senderId: connection.user.userId,
       senderName,
+      displayName,
+      characterName,
       content,
       isInCharacter: isInCharacter || false,
       timestamp: Date.now(),
