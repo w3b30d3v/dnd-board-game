@@ -151,10 +151,14 @@ model Campaign {
   isPublic      Boolean   @default(false)
   status        String    @default("draft") // draft, active, completed, archived
 
+  // Recommended level range
+  recommendedLevel Json   @default("{\"min\":1,\"max\":5}")
+
   // Content
   settings      Json      @default("{}")
 
   // Metadata
+  tags          String[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -163,6 +167,10 @@ model Campaign {
   players       CampaignPlayer[]
   gameSessions  GameSession[]
   maps          Map[]
+  encounters    Encounter[]
+  npcs          NPC[]
+  dialogues     Dialogue[]
+  quests        Quest[]
 
   @@map("campaigns")
 }
@@ -221,17 +229,212 @@ model Map {
   width         Int
   height        Int
   gridSize      Int       @default(5) // feet per cell
+  tileSize      Int       @default(64) // pixels per tile
 
-  // Map data
-  tiles         Json      @default("[]")
+  // Map data - layers contain tiles
+  layers        Json      @default("[]")
+  tiles         Json      @default("[]") // Legacy, use layers
   backgroundUrl String?
 
+  // Lighting & Ambience
+  lighting      Json      @default("{}")
+  ambience      Json      @default("{}")
+
   // Metadata
+  tags          String[]
+  isPublic      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  campaign      Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  encounters    Encounter[]
+
+  @@map("maps")
+}
+
+// ============================================
+// Encounter
+// ============================================
+
+model Encounter {
+  id            String    @id @default(cuid())
+  campaignId    String
+  mapId         String?
+  name          String
+  description   String?
+
+  // Difficulty
+  difficulty    String    @default("medium") // trivial, easy, medium, hard, deadly
+  recommendedLevel Json   @default("{\"min\":1,\"max\":5}")
+
+  // Monsters placed in encounter
+  monsters      Json      @default("[]") // PlacedMonster[]
+
+  // Objectives
+  objectives    Json      @default("[]") // EncounterObjective[]
+
+  // Rewards
+  rewards       Json      @default("[]") // EncounterReward[]
+
+  // Triggers (event-based actions)
+  triggers      Json      @default("[]") // EncounterTrigger[]
+
+  // Environment settings
+  environment   Json      @default("{}")
+
+  // Audio settings
+  audio         Json      @default("{}")
+
+  // Metadata
+  tags          String[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  campaign      Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  map           Map?      @relation(fields: [mapId], references: [id], onDelete: SetNull)
+
+  @@map("encounters")
+}
+
+// ============================================
+// NPC (Non-Player Character)
+// ============================================
+
+model NPC {
+  id            String    @id @default(cuid())
+  campaignId    String
+  name          String
+  title         String?   // e.g., "Innkeeper", "Court Wizard"
+
+  // Stats (optional, for combatant NPCs)
+  monsterId     String?   // Reference to monster template
+  stats         Json?     // Override stats
+
+  // Appearance
+  portraitUrl   String?
+  description   String?
+
+  // Personality
+  personality   String?
+  motivation    String?
+  secrets       String?   // DM-only notes
+
+  // Location
+  defaultLocation String?
+  currentMapId  String?
+
+  // Dialogue
+  defaultDialogueId String?
+
+  // Metadata
+  tags          String[]
+  isHostile     Boolean   @default(false)
+  faction       String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  campaign      Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  dialogues     Dialogue[]
+
+  @@map("npcs")
+}
+
+// ============================================
+// Dialogue Tree
+// ============================================
+
+model Dialogue {
+  id            String    @id @default(cuid())
+  campaignId    String
+  npcId         String?
+  name          String
+  description   String?
+
+  // Dialogue structure
+  startNodeId   String
+  nodes         Json      @default("[]") // DialogueNode[]
+  variables     Json      @default("[]") // DialogueVariable[]
+
+  // Metadata
+  tags          String[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  campaign      Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  npc           NPC?      @relation(fields: [npcId], references: [id], onDelete: SetNull)
+
+  @@map("dialogues")
+}
+
+// ============================================
+// Quest
+// ============================================
+
+model Quest {
+  id            String    @id @default(cuid())
+  campaignId    String
+  name          String
+  description   String?
+
+  // Quest type
+  type          String    @default("main") // main, side, personal
+  status        String    @default("draft") // draft, active, completed, failed
+
+  // Objectives
+  objectives    Json      @default("[]") // QuestObjective[]
+
+  // Rewards
+  rewards       Json      @default("[]") // QuestReward[]
+
+  // Prerequisites
+  prerequisites Json      @default("[]") // Other quests, levels, items
+
+  // Giver
+  questGiverId  String?   // NPC ID
+
+  // Metadata
+  recommendedLevel Int?
+  tags          String[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   // Relations
   campaign      Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
-  @@map("maps")
+  @@map("quests")
+}
+
+// ============================================
+// Published Campaign (for sharing)
+// ============================================
+
+model PublishedCampaign {
+  id            String    @id @default(cuid())
+  campaignId    String
+  version       String
+  name          String
+  description   String?
+
+  // Publishing settings
+  visibility    String    @default("public") // public, private, unlisted
+  price         Int       @default(0) // In cents
+
+  // Content snapshot
+  content       Json      // Full campaign data at publish time
+  thumbnailUrl  String?
+
+  // Stats
+  downloads     Int       @default(0)
+  rating        Float?
+  ratingCount   Int       @default(0)
+
+  // Metadata
+  tags          String[]
+  publishedAt   DateTime  @default(now())
+
+  @@map("published_campaigns")
 }

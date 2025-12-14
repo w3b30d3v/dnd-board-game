@@ -849,15 +849,21 @@ export default function DashboardContent() {
                     <h3 className="dnd-heading-section text-lg mb-0 border-none pb-0" style={{ color: '#A78BFA' }}>
                       Campaigns
                     </h3>
-                    <p className="text-sm text-text-muted">0 campaigns</p>
+                    <p className="text-sm text-text-muted">DM Tools</p>
                   </div>
                 </div>
                 <p className="text-text-secondary text-sm mb-4">
-                  Join existing campaigns or create your own adventure as a Dungeon Master.
+                  Create your own adventures as a Dungeon Master with maps, encounters, NPCs, and quests.
                 </p>
-                <button className="btn-magic w-full opacity-60" disabled>
-                  Coming in Phase 6
-                </button>
+                <Link href="/dm/campaigns">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="btn-magic w-full text-center"
+                  >
+                    Campaign Builder
+                  </motion.button>
+                </Link>
               </EnchantedCard>
             </motion.div>
 

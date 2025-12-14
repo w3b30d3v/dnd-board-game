@@ -8,6 +8,7 @@ import { prisma } from './lib/prisma.js';
 import authRoutes from './routes/auth.js';
 import characterRoutes from './routes/characters.js';
 import mediaRoutes from './routes/media.js';
+import campaignRoutes from './routes/campaigns.js';
 
 const app: Express = express();
 
@@ -78,8 +79,8 @@ app.get('/health/db', async (_req, res) => {
 app.get('/api', (_req, res) => {
   res.json({
     name: 'D&D Platform API',
-    version: '0.1.0',
-    status: 'Phase 2 - Character Builder',
+    version: '0.6.0',
+    status: 'Phase 6 - Campaign Builder',
   });
 });
 
@@ -87,6 +88,7 @@ app.get('/api', (_req, res) => {
 app.use('/auth', authRoutes);
 app.use('/characters', characterRoutes);
 app.use('/media', mediaRoutes);
+app.use('/campaigns', campaignRoutes);
 
 // Error handling middleware
 app.use(
