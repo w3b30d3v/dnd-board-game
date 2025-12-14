@@ -45,38 +45,81 @@ router.get('/dashboard', async (req: Request, res: Response) => {
     });
 
     // Get active game sessions where user is DM
-    const activeSessions = await prisma.gameSession.findMany({
-      where: {
-        campaign: { ownerId: userId },
-        status: { in: ['lobby', 'active', 'paused'] },
-      },
-      include: {
-        campaign: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        participants: {
-          select: {
-            userId: true,
-            role: true,
-            isConnected: true,
-            lastSeenAt: true,
-          },
-        },
-      },
-      orderBy: { lastActivityAt: 'desc' },
-    });
+    // Note: participants table may not exist if migration hasn't run
+    let activeSessions: Array<{
+      id: string;
+      name: string;
+      status: string;
+      inviteCode: string;
+      campaignId: string;
+      inCombat: boolean;
+      round: number;
+      lastActivityAt: Date;
+      createdAt: Date;
+      campaign: { id: string; name: string };
+      participants: Array<{ userId: string; role: string; isConnected: boolean; lastSeenAt: Date }>;
+    }> = [];
 
-    // Get user limits
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        maxActiveSessions: true,
-        aiCharactersGenerated: true,
-      },
-    });
+    try {
+      activeSessions = await prisma.gameSession.findMany({
+        where: {
+          campaign: { ownerId: userId },
+          status: { in: ['lobby', 'active', 'paused'] },
+        },
+        include: {
+          campaign: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          participants: {
+            select: {
+              userId: true,
+              role: true,
+              isConnected: true,
+              lastSeenAt: true,
+            },
+          },
+        },
+        orderBy: { lastActivityAt: 'desc' },
+      });
+    } catch (e) {
+      // If participants table doesn't exist, try without it
+      console.error('Error fetching sessions with participants, trying without:', e);
+      const sessionsWithoutParticipants = await prisma.gameSession.findMany({
+        where: {
+          campaign: { ownerId: userId },
+          status: { in: ['lobby', 'active', 'paused'] },
+        },
+        include: {
+          campaign: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: { lastActivityAt: 'desc' },
+      });
+      activeSessions = sessionsWithoutParticipants.map(s => ({ ...s, participants: [] }));
+    }
+
+    // Get user limits - use aiCharactersGenerated which definitely exists
+    // maxActiveSessions defaults to 3 if migration hasn't run
+    let maxSessions = 3;
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          aiCharactersGenerated: true,
+        },
+      });
+      // maxActiveSessions will be added after migration runs
+      // For now, default to 3
+    } catch {
+      // If query fails, use defaults
+    }
 
     // Calculate stats
     const totalPlayers = new Set(
@@ -90,7 +133,7 @@ router.get('/dashboard', async (req: Request, res: Response) => {
       completedCampaigns: campaigns.filter(c => c.status === 'completed').length,
       totalPlayers,
       activeSessions: activeSessions.length,
-      maxSessions: user?.maxActiveSessions || 3,
+      maxSessions: maxSessions,
       totalMaps: campaigns.reduce((sum, c) => sum + c._count.maps, 0),
       totalEncounters: campaigns.reduce((sum, c) => sum + c._count.encounters, 0),
       totalNpcs: campaigns.reduce((sum, c) => sum + c._count.npcs, 0),
@@ -162,24 +205,40 @@ router.get('/sessions', async (req: Request, res: Response) => {
       where.status = status;
     }
 
-    const sessions = await prisma.gameSession.findMany({
-      where,
-      include: {
-        campaign: {
-          select: {
-            id: true,
-            name: true,
-            coverImageUrl: true,
+    // Try to include participants, fallback if table doesn't exist
+    let sessions;
+    try {
+      sessions = await prisma.gameSession.findMany({
+        where,
+        include: {
+          campaign: {
+            select: {
+              id: true,
+              name: true,
+              coverImageUrl: true,
+            },
+          },
+          participants: true,
+        },
+        orderBy: { lastActivityAt: 'desc' },
+      });
+    } catch {
+      // If participants table doesn't exist, fetch without it
+      const sessionsWithoutParticipants = await prisma.gameSession.findMany({
+        where,
+        include: {
+          campaign: {
+            select: {
+              id: true,
+              name: true,
+              coverImageUrl: true,
+            },
           },
         },
-        participants: {
-          include: {
-            // Note: Can't include user directly - would need separate query
-          },
-        },
-      },
-      orderBy: { lastActivityAt: 'desc' },
-    });
+        orderBy: { lastActivityAt: 'desc' },
+      });
+      sessions = sessionsWithoutParticipants.map(s => ({ ...s, participants: [] }));
+    }
 
     return res.json({ sessions });
   } catch (error) {
@@ -206,20 +265,14 @@ router.post('/sessions', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Campaign not found' });
     }
 
-    // Check session limit
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { maxActiveSessions: true },
-    });
-
+    // Check session limit - default to 3 until migration runs
+    const maxSessions = 3;
     const activeCount = await prisma.gameSession.count({
       where: {
         campaign: { ownerId: userId },
         status: { in: ['lobby', 'active', 'paused'] },
       },
     });
-
-    const maxSessions = user?.maxActiveSessions || 3;
     if (activeCount >= maxSessions) {
       return res.status(400).json({
         error: `Maximum ${maxSessions} active sessions allowed. Complete or archive existing sessions.`,
@@ -244,15 +297,20 @@ router.post('/sessions', async (req: Request, res: Response) => {
       },
     });
 
-    // Add DM as participant
-    await prisma.gameSessionParticipant.create({
-      data: {
-        sessionId: session.id,
-        userId,
-        role: 'dm',
-        isConnected: false,
-      },
-    });
+    // Add DM as participant (if migration has run)
+    try {
+      await prisma.gameSessionParticipant.create({
+        data: {
+          sessionId: session.id,
+          userId,
+          role: 'dm',
+          isConnected: false,
+        },
+      });
+    } catch {
+      // Participants table may not exist yet - session still works
+      console.log('Could not create participant record - table may not exist');
+    }
 
     return res.status(201).json({ session });
   } catch (error) {

@@ -97,6 +97,7 @@ export class AuthService {
   async login(email: string, password: string): Promise<AuthResult> {
     let user;
     try {
+      // Fetch user with all fields - if DB schema mismatch, error will be caught
       user = await prisma.user.findUnique({ where: { email } });
     } catch (dbError) {
       // Log the actual database error for debugging
