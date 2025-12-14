@@ -11,6 +11,32 @@ import mediaRoutes from './routes/media.js';
 import campaignRoutes from './routes/campaigns.js';
 import dmRoutes from './routes/dm.js';
 
+// Verify database connection and schema on startup
+async function verifyDatabase() {
+  try {
+    // Test basic connection with a simple query
+    await prisma.$queryRaw`SELECT 1`;
+    logger.info('Database connection verified');
+
+    // Check if maxActiveSessions column exists
+    const result = await prisma.$queryRaw`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'users' AND column_name = 'maxActiveSessions'
+    ` as Array<{ column_name: string }>;
+
+    if (result.length === 0) {
+      logger.warn('maxActiveSessions column not found - migration may not have run');
+    } else {
+      logger.info('Schema verification passed');
+    }
+  } catch (error) {
+    logger.error({ error }, 'Database verification failed');
+  }
+}
+
+// Run verification
+verifyDatabase().catch(console.error);
+
 const app: Express = express();
 
 // Middleware
