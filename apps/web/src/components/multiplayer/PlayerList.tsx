@@ -72,8 +72,8 @@ export function PlayerList({
                 </div>
               </div>
 
-              {/* Ready status */}
-              {showReadyStatus && !player.isDM && (
+              {/* Ready status - shown for all players including DM */}
+              {showReadyStatus && (
                 <div
                   className={`
                     px-2 py-1 text-xs rounded

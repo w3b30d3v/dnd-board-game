@@ -20,6 +20,7 @@ export default function MultiplayerTestPage() {
     currentSession: session,
     players,
     diceResults,
+    isReady,
   } = useMultiplayerStore();
 
   const {
@@ -215,9 +216,13 @@ export default function MultiplayerTestPage() {
                   onClick={() => setReady(session.id)}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="mt-4 w-full px-4 py-2 bg-primary text-bg-dark rounded font-medium"
+                  className={`mt-4 w-full px-4 py-2 rounded font-medium transition-colors ${
+                    isReady
+                      ? 'bg-green-500/20 text-green-400 border border-green-500/50'
+                      : 'bg-primary text-bg-dark'
+                  }`}
                 >
-                  Toggle Ready
+                  {isReady ? '✓ Ready' : 'Set Ready'}
                 </motion.button>
               </div>
 

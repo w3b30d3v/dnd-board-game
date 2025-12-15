@@ -67,12 +67,18 @@ export const useCampaignStore = create<CampaignState>((set, get) => ({
       const response = await fetch(`${API_URL}/campaigns`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!response.ok) throw new Error('Failed to fetch campaigns');
+      if (!response.ok) {
+        // Try to get error message from response
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to fetch campaigns');
+      }
       const data = await response.json();
-      set({ campaigns: data.campaigns, isLoading: false });
+      // Clear error on successful fetch (even if empty campaigns array)
+      set({ campaigns: data.campaigns || [], isLoading: false, error: null });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch campaigns';
-      set({ error: message, isLoading: false });
+      // Don't show error for empty list - just set empty campaigns
+      set({ error: message, isLoading: false, campaigns: [] });
     }
   },
 

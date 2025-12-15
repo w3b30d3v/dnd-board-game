@@ -14,6 +14,7 @@ router.use(auth);
 router.get('/dashboard', async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
+    console.log('Fetching DM dashboard for user:', userId);
 
     // Get all campaigns owned by the user with counts
     const campaigns = await prisma.campaign.findMany({
@@ -184,7 +185,14 @@ router.get('/dashboard', async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error fetching DM dashboard:', error);
-    return res.status(500).json({ error: 'Failed to fetch dashboard' });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    // Check for database errors
+    if (message.includes('connect') || message.includes('ECONNREFUSED') ||
+        message.includes('database') || message.includes('P2022') ||
+        message.includes('column') || message.includes('does not exist')) {
+      return res.status(503).json({ error: 'Database error', details: message });
+    }
+    return res.status(500).json({ error: 'Failed to fetch dashboard', details: message });
   }
 });
 

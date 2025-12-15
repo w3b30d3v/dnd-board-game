@@ -120,8 +120,16 @@ const publishSchema = z.object({
 router.get('/', auth, async (req: Request, res: Response) => {
   try {
     const campaigns = await campaignService.findByUser(req.user!.id);
-    return res.json({ campaigns });
+    return res.json({ campaigns: campaigns || [] });
   } catch (error) {
+    console.error('Error fetching campaigns:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    // Check for database errors
+    if (message.includes('connect') || message.includes('ECONNREFUSED') ||
+        message.includes('database') || message.includes('P2022') ||
+        message.includes('column') || message.includes('does not exist')) {
+      return res.status(503).json({ error: 'Database error', details: message });
+    }
     return res.status(500).json({ error: 'Failed to fetch campaigns' });
   }
 });
@@ -129,10 +137,18 @@ router.get('/', auth, async (req: Request, res: Response) => {
 // POST /campaigns - Create a new campaign
 router.post('/', auth, validateBody(createCampaignSchema), async (req: Request, res: Response) => {
   try {
+    console.log('Creating campaign with data:', req.body);
     const campaign = await campaignService.create(req.user!.id, req.body);
     return res.status(201).json(campaign);
   } catch (error) {
+    console.error('Error creating campaign:', error);
     const message = error instanceof Error ? error.message : 'Failed to create campaign';
+    // Check for database errors
+    if (message.includes('connect') || message.includes('ECONNREFUSED') ||
+        message.includes('database') || message.includes('P2022') ||
+        message.includes('column') || message.includes('does not exist')) {
+      return res.status(503).json({ error: 'Database error', details: message });
+    }
     return res.status(400).json({ error: message });
   }
 });
