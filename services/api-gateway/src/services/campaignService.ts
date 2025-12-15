@@ -110,9 +110,22 @@ export class CampaignService {
   // ========================
 
   async findByUser(userId: string) {
+    // Use explicit select to avoid new columns that may not exist yet (gameState, lastSavedAt)
     return prisma.campaign.findMany({
       where: { ownerId: userId },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        coverImageUrl: true,
+        status: true,
+        isPublic: true,
+        recommendedLevel: true,
+        settings: true,
+        tags: true,
+        createdAt: true,
+        updatedAt: true,
+        ownerId: true,
         _count: {
           select: {
             maps: true,
@@ -127,6 +140,7 @@ export class CampaignService {
   }
 
   async findById(id: string, userId: string) {
+    // Use explicit select to avoid new columns that may not exist yet (gameState, lastSavedAt)
     const campaign = await prisma.campaign.findFirst({
       where: {
         id,
@@ -136,7 +150,19 @@ export class CampaignService {
           { players: { some: { userId } } },
         ],
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        coverImageUrl: true,
+        status: true,
+        isPublic: true,
+        recommendedLevel: true,
+        settings: true,
+        tags: true,
+        createdAt: true,
+        updatedAt: true,
+        ownerId: true,
         maps: true,
         encounters: true,
         npcs: true,
@@ -160,6 +186,7 @@ export class CampaignService {
   }
 
   async create(userId: string, data: CreateCampaignInput) {
+    // Use explicit select to avoid new columns that may not exist yet (gameState, lastSavedAt)
     return prisma.campaign.create({
       data: {
         ownerId: userId,
@@ -171,7 +198,19 @@ export class CampaignService {
         settings: (data.settings ?? {}) as Prisma.InputJsonValue,
         tags: data.tags ?? [],
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        coverImageUrl: true,
+        status: true,
+        isPublic: true,
+        recommendedLevel: true,
+        settings: true,
+        tags: true,
+        createdAt: true,
+        updatedAt: true,
+        ownerId: true,
         _count: {
           select: { maps: true, encounters: true, npcs: true, quests: true },
         },
@@ -180,15 +219,17 @@ export class CampaignService {
   }
 
   async update(id: string, userId: string, data: UpdateCampaignInput) {
-    // Verify ownership
+    // Verify ownership - use select to avoid new columns
     const existing = await prisma.campaign.findFirst({
       where: { id, ownerId: userId },
+      select: { id: true },
     });
 
     if (!existing) {
       throw new Error('Campaign not found or you do not have permission');
     }
 
+    // Use explicit select to avoid new columns that may not exist yet (gameState, lastSavedAt)
     return prisma.campaign.update({
       where: { id },
       data: {
@@ -201,7 +242,19 @@ export class CampaignService {
         settings: data.settings as Prisma.InputJsonValue,
         tags: data.tags,
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        coverImageUrl: true,
+        status: true,
+        isPublic: true,
+        recommendedLevel: true,
+        settings: true,
+        tags: true,
+        createdAt: true,
+        updatedAt: true,
+        ownerId: true,
         _count: {
           select: { maps: true, encounters: true, npcs: true, quests: true },
         },
@@ -210,8 +263,10 @@ export class CampaignService {
   }
 
   async delete(id: string, userId: string) {
+    // Use select to avoid new columns
     const existing = await prisma.campaign.findFirst({
       where: { id, ownerId: userId },
+      select: { id: true },
     });
 
     if (!existing) {
@@ -227,9 +282,10 @@ export class CampaignService {
   // ========================
 
   async createMap(campaignId: string, userId: string, data: CreateMapInput) {
-    // Verify campaign ownership
+    // Verify campaign ownership - use select to avoid new columns
     const campaign = await prisma.campaign.findFirst({
       where: { id: campaignId, ownerId: userId },
+      select: { id: true },
     });
 
     if (!campaign) {
@@ -302,8 +358,10 @@ export class CampaignService {
   // ========================
 
   async createEncounter(campaignId: string, userId: string, data: CreateEncounterInput) {
+    // Use select to avoid new columns
     const campaign = await prisma.campaign.findFirst({
       where: { id: campaignId, ownerId: userId },
+      select: { id: true },
     });
 
     if (!campaign) {
@@ -377,8 +435,10 @@ export class CampaignService {
   // ========================
 
   async createNPC(campaignId: string, userId: string, data: CreateNPCInput) {
+    // Use select to avoid new columns
     const campaign = await prisma.campaign.findFirst({
       where: { id: campaignId, ownerId: userId },
+      select: { id: true },
     });
 
     if (!campaign) {
@@ -456,8 +516,10 @@ export class CampaignService {
   // ========================
 
   async createQuest(campaignId: string, userId: string, data: CreateQuestInput) {
+    // Use select to avoid new columns
     const campaign = await prisma.campaign.findFirst({
       where: { id: campaignId, ownerId: userId },
+      select: { id: true },
     });
 
     if (!campaign) {
@@ -525,9 +587,16 @@ export class CampaignService {
   // ========================
 
   async validateCampaign(campaignId: string): Promise<ValidationResult> {
+    // Use explicit select to avoid new columns
     const campaign = await prisma.campaign.findUnique({
       where: { id: campaignId },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        coverImageUrl: true,
+        status: true,
+        tags: true,
         maps: true,
         encounters: true,
         npcs: true,
@@ -626,10 +695,17 @@ export class CampaignService {
       tags?: string[];
     }
   ) {
-    // Verify ownership
+    // Verify ownership - use explicit select to avoid new columns
     const campaign = await prisma.campaign.findFirst({
       where: { id: campaignId, ownerId: userId },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        coverImageUrl: true,
+        status: true,
+        tags: true,
+        ownerId: true,
         maps: true,
         encounters: true,
         npcs: true,

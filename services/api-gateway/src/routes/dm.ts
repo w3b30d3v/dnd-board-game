@@ -17,9 +17,19 @@ router.get('/dashboard', async (req: Request, res: Response) => {
     console.log('Fetching DM dashboard for user:', userId);
 
     // Get all campaigns owned by the user with counts
+    // Use explicit select to avoid new columns that may not exist (gameState, lastSavedAt)
     const campaigns = await prisma.campaign.findMany({
       where: { ownerId: userId },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        coverImageUrl: true,
+        status: true,
+        isPublic: true,
+        createdAt: true,
+        updatedAt: true,
+        ownerId: true,
         _count: {
           select: {
             maps: true,
@@ -62,12 +72,22 @@ router.get('/dashboard', async (req: Request, res: Response) => {
     }> = [];
 
     try {
+      // Use explicit select to avoid new columns (isLocked, allowedUsers)
       activeSessions = await prisma.gameSession.findMany({
         where: {
           campaign: { ownerId: userId },
           status: { in: ['lobby', 'active', 'paused'] },
         },
-        include: {
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          inviteCode: true,
+          campaignId: true,
+          inCombat: true,
+          round: true,
+          lastActivityAt: true,
+          createdAt: true,
           campaign: {
             select: {
               id: true,
@@ -93,7 +113,16 @@ router.get('/dashboard', async (req: Request, res: Response) => {
           campaign: { ownerId: userId },
           status: { in: ['lobby', 'active', 'paused'] },
         },
-        include: {
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          inviteCode: true,
+          campaignId: true,
+          inCombat: true,
+          round: true,
+          lastActivityAt: true,
+          createdAt: true,
           campaign: {
             select: {
               id: true,
@@ -264,9 +293,10 @@ router.post('/sessions', async (req: Request, res: Response) => {
     const userId = req.user!.id;
     const { campaignId, name } = req.body;
 
-    // Verify user owns the campaign
+    // Verify user owns the campaign - use select to avoid new columns
     const campaign = await prisma.campaign.findFirst({
       where: { id: campaignId, ownerId: userId },
+      select: { id: true, name: true },
     });
 
     if (!campaign) {
