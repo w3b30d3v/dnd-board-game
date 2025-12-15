@@ -158,6 +158,10 @@ model Campaign {
   // Content
   settings      Json      @default("{}")
 
+  // Game state persistence - saved from sessions
+  gameState     Json?     // Full game state snapshot for resuming
+  lastSavedAt   DateTime? // When game state was last saved
+
   // Metadata
   tags          String[]
   createdAt     DateTime  @default(now())
@@ -203,6 +207,10 @@ model GameSession {
 
   // Current map
   currentMapId  String?
+
+  // Session lock - DM can prevent new players from joining
+  isLocked      Boolean   @default(false)
+  allowedUsers  String[]  @default([]) // User IDs allowed to join when locked
 
   // Combat state
   inCombat      Boolean   @default(false)

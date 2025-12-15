@@ -394,6 +394,286 @@ router.delete('/sessions/:id', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /dm/sessions/:id/lock
+ * Lock or unlock a session (DM only)
+ */
+router.post('/sessions/:id/lock', async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { id } = req.params;
+    const { locked, allowedUsers } = req.body;
+
+    // Verify user owns the campaign this session belongs to
+    const session = await prisma.gameSession.findFirst({
+      where: {
+        id,
+        campaign: { ownerId: userId },
+      },
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    const updateData: { isLocked?: boolean; allowedUsers?: string[] } = {};
+    if (typeof locked === 'boolean') {
+      updateData.isLocked = locked;
+    }
+    if (Array.isArray(allowedUsers)) {
+      updateData.allowedUsers = allowedUsers;
+    }
+
+    const updated = await prisma.gameSession.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return res.json({
+      session: {
+        id: updated.id,
+        isLocked: updated.isLocked,
+        allowedUsers: updated.allowedUsers,
+      },
+    });
+  } catch (error) {
+    console.error('Error locking session:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    // Check if it's a schema error (column doesn't exist)
+    if (message.includes('column') || message.includes('does not exist') || message.includes('Unknown arg')) {
+      return res.status(503).json({
+        error: 'Session lock feature not available',
+        details: 'Database schema needs migration. Please contact administrator.',
+      });
+    }
+    return res.status(500).json({ error: 'Failed to lock session' });
+  }
+});
+
+/**
+ * POST /dm/sessions/:id/save
+ * Save current session state to campaign for long-term persistence
+ */
+router.post('/sessions/:id/save', async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { id } = req.params;
+
+    // Get session with all state data
+    const session = await prisma.gameSession.findFirst({
+      where: {
+        id,
+        campaign: { ownerId: userId },
+      },
+      include: {
+        participants: true,
+      },
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    // Create a comprehensive game state snapshot
+    const gameState = {
+      sessionId: session.id,
+      sessionName: session.name,
+      status: session.status,
+      currentMapId: session.currentMapId,
+      inCombat: session.inCombat,
+      currentTurn: session.currentTurn,
+      round: session.round,
+      initiativeOrder: session.initiativeOrder,
+      tokenStates: session.tokenStates,
+      revealedCells: session.revealedCells,
+      journal: session.journal,
+      participants: session.participants.map((p) => ({
+        odlUserId: p.userId,
+        characterId: p.characterId,
+        role: p.role,
+        currentHp: p.currentHp,
+        tempHp: p.tempHp,
+        conditions: p.conditions,
+        inspiration: p.inspiration,
+      })),
+      savedAt: new Date().toISOString(),
+    };
+
+    // Save to campaign
+    const campaign = await prisma.campaign.update({
+      where: { id: session.campaignId },
+      data: {
+        gameState: gameState,
+        lastSavedAt: new Date(),
+      },
+    });
+
+    return res.json({
+      success: true,
+      savedAt: campaign.lastSavedAt,
+      message: 'Game state saved to campaign. You can resume this session anytime.',
+    });
+  } catch (error) {
+    console.error('Error saving session:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    // Check if it's a schema error (column doesn't exist)
+    if (message.includes('column') || message.includes('does not exist') || message.includes('Unknown arg')) {
+      return res.status(503).json({
+        error: 'Session save feature not available',
+        details: 'Database schema needs migration. Please contact administrator.',
+      });
+    }
+    return res.status(500).json({ error: 'Failed to save session' });
+  }
+});
+
+/**
+ * POST /dm/sessions/:id/load
+ * Load saved game state from campaign into a new or existing session
+ */
+router.post('/sessions/:id/load', async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { id } = req.params; // This is the session ID to load into
+
+    // Get the session
+    const session = await prisma.gameSession.findFirst({
+      where: {
+        id,
+        campaign: { ownerId: userId },
+      },
+      include: {
+        campaign: true,
+      },
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    // Get saved game state from campaign
+    const campaign = session.campaign;
+    if (!campaign.gameState) {
+      return res.status(404).json({ error: 'No saved game state found for this campaign' });
+    }
+
+    const savedState = campaign.gameState as {
+      currentMapId?: string;
+      inCombat?: boolean;
+      currentTurn?: number;
+      round?: number;
+      initiativeOrder?: Record<string, unknown>[];
+      tokenStates?: Record<string, unknown>;
+      revealedCells?: Record<string, unknown>;
+      journal?: Record<string, unknown>[];
+    };
+
+    // Build update data, only including fields that have values
+    const updateData: Record<string, unknown> = {
+      inCombat: savedState.inCombat ?? false,
+      round: savedState.round ?? 0,
+      tokenStates: savedState.tokenStates ?? {},
+      revealedCells: savedState.revealedCells ?? {},
+      journal: savedState.journal ?? [],
+      lastActivityAt: new Date(),
+    };
+
+    if (savedState.currentMapId !== undefined) {
+      updateData.currentMapId = savedState.currentMapId;
+    }
+    if (savedState.currentTurn !== undefined) {
+      updateData.currentTurn = savedState.currentTurn;
+    }
+    if (savedState.initiativeOrder !== undefined) {
+      updateData.initiativeOrder = savedState.initiativeOrder;
+    }
+
+    // Restore session state
+    const updated = await prisma.gameSession.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return res.json({
+      success: true,
+      session: {
+        id: updated.id,
+        status: updated.status,
+        inCombat: updated.inCombat,
+        round: updated.round,
+      },
+      message: 'Game state loaded from saved campaign data.',
+    });
+  } catch (error) {
+    console.error('Error loading session:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    // Check if it's a schema error (column doesn't exist)
+    if (message.includes('column') || message.includes('does not exist') || message.includes('Unknown arg')) {
+      return res.status(503).json({
+        error: 'Session load feature not available',
+        details: 'Database schema needs migration. Please contact administrator.',
+      });
+    }
+    return res.status(500).json({ error: 'Failed to load session' });
+  }
+});
+
+/**
+ * GET /dm/campaigns/:id/saved-state
+ * Get saved game state info for a campaign
+ */
+router.get('/campaigns/:id/saved-state', async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { id } = req.params;
+
+    const campaign = await prisma.campaign.findFirst({
+      where: {
+        id,
+        ownerId: userId,
+      },
+      select: {
+        id: true,
+        name: true,
+        gameState: true,
+        lastSavedAt: true,
+      },
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found' });
+    }
+
+    const hasSavedState = campaign.gameState !== null;
+    const savedState = campaign.gameState as { sessionName?: string; round?: number; inCombat?: boolean } | null;
+
+    return res.json({
+      campaignId: campaign.id,
+      campaignName: campaign.name,
+      hasSavedState,
+      lastSavedAt: campaign.lastSavedAt,
+      preview: hasSavedState
+        ? {
+            sessionName: savedState?.sessionName,
+            round: savedState?.round,
+            inCombat: savedState?.inCombat,
+          }
+        : null,
+    });
+  } catch (error) {
+    console.error('Error getting saved state:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    // Check if it's a schema error (column doesn't exist)
+    if (message.includes('column') || message.includes('does not exist') || message.includes('Unknown arg')) {
+      return res.status(503).json({
+        error: 'Saved state feature not available',
+        details: 'Database schema needs migration. Please contact administrator.',
+      });
+    }
+    return res.status(500).json({ error: 'Failed to get saved state' });
+  }
+});
+
 // Helper functions
 
 function generateInviteCode(): string {

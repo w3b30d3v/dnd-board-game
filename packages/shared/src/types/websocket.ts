@@ -20,6 +20,12 @@ export const WSMessageType = {
   SESSION_CLOSED: 'SESSION_CLOSED',
   SESSION_ERROR: 'SESSION_ERROR',
 
+  // Session Lock (DM feature)
+  SESSION_LOCK: 'SESSION_LOCK',
+  SESSION_UNLOCK: 'SESSION_UNLOCK',
+  SESSION_LOCKED: 'SESSION_LOCKED', // Broadcast when session lock status changes
+  SESSION_LOCKED_ERROR: 'SESSION_LOCKED_ERROR', // Error when trying to join locked session
+
   // Player Status
   PLAYER_JOINED: 'PLAYER_JOINED',
   PLAYER_LEFT: 'PLAYER_LEFT',
@@ -74,6 +80,12 @@ export const WSMessageType = {
   // DM Controls
   DM_COMMAND: 'DM_COMMAND',
   DM_BROADCAST: 'DM_BROADCAST',
+
+  // Game State Persistence
+  GAME_SAVE: 'GAME_SAVE',
+  GAME_SAVED: 'GAME_SAVED',
+  GAME_LOAD: 'GAME_LOAD',
+  GAME_LOADED: 'GAME_LOADED',
 
   // Errors
   ERROR: 'ERROR',
@@ -412,10 +424,13 @@ export const SessionStateSchema = z.object({
   status: z.enum(['lobby', 'starting', 'active', 'paused', 'ended']),
   maxPlayers: z.number(),
   isPrivate: z.boolean(),
+  isLocked: z.boolean().default(false), // DM can lock session to prevent new joins
+  allowedUsers: z.array(z.string()).default([]), // User IDs allowed when locked
   players: z.array(PlayerSchema),
   gameState: z.unknown().optional(), // Full game state when active
   createdAt: z.number(),
   startedAt: z.number().optional(),
+  lastSavedAt: z.number().optional(), // Last time game was saved to campaign
 });
 
 export type SessionState = z.infer<typeof SessionStateSchema>;

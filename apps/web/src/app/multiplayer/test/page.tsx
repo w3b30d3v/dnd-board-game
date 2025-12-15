@@ -22,6 +22,8 @@ export default function MultiplayerTestPage() {
     players,
     diceResults,
     isReady,
+    isHost,
+    isSessionLocked,
   } = useMultiplayerStore();
 
   const {
@@ -35,6 +37,8 @@ export default function MultiplayerTestPage() {
     sendChat,
     rollDice,
     setReady,
+    lockSession,
+    unlockSession,
   } = useWebSocket();
 
   const handleCreateSession = () => {
@@ -211,6 +215,34 @@ export default function MultiplayerTestPage() {
                 >
                   Leave Session
                 </motion.button>
+
+                {/* DM Controls */}
+                {isHost && (
+                  <div className="mt-4 pt-4 border-t border-border space-y-2">
+                    <h4 className="text-xs font-medium text-text-secondary uppercase tracking-wide">DM Controls</h4>
+
+                    {/* Lock Toggle */}
+                    <motion.button
+                      onClick={() => isSessionLocked ? unlockSession(session.id) : lockSession(session.id)}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`w-full px-4 py-2 rounded font-medium transition-colors ${
+                        isSessionLocked
+                          ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
+                          : 'bg-gray-500/20 text-gray-400 border border-gray-500/30 hover:bg-gray-500/30'
+                      }`}
+                    >
+                      {isSessionLocked ? '🔒 Unlock Session' : '🔓 Lock Session'}
+                    </motion.button>
+
+                    {/* Lock Status */}
+                    {isSessionLocked && (
+                      <p className="text-xs text-yellow-400 text-center">
+                        New players cannot join
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Player List */}

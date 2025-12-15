@@ -82,6 +82,8 @@ export class SessionManager {
       status: 'lobby',
       maxPlayers: options.maxPlayers || config.session.defaultMaxPlayers,
       isPrivate: options.isPrivate || false,
+      isLocked: false,
+      allowedUsers: [],
       players: [hostPlayer],
       createdAt: Date.now(),
     };
@@ -169,6 +171,14 @@ export class SessionManager {
 
     if (session.players.length >= session.maxPlayers) {
       return { success: false, error: 'Session is full' };
+    }
+
+    // Check if session is locked
+    if (session.isLocked) {
+      const isAllowed = session.allowedUsers.includes(userId) || session.hostUserId === userId;
+      if (!isAllowed) {
+        return { success: false, error: 'Session is locked. Only invited players can join.' };
+      }
     }
 
     // Check if user is already in session
@@ -415,6 +425,52 @@ export class SessionManager {
     this.inviteCodeMap.delete(session.inviteCode);
 
     logger.info('Session closed', { sessionId });
+  }
+
+  /**
+   * Lock or unlock a session (DM only)
+   */
+  async setSessionLock(
+    sessionId: string,
+    userId: string,
+    isLocked: boolean,
+    allowedUsers?: string[]
+  ): Promise<{ success: boolean; session?: SessionState; error?: string }> {
+    const session = await this.getSession(sessionId);
+    if (!session) {
+      return { success: false, error: 'Session not found' };
+    }
+
+    // Only host/DM can lock sessions
+    if (session.hostUserId !== userId) {
+      return { success: false, error: 'Only the host can lock/unlock the session' };
+    }
+
+    session.isLocked = isLocked;
+    if (allowedUsers !== undefined) {
+      session.allowedUsers = allowedUsers;
+    }
+
+    await this.saveSession(session);
+
+    // Broadcast lock status change
+    this.broadcastToSession(session.id, {
+      type: WSMessageType.SESSION_LOCKED,
+      timestamp: Date.now(),
+      payload: {
+        sessionId: session.id,
+        isLocked: session.isLocked,
+        allowedUsers: session.allowedUsers,
+      },
+    });
+
+    logger.info('Session lock status changed', {
+      sessionId,
+      isLocked,
+      allowedUsersCount: session.allowedUsers.length,
+    });
+
+    return { success: true, session };
   }
 
   /**

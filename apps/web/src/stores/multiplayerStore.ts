@@ -40,6 +40,7 @@ interface MultiplayerState {
   players: Player[];
   isHost: boolean;
   isReady: boolean;
+  isSessionLocked: boolean;
 
   // Chat
   messages: ChatMessage[];
@@ -63,6 +64,7 @@ interface MultiplayerState {
   removePlayer: (odId: string) => void;
   setIsHost: (isHost: boolean) => void;
   setIsReady: (isReady: boolean) => void;
+  setIsSessionLocked: (isLocked: boolean) => void;
   addMessage: (message: Omit<ChatMessage, 'id'>) => void;
   clearMessages: () => void;
   markMessagesRead: () => void;
@@ -81,6 +83,7 @@ const initialState = {
   players: [],
   isHost: false,
   isReady: false,
+  isSessionLocked: false,
   messages: [],
   unreadCount: 0,
   diceResults: [],
@@ -128,6 +131,8 @@ export const useMultiplayerStore = create<MultiplayerState>()(
       setIsHost: (isHost) => set({ isHost }),
 
       setIsReady: (isReady) => set({ isReady }),
+
+      setIsSessionLocked: (isLocked) => set({ isSessionLocked: isLocked }),
 
       addMessage: (message) =>
         set((state) => ({

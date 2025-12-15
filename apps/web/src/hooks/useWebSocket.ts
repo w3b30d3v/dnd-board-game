@@ -40,6 +40,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     setIsInCombat,
     setIsHost,
     setIsReady,
+    setIsSessionLocked,
     reset,
   } = useMultiplayerStore();
 
@@ -165,6 +166,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
               hostUserId: '', // Will be set from player list
               maxPlayers: 6,
               isPrivate: false,
+              isLocked: false,
+              allowedUsers: [],
               players: [],
               createdAt: Date.now(),
             });
@@ -189,6 +192,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
               hostUserId: '',
               maxPlayers: 6,
               isPrivate: false,
+              isLocked: payload.isLocked || false,
+              allowedUsers: payload.allowedUsers || [],
               players: [],
               createdAt: Date.now(),
             });
@@ -342,6 +347,35 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
             setSession(null);
             break;
 
+          case WSMessageType.SESSION_LOCKED:
+            setIsSessionLocked(payload.isLocked);
+            addMessage({
+              senderId: 'system',
+              senderName: 'System',
+              content: payload.isLocked
+                ? 'Session has been locked. No new players can join.'
+                : 'Session has been unlocked. New players can now join.',
+              isInCharacter: false,
+              isWhisper: false,
+              isSystem: true,
+              level: payload.isLocked ? 'warning' : 'info',
+              timestamp: Date.now(),
+            });
+            break;
+
+          case 'SESSION_LOCKED_ERROR':
+            addMessage({
+              senderId: 'system',
+              senderName: 'System',
+              content: payload.message || 'Cannot join: session is locked',
+              isInCharacter: false,
+              isWhisper: false,
+              isSystem: true,
+              level: 'error',
+              timestamp: Date.now(),
+            });
+            break;
+
           case 'SESSION_LEFT':
             addMessage({
               senderId: 'system',
@@ -393,6 +427,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       setIsInCombat,
       setIsHost,
       setIsReady,
+      setIsSessionLocked,
       setSession,
     ]
   );
@@ -598,6 +633,31 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     [sendMessage]
   );
 
+  /**
+   * Lock the session (DM only)
+   */
+  const lockSession = useCallback(
+    (sessionId: string, allowedUsers?: string[]) => {
+      return sendMessage(WSMessageType.SESSION_LOCK, {
+        sessionId,
+        allowedUsers,
+      });
+    },
+    [sendMessage]
+  );
+
+  /**
+   * Unlock the session (DM only)
+   */
+  const unlockSession = useCallback(
+    (sessionId: string) => {
+      return sendMessage(WSMessageType.SESSION_UNLOCK, {
+        sessionId,
+      });
+    },
+    [sendMessage]
+  );
+
   // Auto-connect on mount if enabled
   useEffect(() => {
     if (autoConnect && token) {
@@ -632,6 +692,10 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     // Game
     rollDice,
     endTurn,
+
+    // DM Controls
+    lockSession,
+    unlockSession,
 
     // Raw send
     sendMessage,

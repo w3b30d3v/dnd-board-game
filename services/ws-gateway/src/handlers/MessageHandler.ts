@@ -89,6 +89,15 @@ export async function handleMessage(
         await handleGameStart(connection, message);
         break;
 
+      // Session Lock
+      case WSMessageType.SESSION_LOCK:
+        await handleSessionLock(connection, message, true);
+        break;
+
+      case WSMessageType.SESSION_UNLOCK:
+        await handleSessionLock(connection, message, false);
+        break;
+
       // Chat
       case WSMessageType.CHAT_MESSAGE:
         await handleChatMessage(connection, message);
@@ -381,6 +390,40 @@ async function handleGameStart(
     sendError(connection.id, 'START_FAILED', result.error || 'Failed to start game');
   }
   // Success broadcast is handled in startSession
+}
+
+/**
+ * Handle session lock/unlock message
+ */
+async function handleSessionLock(
+  connection: Connection,
+  message: IncomingMessage,
+  isLocking: boolean
+): Promise<void> {
+  if (!connection.user || !connection.sessionId) {
+    sendError(connection.id, 'NOT_IN_SESSION', 'You must be in a session');
+    return;
+  }
+
+  const { allowedUsers } = message.payload || {};
+
+  const result = await sessionManager.setSessionLock(
+    connection.sessionId,
+    connection.user.userId,
+    isLocking,
+    allowedUsers
+  );
+
+  if (!result.success) {
+    sendError(connection.id, 'LOCK_FAILED', result.error || 'Failed to change lock status');
+    return;
+  }
+
+  // Success broadcast is handled in setSessionLock
+  logger.info(`Session ${isLocking ? 'locked' : 'unlocked'}`, {
+    sessionId: connection.sessionId,
+    userId: connection.user.userId,
+  });
 }
 
 /**
