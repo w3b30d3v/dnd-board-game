@@ -95,7 +95,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
             }
             break;
 
-          case WSMessageType.AUTHENTICATED:
+          case WSMessageType.AUTHENTICATED: {
             setConnectionStatus('authenticated');
             // Auto-rejoin session if we have one cached (handles reconnection)
             const cachedSession = useMultiplayerStore.getState().currentSession;
@@ -127,6 +127,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
               });
             }
             break;
+          }
 
           case WSMessageType.AUTH_ERROR:
             setConnectionStatus('error', payload.message);
@@ -361,20 +362,6 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
               senderId: 'system',
               senderName: 'System',
               content: payload.message || 'Session error',
-              isInCharacter: false,
-              isWhisper: false,
-              isSystem: true,
-              level: 'error',
-              timestamp: Date.now(),
-            });
-            break;
-
-          case WSMessageType.ERROR:
-            console.error('WebSocket error:', payload);
-            addMessage({
-              senderId: 'system',
-              senderName: 'System',
-              content: payload.message,
               isInCharacter: false,
               isWhisper: false,
               isSystem: true,
