@@ -242,12 +242,23 @@ router.get('/sessions', async (req: Request, res: Response) => {
       where.status = status;
     }
 
-    // Try to include participants, fallback if table doesn't exist
+    // Use explicit select to avoid new columns (isLocked, allowedUsers)
     let sessions;
     try {
       sessions = await prisma.gameSession.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          inviteCode: true,
+          campaignId: true,
+          inCombat: true,
+          round: true,
+          currentMapId: true,
+          lastActivityAt: true,
+          createdAt: true,
+          endedAt: true,
           campaign: {
             select: {
               id: true,
@@ -255,7 +266,14 @@ router.get('/sessions', async (req: Request, res: Response) => {
               coverImageUrl: true,
             },
           },
-          participants: true,
+          participants: {
+            select: {
+              userId: true,
+              role: true,
+              isConnected: true,
+              characterId: true,
+            },
+          },
         },
         orderBy: { lastActivityAt: 'desc' },
       });
@@ -263,7 +281,18 @@ router.get('/sessions', async (req: Request, res: Response) => {
       // If participants table doesn't exist, fetch without it
       const sessionsWithoutParticipants = await prisma.gameSession.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          inviteCode: true,
+          campaignId: true,
+          inCombat: true,
+          round: true,
+          currentMapId: true,
+          lastActivityAt: true,
+          createdAt: true,
+          endedAt: true,
           campaign: {
             select: {
               id: true,
@@ -320,7 +349,7 @@ router.post('/sessions', async (req: Request, res: Response) => {
     // Generate a 6-character invite code
     const inviteCode = generateInviteCode();
 
-    // Create session
+    // Create session - use explicit select to avoid new columns
     const session = await prisma.gameSession.create({
       data: {
         campaignId,
@@ -328,7 +357,15 @@ router.post('/sessions', async (req: Request, res: Response) => {
         inviteCode,
         status: 'lobby',
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        inviteCode: true,
+        campaignId: true,
+        inCombat: true,
+        round: true,
+        createdAt: true,
         campaign: {
           select: { name: true },
         },
@@ -367,23 +404,35 @@ router.patch('/sessions/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    // Verify user owns the campaign this session belongs to
+    // Verify user owns the campaign this session belongs to - use select to avoid new columns
     const session = await prisma.gameSession.findFirst({
       where: {
         id,
         campaign: { ownerId: userId },
       },
+      select: { id: true },
     });
 
     if (!session) {
       return res.status(404).json({ error: 'Session not found' });
     }
 
+    // Use explicit select to avoid new columns (isLocked, allowedUsers)
     const updated = await prisma.gameSession.update({
       where: { id },
       data: {
         status,
         ...(status === 'completed' ? { endedAt: new Date() } : {}),
+      },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        inviteCode: true,
+        campaignId: true,
+        inCombat: true,
+        round: true,
+        endedAt: true,
       },
     });
 
@@ -403,12 +452,13 @@ router.delete('/sessions/:id', async (req: Request, res: Response) => {
     const userId = req.user!.id;
     const { id } = req.params;
 
-    // Verify user owns the campaign this session belongs to
+    // Verify user owns the campaign this session belongs to - use select to avoid new columns
     const session = await prisma.gameSession.findFirst({
       where: {
         id,
         campaign: { ownerId: userId },
       },
+      select: { id: true },
     });
 
     if (!session) {
@@ -434,12 +484,13 @@ router.post('/sessions/:id/lock', async (req: Request, res: Response) => {
     const { id } = req.params;
     const { locked, allowedUsers } = req.body;
 
-    // Verify user owns the campaign this session belongs to
+    // Verify user owns the campaign this session belongs to - use select to avoid fetching all columns
     const session = await prisma.gameSession.findFirst({
       where: {
         id,
         campaign: { ownerId: userId },
       },
+      select: { id: true },
     });
 
     if (!session) {
@@ -454,9 +505,16 @@ router.post('/sessions/:id/lock', async (req: Request, res: Response) => {
       updateData.allowedUsers = allowedUsers;
     }
 
+    // Note: This endpoint intentionally uses isLocked/allowedUsers columns
+    // If migration hasn't run, it will fail and the error handler below returns 503
     const updated = await prisma.gameSession.update({
       where: { id },
       data: updateData,
+      select: {
+        id: true,
+        isLocked: true,
+        allowedUsers: true,
+      },
     });
 
     return res.json({
@@ -489,14 +547,36 @@ router.post('/sessions/:id/save', async (req: Request, res: Response) => {
     const userId = req.user!.id;
     const { id } = req.params;
 
-    // Get session with all state data
+    // Get session with all state data - use explicit select to avoid isLocked/allowedUsers
     const session = await prisma.gameSession.findFirst({
       where: {
         id,
         campaign: { ownerId: userId },
       },
-      include: {
-        participants: true,
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        campaignId: true,
+        currentMapId: true,
+        inCombat: true,
+        currentTurn: true,
+        round: true,
+        initiativeOrder: true,
+        tokenStates: true,
+        revealedCells: true,
+        journal: true,
+        participants: {
+          select: {
+            userId: true,
+            characterId: true,
+            role: true,
+            currentHp: true,
+            tempHp: true,
+            conditions: true,
+            inspiration: true,
+          },
+        },
       },
     });
 
@@ -529,12 +609,17 @@ router.post('/sessions/:id/save', async (req: Request, res: Response) => {
       savedAt: new Date().toISOString(),
     };
 
-    // Save to campaign
+    // Save to campaign - intentionally uses gameState/lastSavedAt columns
+    // Will fail with 503 if migration hasn't run (handled below)
     const campaign = await prisma.campaign.update({
       where: { id: session.campaignId },
       data: {
         gameState: gameState,
         lastSavedAt: new Date(),
+      },
+      select: {
+        id: true,
+        lastSavedAt: true,
       },
     });
 
@@ -566,14 +651,22 @@ router.post('/sessions/:id/load', async (req: Request, res: Response) => {
     const userId = req.user!.id;
     const { id } = req.params; // This is the session ID to load into
 
-    // Get the session
+    // Get the session with explicit select to avoid isLocked/allowedUsers
+    // This endpoint intentionally selects campaign.gameState which requires migration
     const session = await prisma.gameSession.findFirst({
       where: {
         id,
         campaign: { ownerId: userId },
       },
-      include: {
-        campaign: true,
+      select: {
+        id: true,
+        campaignId: true,
+        campaign: {
+          select: {
+            id: true,
+            gameState: true,
+          },
+        },
       },
     });
 
@@ -618,10 +711,16 @@ router.post('/sessions/:id/load', async (req: Request, res: Response) => {
       updateData.initiativeOrder = savedState.initiativeOrder;
     }
 
-    // Restore session state
+    // Restore session state - use explicit select to avoid isLocked/allowedUsers
     const updated = await prisma.gameSession.update({
       where: { id },
       data: updateData,
+      select: {
+        id: true,
+        status: true,
+        inCombat: true,
+        round: true,
+      },
     });
 
     return res.json({
