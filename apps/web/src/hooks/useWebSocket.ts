@@ -79,6 +79,16 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         switch (type) {
           case 'CONNECTED':
             setConnectionId(payload.connectionId);
+            addMessage({
+              senderId: 'system',
+              senderName: 'System',
+              content: 'WebSocket connected. Authenticating...',
+              isInCharacter: false,
+              isWhisper: false,
+              isSystem: true,
+              level: 'info',
+              timestamp: Date.now(),
+            });
             // Auto-authenticate if we have a token
             if (token) {
               sendMessage(WSMessageType.AUTHENTICATE, { token });
@@ -87,10 +97,62 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
           case WSMessageType.AUTHENTICATED:
             setConnectionStatus('authenticated');
+            // Auto-rejoin session if we have one cached (handles reconnection)
+            const cachedSession = useMultiplayerStore.getState().currentSession;
+            if (cachedSession) {
+              // Rejoin the session after reconnecting
+              sendMessage(WSMessageType.JOIN_SESSION, {
+                sessionId: cachedSession.id,
+              });
+              addMessage({
+                senderId: 'system',
+                senderName: 'System',
+                content: 'Reconnecting to session...',
+                isInCharacter: false,
+                isWhisper: false,
+                isSystem: true,
+                level: 'info',
+                timestamp: Date.now(),
+              });
+            } else {
+              addMessage({
+                senderId: 'system',
+                senderName: 'System',
+                content: 'Authentication successful. Ready to create or join a session.',
+                isInCharacter: false,
+                isWhisper: false,
+                isSystem: true,
+                level: 'success',
+                timestamp: Date.now(),
+              });
+            }
             break;
 
           case WSMessageType.AUTH_ERROR:
             setConnectionStatus('error', payload.message);
+            addMessage({
+              senderId: 'system',
+              senderName: 'System',
+              content: `Authentication failed: ${payload.message}`,
+              isInCharacter: false,
+              isWhisper: false,
+              isSystem: true,
+              level: 'error',
+              timestamp: Date.now(),
+            });
+            break;
+
+          case WSMessageType.ERROR:
+            addMessage({
+              senderId: 'system',
+              senderName: 'System',
+              content: `Error: ${payload.message}`,
+              isInCharacter: false,
+              isWhisper: false,
+              isSystem: true,
+              level: 'error',
+              timestamp: Date.now(),
+            });
             break;
 
           case WSMessageType.SESSION_CREATED:
@@ -380,8 +442,40 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
             reconnectCountRef.current++;
             const delay = reconnectDelay * reconnectCountRef.current;
             console.log(`Reconnecting in ${delay}ms (attempt ${reconnectCountRef.current})`);
+            addMessage({
+              senderId: 'system',
+              senderName: 'System',
+              content: `Connection lost. Reconnecting in ${delay / 1000}s (attempt ${reconnectCountRef.current}/${reconnectAttempts})...`,
+              isInCharacter: false,
+              isWhisper: false,
+              isSystem: true,
+              level: 'warning',
+              timestamp: Date.now(),
+            });
             reconnectTimeoutRef.current = setTimeout(connect, delay);
+          } else {
+            addMessage({
+              senderId: 'system',
+              senderName: 'System',
+              content: 'Connection lost. Max reconnect attempts reached. Click Connect to try again.',
+              isInCharacter: false,
+              isWhisper: false,
+              isSystem: true,
+              level: 'error',
+              timestamp: Date.now(),
+            });
           }
+        } else {
+          addMessage({
+            senderId: 'system',
+            senderName: 'System',
+            content: 'Disconnected from server.',
+            isInCharacter: false,
+            isWhisper: false,
+            isSystem: true,
+            level: 'info',
+            timestamp: Date.now(),
+          });
         }
       };
 
@@ -395,7 +489,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       console.error('Failed to create WebSocket:', error);
       setConnectionStatus('error', 'Failed to connect');
     }
-  }, [WS_URL, handleMessage, setConnectionStatus, reconnectAttempts, reconnectDelay]);
+  }, [WS_URL, handleMessage, setConnectionStatus, addMessage, reconnectAttempts, reconnectDelay]);
 
   /**
    * Disconnect from WebSocket server

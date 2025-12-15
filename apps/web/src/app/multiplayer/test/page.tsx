@@ -7,6 +7,7 @@ import { useMultiplayerStore } from '@/stores/multiplayerStore';
 import { useAuthStore } from '@/stores/authStore';
 import { PlayerList } from '@/components/multiplayer/PlayerList';
 import { ChatPanel } from '@/components/multiplayer/ChatPanel';
+import { SystemLog } from '@/components/multiplayer/SystemLog';
 
 export default function MultiplayerTestPage() {
   const [sessionName, setSessionName] = useState('Test Session');
@@ -115,6 +116,12 @@ export default function MultiplayerTestPage() {
               </motion.button>
             )}
           </div>
+        </div>
+
+        {/* System Log - Always visible */}
+        <div className="mb-6 p-4 bg-bg-card rounded-lg border border-border">
+          <h2 className="text-lg font-medium text-text-primary mb-2">System Log</h2>
+          <SystemLog maxHeight="150px" showSystemOnly={true} />
         </div>
 
         {/* Session Management */}
