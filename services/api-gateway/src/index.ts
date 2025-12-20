@@ -106,7 +106,7 @@ app.get('/health/db', async (_req, res) => {
 app.get('/api', (_req, res) => {
   res.json({
     name: 'D&D Platform API',
-    version: '0.6.0',
+    version: '0.6.1',
     status: 'Phase 6 - Campaign Builder',
   });
 });
