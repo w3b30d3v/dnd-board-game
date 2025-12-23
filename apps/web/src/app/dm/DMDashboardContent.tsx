@@ -248,15 +248,26 @@ export default function DMDashboardContent() {
                 Welcome back, {user?.displayName || 'DM'}
               </p>
             </div>
-            <Link href="/dm/campaigns">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="btn-magic"
-              >
-                Campaign Builder
-              </motion.button>
-            </Link>
+            <div className="flex gap-3">
+              <Link href="/dm/campaign-studio">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-primary text-white rounded-lg font-medium shadow-lg shadow-purple-500/20"
+                >
+                  AI Campaign Studio
+                </motion.button>
+              </Link>
+              <Link href="/dm/campaigns">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="btn-magic"
+                >
+                  Campaign Builder
+                </motion.button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -550,7 +561,16 @@ export default function DMDashboardContent() {
         {/* Quick Links */}
         <section className="mt-8 p-6 bg-bg-card rounded-lg border border-border">
           <h3 className="font-medium text-text-primary mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+            <Link href="/dm/campaign-studio">
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                className="p-4 bg-gradient-to-br from-purple-900/30 to-bg-elevated rounded-lg text-center cursor-pointer hover:from-purple-900/50 transition-colors border border-purple-500/20"
+              >
+                <span className="text-2xl block mb-2">✨</span>
+                <span className="text-sm text-purple-400">AI Campaign Studio</span>
+              </motion.div>
+            </Link>
             <Link href="/dm/campaigns">
               <motion.div
                 whileHover={{ scale: 1.02 }}
