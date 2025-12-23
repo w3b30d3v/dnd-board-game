@@ -82,6 +82,11 @@ All specifications are in the `/docs/` directory. **Read in this order:**
 | `43_Character_Builder_Personality_Visualization.md` | **Personality auto-generation, progressive visual build-up, content safety** |
 | `45_Character_Trading_Card_Specification.md` | **Printable trading card design - 2.5" × 3.5" collectible cards** |
 
+### AI Campaign Studio (Phase 6A - NEW)
+| Document | Purpose |
+|----------|---------|
+| `50_AI_Campaign_Studio_Implementation.md` | **CRITICAL: Complete AI integration guide - Claude, Runway, ElevenLabs** |
+
 ### AI-Powered Graphics & Media (FOR IMPRESSIVE VISUALS)
 | Document | Purpose |
 |----------|---------|
@@ -204,17 +209,19 @@ export function MyComponent() {
 
 **CRITICAL: Complete each phase fully before moving to the next.**
 
-| Phase | Name | Duration | Key Output |
-|-------|------|----------|------------|
-| 0 | Project Setup | 1-2 days | Working dev environment |
-| 1 | Authentication | 3-4 days | Login, register, JWT |
-| 2 | Character Builder | 5-7 days | Full RAW 5e character creation |
-| 3 | Game Board Core | 7-10 days | PixiJS canvas with tokens |
-| 4 | Rules Engine | 7-10 days | Rust 5e combat mechanics |
-| 5 | Multiplayer | 5-7 days | WebSocket real-time sync |
-| 6 | Campaign Builder | 7-10 days | DM tools suite |
-| 7 | Media Pipeline | 5-7 days | AI image generation |
-| 8 | Polish & Launch | 5-7 days | Production deployment |
+| Phase | Name | Status | Key Output |
+|-------|------|--------|------------|
+| 0 | Project Setup | ✅ Complete | Working dev environment |
+| 1 | Authentication | ✅ Complete | Login, register, JWT |
+| 2 | Character Builder | ✅ Complete | Full RAW 5e character creation |
+| 3 | Game Board Core | ✅ Complete | PixiJS canvas with tokens |
+| 4 | Rules Engine | ✅ Complete | TypeScript 5e combat mechanics |
+| 5 | Multiplayer | ✅ Complete | WebSocket real-time sync |
+| 6A | AI Campaign Studio | 🚧 In Progress | Claude-powered campaign creation |
+| 6B | Video Generation | ⏳ Planned | Runway Gen-3 cutscenes |
+| 6C | Content Editors | ⏳ Planned | Full map/NPC/quest editors |
+| 7 | Player Immersion | ⏳ Planned | Cutscenes, TTS, atmosphere |
+| 8 | Polish & Launch | ⏳ Planned | Production deployment |
 
 ### Phase Verification
 
@@ -275,11 +282,12 @@ dnd-board-game/
 │   └── mobile/              # React Native (future)
 ├── services/
 │   ├── api-gateway/         # REST API (Node.js)
+│   ├── ai-service-ts/       # AI Campaign Studio (NEW)
 │   ├── game-state/          # Session management
 │   ├── ws-gateway/          # WebSocket server
-│   ├── rules-engine/        # RAW 5e (Rust)
-│   ├── grid-solver/         # LoS/AoE (Rust)
-│   └── media-service/       # AI generation
+│   ├── rules-engine/        # RAW 5e (Rust - stub)
+│   ├── grid-solver/         # LoS/AoE (Rust - stub)
+│   └── media-service/       # NanoBanana images
 ├── packages/
 │   ├── shared/              # Shared types & utils
 │   ├── ui/                  # Component library
@@ -393,6 +401,51 @@ CALLBACK_BASE_URL=https://your-api-domain.com
 ```
 
 See `docs/44_NanoBanana_API_Integration.md` for complete implementation details.
+
+---
+
+## AI Campaign Studio (Phase 6A - NEW)
+
+The AI Campaign Studio transforms campaign creation into a conversational, creative experience.
+
+### Features
+- **Chat Interface**: Describe your vision, Claude helps build it
+- **Hybrid Claude Models**: Sonnet for chat, Opus for content generation
+- **6 Creation Phases**: Setting, Story, Locations, NPCs, Encounters, Quests
+- **Video Cutscenes**: Runway Gen-3 for cinematic moments (MANDATORY)
+- **Voice Narration**: ElevenLabs TTS for NPCs and read-aloud text
+- **AI Images**: NanoBanana for scene and NPC portraits
+
+### AI Service Endpoints
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/ai/conversation/start` | POST | Start campaign creation chat |
+| `/ai/conversation/:id/message` | POST | Send message to Claude |
+| `/ai/conversation/:id/advance` | POST | Move to next phase |
+| `/ai/generate/setting` | POST | Generate campaign setting |
+| `/ai/generate/npc` | POST | Generate NPC with personality |
+| `/ai/generate/encounter` | POST | Generate balanced encounter |
+| `/ai/generate/quest` | POST | Generate quest with objectives |
+| `/ai/generate/map` | POST | Generate map layout |
+
+### API Keys Required
+```env
+ANTHROPIC_API_KEY=sk-ant-...     # Claude API (console.anthropic.com)
+RUNWAY_API_KEY=rw_...            # Runway Gen-3 (runwayml.com)
+ELEVENLABS_API_KEY=...           # ElevenLabs TTS (elevenlabs.io)
+NANOBANANA_API_KEY=...           # NanoBanana (existing)
+```
+
+### Cost per Campaign (~$9)
+| Service | Usage | Cost |
+|---------|-------|------|
+| Claude Sonnet | ~50 messages | ~$0.50 |
+| Claude Opus | ~10 generations | ~$1.50 |
+| NanoBanana | ~20 images | ~$0.80 |
+| Runway Gen-3 | ~5 videos | ~$5.00 |
+| ElevenLabs | ~10 min audio | ~$1.00 |
+
+See `docs/50_AI_Campaign_Studio_Implementation.md` for full implementation details.
 
 ---
 
