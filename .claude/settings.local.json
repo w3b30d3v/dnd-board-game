@@ -27,7 +27,8 @@
       "Bash(curl:*)",
       "Bash(ls:*)",
       "WebFetch(domain:github.com)",
-      "Bash(timeout 60 pnpm --filter @dnd/web test:unit:*)"
+      "Bash(timeout 60 pnpm --filter @dnd/web test:unit:*)",
+      "Bash(npm info:*)"
     ],
     "deny": [],
     "ask": []

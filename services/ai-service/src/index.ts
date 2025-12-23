@@ -9,6 +9,8 @@ import { logger } from './lib/logger.js';
 import { authMiddleware } from './middleware/auth.js';
 import conversationRoutes from './routes/conversation.js';
 import generationRoutes from './routes/generation.js';
+import videoRoutes from './routes/video.js';
+import { isRunwayConfigured } from './lib/runway.js';
 
 const app: Express = express();
 
@@ -54,11 +56,15 @@ app.get('/health', (_req, res) => {
 app.get('/api', (_req, res) => {
   res.json({
     name: 'AI Service',
-    version: '0.1.0',
+    version: '0.2.0',
     description: 'Campaign Studio & Content Generation',
     endpoints: {
       conversation: '/ai/conversation',
       generation: '/ai/generate',
+      video: '/ai/video',
+    },
+    integrations: {
+      runway: isRunwayConfigured(),
     },
   });
 });
@@ -84,9 +90,21 @@ app.get('/test/claude', async (_req, res) => {
   }
 });
 
+// Test endpoint (no auth) - verifies Runway connection
+app.get('/test/runway', (_req, res) => {
+  res.json({
+    status: isRunwayConfigured() ? 'ok' : 'not_configured',
+    configured: isRunwayConfigured(),
+    message: isRunwayConfigured()
+      ? 'Runway Gen-3 Alpha is configured and ready'
+      : 'RUNWAY_API_KEY not set - video generation unavailable',
+  });
+});
+
 // Routes (protected)
 app.use('/ai/conversation', authMiddleware, conversationRoutes);
 app.use('/ai/generate', authMiddleware, generationRoutes);
+app.use('/ai/video', authMiddleware, videoRoutes);
 
 // Error handling middleware
 app.use(

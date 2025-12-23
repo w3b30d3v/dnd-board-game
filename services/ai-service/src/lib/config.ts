@@ -11,9 +11,9 @@ export const config = {
   claudeModelGeneration: process.env.CLAUDE_MODEL_GENERATION || 'claude-opus-4-20250514',
   claudeMaxDailySpend: parseFloat(process.env.CLAUDE_MAX_DAILY_SPEND || '50'),
 
-  // Runway
+  // Runway (Veo3.1 default durations: 4, 6, or 8 seconds)
   runwayApiKey: process.env.RUNWAY_API_KEY || '',
-  runwayDefaultDuration: parseInt(process.env.RUNWAY_DEFAULT_DURATION || '5', 10),
+  runwayDefaultDuration: parseInt(process.env.RUNWAY_DEFAULT_DURATION || '6', 10) as 4 | 6 | 8,
   runwayMaxVideosPerCampaign: parseInt(process.env.RUNWAY_MAX_VIDEOS_PER_CAMPAIGN || '10', 10),
 
   // ElevenLabs
