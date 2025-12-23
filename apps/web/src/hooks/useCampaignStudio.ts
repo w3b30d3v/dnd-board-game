@@ -16,7 +16,7 @@ import {
  */
 export function useCampaignStudio(campaignId?: string) {
   const router = useRouter();
-  const { token, user } = useAuthStore();
+  const { token, user, _hasHydrated } = useAuthStore();
 
   const {
     id: conversationId,
@@ -36,19 +36,19 @@ export function useCampaignStudio(campaignId?: string) {
     setError,
   } = useCampaignStudioStore();
 
-  // Redirect if not authenticated
+  // Redirect if not authenticated (only after hydration)
   useEffect(() => {
-    if (!token) {
+    if (_hasHydrated && !token) {
       router.push('/login?redirect=/dm/campaign-studio');
     }
-  }, [token, router]);
+  }, [_hasHydrated, token, router]);
 
-  // Start conversation when campaign ID changes
+  // Start conversation when campaign ID changes (only after hydration)
   useEffect(() => {
-    if (campaignId && token && !conversationId) {
+    if (_hasHydrated && campaignId && token && !conversationId) {
       startConversation(campaignId);
     }
-  }, [campaignId, token, conversationId, startConversation]);
+  }, [_hasHydrated, campaignId, token, conversationId, startConversation]);
 
   // Check if phase is complete (has generated content)
   const isPhaseComplete = useCallback(
