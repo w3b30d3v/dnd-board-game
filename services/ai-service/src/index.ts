@@ -63,6 +63,27 @@ app.get('/api', (_req, res) => {
   });
 });
 
+// Test endpoint (no auth) - verifies Claude connection
+app.get('/test/claude', async (_req, res) => {
+  try {
+    const { chat } = await import('./lib/claude.js');
+    const response = await chat(
+      'You are a helpful assistant. Respond in exactly 10 words or less.',
+      [{ role: 'user', content: 'Say hello and confirm you are Claude.' }],
+      { maxTokens: 50 }
+    );
+    res.json({
+      status: 'ok',
+      response: response.content,
+      usage: response.usage,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error({ error }, 'Claude test failed');
+    res.status(500).json({ status: 'error', message });
+  }
+});
+
 // Routes (protected)
 app.use('/ai/conversation', authMiddleware, conversationRoutes);
 app.use('/ai/generate', authMiddleware, generationRoutes);
