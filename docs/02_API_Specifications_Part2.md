@@ -1872,4 +1872,440 @@ X-RateLimit-Reset: 1710936060
 
 ---
 
+# 15. AI Campaign Studio API (NEW)
+
+The AI Campaign Studio provides Claude-powered conversational campaign creation and content generation.
+
+**Base URL:** `https://ai-production-xxxx.up.railway.app`
+
+## 15.1 Health & Info
+
+### GET /health
+Returns service status and feature flags.
+
+**Response:**
+```json
+{
+  "status": "ok",
+  "service": "ai-service",
+  "timestamp": "2025-12-23T13:50:05.497Z",
+  "features": {
+    "aiCampaignStudio": true,
+    "videoCutscenes": true,
+    "ttsNarration": true
+  }
+}
+```
+
+### GET /api
+Returns API information.
+
+**Response:**
+```json
+{
+  "name": "AI Service",
+  "version": "0.1.0",
+  "description": "Campaign Studio & Content Generation",
+  "endpoints": {
+    "conversation": "/ai/conversation",
+    "generation": "/ai/generate"
+  }
+}
+```
+
+## 15.2 Conversation API
+
+All conversation endpoints require JWT authentication.
+
+### POST /ai/conversation/start
+Start a new campaign creation conversation.
+
+**Request:**
+```json
+{
+  "campaignId": "uuid-of-campaign"
+}
+```
+
+**Response:**
+```json
+{
+  "conversationId": "uuid-of-conversation",
+  "phase": "setting",
+  "message": "Welcome to the Campaign Studio! I'm here to help you create an amazing D&D campaign..."
+}
+```
+
+### POST /ai/conversation/{conversationId}/message
+Send a message and receive Claude's response.
+
+**Request:**
+```json
+{
+  "message": "I want to create a dark fantasy campaign in an ancient elven forest..."
+}
+```
+
+**Response:**
+```json
+{
+  "response": "That sounds amazing! Let me help you flesh out this setting...",
+  "phase": "setting",
+  "cost": 0.0012,
+  "totalCost": 0.0045
+}
+```
+
+### GET /ai/conversation/{conversationId}/history
+Get the full conversation history.
+
+**Response:**
+```json
+{
+  "conversationId": "uuid",
+  "phase": "story",
+  "messages": [
+    {"role": "user", "content": "I want to create..."},
+    {"role": "assistant", "content": "That sounds amazing..."}
+  ],
+  "totalCost": 0.42
+}
+```
+
+### POST /ai/conversation/{conversationId}/advance
+Advance to the next creation phase.
+
+**Response:**
+```json
+{
+  "phase": "story",
+  "message": "Great! Now let's develop your main story arc..."
+}
+```
+
+### POST /ai/conversation/{conversationId}/phase
+Set a specific phase.
+
+**Request:**
+```json
+{
+  "phase": "npcs"
+}
+```
+
+**Response:**
+```json
+{
+  "phase": "npcs",
+  "message": "Switched to NPCs phase."
+}
+```
+
+### DELETE /ai/conversation/{conversationId}
+Delete a conversation.
+
+**Response:**
+```json
+{
+  "success": true
+}
+```
+
+## 15.3 Generation API
+
+All generation endpoints require JWT authentication.
+
+### POST /ai/generate/setting
+Generate a campaign setting.
+
+**Request:**
+```json
+{
+  "conversationId": "optional-uuid",
+  "description": "A dark fantasy world with an ancient elven forest being corrupted by shadow magic"
+}
+```
+
+**Response:**
+```json
+{
+  "setting": {
+    "name": "The Shadows of Eldergrove",
+    "description": "An ancient elven forest slowly being corrupted...",
+    "tone": "gritty",
+    "magicLevel": "medium",
+    "themes": ["corruption", "redemption", "nature vs darkness"],
+    "factions": [
+      {
+        "name": "The Shadow Cult",
+        "description": "Worshippers of Malachar seeking to free their master",
+        "alignment": "chaotic evil",
+        "goals": "Release the shadow dragon"
+      }
+    ],
+    "currentEvents": ["Strange disappearances near the forest edge"],
+    "startingLocation": {
+      "name": "Millbrook Village",
+      "type": "village",
+      "description": "A peaceful farming village on the forest's edge"
+    }
+  },
+  "cost": 0.15
+}
+```
+
+### POST /ai/generate/npc
+Generate an NPC with full details.
+
+**Request:**
+```json
+{
+  "conversationId": "optional-uuid",
+  "description": "A corrupted elf who leads the shadow cult",
+  "context": "Campaign setting: The Shadows of Eldergrove..."
+}
+```
+
+**Response:**
+```json
+{
+  "npc": {
+    "name": "Vaelith Shadowmere",
+    "race": "High Elf",
+    "class": "Warlock",
+    "alignment": "neutral evil",
+    "appearance": "Tall, gaunt elf with silver hair now streaked with black...",
+    "personality": {
+      "traits": ["Calculating", "Patient", "Charismatic"],
+      "ideals": "Power through any means",
+      "bonds": "Bound to Malachar by dark pact",
+      "flaws": "Believes he can control the shadow dragon"
+    },
+    "background": "Once a respected elder of Eldergrove...",
+    "motivation": "Achieve immortality through Malachar's power",
+    "secrets": ["Murdered his own brother to gain shadow magic"],
+    "voiceNotes": "Speaks softly with long pauses, never raises voice",
+    "relationship": "enemy",
+    "statBlock": {
+      "cr": 8,
+      "hp": 85,
+      "ac": 16,
+      "abilities": {"str": 10, "dex": 14, "con": 14, "int": 16, "wis": 12, "cha": 18}
+    }
+  },
+  "cost": 0.18
+}
+```
+
+### POST /ai/generate/encounter
+Generate a balanced combat encounter.
+
+**Request:**
+```json
+{
+  "conversationId": "optional-uuid",
+  "description": "The first shadow anchor guarded by corrupted creatures",
+  "partyLevel": 4,
+  "partySize": 4,
+  "context": "Campaign setting: The Shadows of Eldergrove..."
+}
+```
+
+**Response:**
+```json
+{
+  "encounter": {
+    "name": "The Fallen Shrine",
+    "type": "combat",
+    "description": "A ruined elven shrine now pulsing with shadow energy...",
+    "readAloud": "As you push through the twisted brambles, you see a crumbling stone shrine. Dark tendrils of shadow coil around the central altar...",
+    "difficulty": "hard",
+    "partyLevel": 4,
+    "partySize": 4,
+    "monsters": [
+      {"name": "Shadow Cultist", "count": 3, "notes": "Focus on protecting the anchor"},
+      {"name": "Shadow Mastiff", "count": 2, "notes": "Hunt weakest party member"}
+    ],
+    "environment": {
+      "terrain": "Ruined shrine with broken pillars providing half cover",
+      "hazards": ["Shadow tendrils deal 1d6 necrotic at start of turn"],
+      "cover": ["Fallen pillars (half cover)", "Altar (full cover)"],
+      "lighting": "dim"
+    },
+    "objectives": {
+      "victory": ["Defeat all enemies", "Destroy the shadow anchor"],
+      "defeat": ["All party members reduced to 0 HP"]
+    },
+    "rewards": {
+      "xp": 1200,
+      "gold": 150,
+      "items": ["Shadow Shard (quest item)"],
+      "story": "First anchor destroyed, two remain"
+    },
+    "tactics": "Cultists maintain concentration on shadow tendrils while mastiffs flank"
+  },
+  "cost": 0.22
+}
+```
+
+### POST /ai/generate/quest
+Generate a quest with objectives and branches.
+
+**Request:**
+```json
+{
+  "conversationId": "optional-uuid",
+  "description": "The main quest to stop the shadow cult",
+  "context": "Campaign setting: The Shadows of Eldergrove..."
+}
+```
+
+**Response:**
+```json
+{
+  "quest": {
+    "title": "The Shadow's Reach",
+    "description": "Investigate the corruption spreading through Eldergrove and stop the cult before they release Malachar",
+    "questGiver": {
+      "name": "Elder Theron",
+      "motivation": "Save the forest and its people"
+    },
+    "objectives": [
+      {"description": "Investigate the disappearances at Millbrook", "type": "main", "completed": false},
+      {"description": "Find and destroy the three shadow anchors", "type": "main", "completed": false},
+      {"description": "Discover the cult leader's identity", "type": "optional", "completed": false},
+      {"description": "Find Theron's missing daughter", "type": "hidden", "completed": false}
+    ],
+    "prerequisites": [],
+    "rewards": {
+      "gold": 500,
+      "xp": 2500,
+      "items": ["Shadowbane Amulet"],
+      "reputation": [{"faction": "Eldergrove Elves", "change": 50}]
+    },
+    "consequences": {
+      "success": "Malachar remains sealed, forest begins to heal",
+      "failure": "Malachar is released, region consumed by shadow"
+    },
+    "branches": [
+      {"condition": "Players ally with the cult", "outcome": "Dark ending available"},
+      {"condition": "All three anchors destroyed before confrontation", "outcome": "Weakened Malachar in final battle"}
+    ]
+  },
+  "cost": 0.20
+}
+```
+
+### POST /ai/generate/map
+Generate a map layout with terrain and points of interest.
+
+**Request:**
+```json
+{
+  "conversationId": "optional-uuid",
+  "description": "A ruined elven shrine in the corrupted forest",
+  "width": 30,
+  "height": 30,
+  "context": "Campaign setting: The Shadows of Eldergrove..."
+}
+```
+
+**Response:**
+```json
+{
+  "map": {
+    "name": "The Fallen Shrine",
+    "description": "Once a place of worship, now twisted by shadow magic",
+    "width": 30,
+    "height": 30,
+    "terrain": [
+      {"x": 0, "y": 0, "type": "forest"},
+      {"x": 15, "y": 15, "type": "stone"}
+    ],
+    "pointsOfInterest": [
+      {"name": "Shadow Anchor", "x": 15, "y": 15, "description": "The source of corruption", "icon": "anchor"},
+      {"name": "Fallen Pillar", "x": 12, "y": 18, "description": "Provides half cover", "icon": "pillar"}
+    ],
+    "lighting": "dim",
+    "atmosphere": "Dark tendrils of shadow curl through the air, ancient elven runes glow faintly on crumbling stone pillars"
+  },
+  "cost": 0.12
+}
+```
+
+## 15.4 Conversation Phases
+
+The Campaign Studio guides DMs through 6 creation phases:
+
+| Phase | Focus | Generated Content |
+|-------|-------|-------------------|
+| `setting` | World, tone, themes | Campaign setting JSON |
+| `story` | Plot, antagonist, stakes | Story outline |
+| `locations` | Maps, atmosphere | Map layouts, descriptions |
+| `npcs` | Characters, motivations | NPC stat blocks, personalities |
+| `encounters` | Combat, puzzles | Balanced encounters |
+| `quests` | Objectives, rewards | Quest structures |
+
+## 15.5 Cost Tracking
+
+All generation responses include a `cost` field (USD). The conversation endpoint also returns `totalCost` for the session.
+
+**Estimated costs per generation:**
+| Content Type | Typical Cost |
+|--------------|--------------|
+| Chat message | $0.001-0.003 |
+| Setting | $0.10-0.20 |
+| NPC | $0.15-0.25 |
+| Encounter | $0.15-0.25 |
+| Quest | $0.15-0.25 |
+| Map | $0.08-0.15 |
+
+**Average campaign creation: ~$9**
+
+## 15.6 Error Responses
+
+```json
+{
+  "error": "Authentication required"
+}
+```
+
+```json
+{
+  "error": "Invalid request",
+  "details": [{"path": ["description"], "message": "String must contain at least 10 character(s)"}]
+}
+```
+
+```json
+{
+  "error": "Failed to generate NPC"
+}
+```
+
+---
+
+# 16. Video Generation API (Planned - Sprint 3)
+
+Runway Gen-3 integration for cinematic cutscenes.
+
+## 16.1 Endpoints (Coming Soon)
+
+### POST /ai/video/generate
+### GET /ai/video/{id}/status
+### GET /ai/video/{id}
+
+---
+
+# 17. Text-to-Speech API (Planned - Sprint 4)
+
+ElevenLabs integration for NPC voices and narration.
+
+## 17.1 Endpoints (Coming Soon)
+
+### POST /ai/tts/generate
+### GET /ai/tts/{id}
+
+---
+
 # END OF API SPECIFICATIONS

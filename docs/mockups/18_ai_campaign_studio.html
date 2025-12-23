@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D Digital - AI Campaign Studio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-400: #FBBF24;
+      --primary-500: #F59E0B;
+      --primary-600: #D97706;
+      --secondary-400: #A78BFA;
+      --secondary-500: #8B5CF6;
+      --bg-primary: #0F0D13;
+      --bg-secondary: #1A1720;
+      --bg-tertiary: #252231;
+      --surface-dark: #1E1B26;
+      --text-primary: #F4F4F5;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+      --border-subtle: #27272A;
+      --success: #22C55E;
+      --warning: #F59E0B;
+      --error: #EF4444;
+      --claude-purple: #8B5CF6;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .font-display { font-family: 'Cinzel', serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Main Layout */
+    .studio-layout {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      grid-template-rows: 56px 1fr;
+      height: 100vh;
+    }
+
+    /* Top Toolbar */
+    .toolbar {
+      grid-column: 1 / -1;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      padding: 0 1rem;
+      gap: 1rem;
+    }
+
+    .toolbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding-right: 1rem;
+      border-right: 1px solid var(--border-subtle);
+    }
+
+    .toolbar-brand span {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      color: var(--primary-400);
+    }
+
+    .campaign-name {
+      font-size: 0.9375rem;
+      color: var(--text-primary);
+    }
+
+    .campaign-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      padding: 0.25rem 0.5rem;
+      background: var(--surface-dark);
+      border-radius: 4px;
+    }
+
+    .toolbar-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .toolbar-btn {
+      padding: 0.5rem 1rem;
+      background: var(--surface-dark);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 0.875rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .toolbar-btn:hover {
+      border-color: var(--primary-500);
+    }
+
+    .toolbar-btn.primary {
+      background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+      border: none;
+      color: var(--bg-primary);
+    }
+
+    .toolbar-btn.primary:hover {
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+    }
+
+    /* Chat Panel */
+    .chat-panel {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-primary);
+      position: relative;
+    }
+
+    /* Phase Progress Bar */
+    .phase-progress {
+      display: flex;
+      padding: 1rem 1.5rem;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-subtle);
+      gap: 0.5rem;
+    }
+
+    .phase-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      opacity: 0.5;
+      transition: all 0.3s ease;
+    }
+
+    .phase-item.active {
+      opacity: 1;
+    }
+
+    .phase-item.completed {
+      opacity: 0.8;
+    }
+
+    .phase-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--surface-dark);
+      border: 2px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+      transition: all 0.3s ease;
+    }
+
+    .phase-item.active .phase-dot {
+      background: var(--claude-purple);
+      border-color: var(--claude-purple);
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+    }
+
+    .phase-item.completed .phase-dot {
+      background: var(--success);
+      border-color: var(--success);
+    }
+
+    .phase-label {
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .phase-item.active .phase-label {
+      color: var(--claude-purple);
+    }
+
+    .phase-connector {
+      flex: 0.5;
+      height: 2px;
+      background: var(--border-subtle);
+      margin-top: 15px;
+    }
+
+    .phase-connector.completed {
+      background: var(--success);
+    }
+
+    /* Messages Area */
+    .messages-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .message {
+      display: flex;
+      gap: 0.75rem;
+      max-width: 85%;
+      animation: message-in 0.3s ease-out;
+    }
+
+    @keyframes message-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .message-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .message.assistant .message-avatar {
+      background: linear-gradient(135deg, var(--claude-purple), #6366F1);
+    }
+
+    .message.user .message-avatar {
+      background: var(--primary-500);
+    }
+
+    .message-content {
+      background: var(--surface-dark);
+      border-radius: 16px;
+      padding: 0.875rem 1rem;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .message.user .message-content {
+      background: rgba(245, 158, 11, 0.1);
+      border-color: rgba(245, 158, 11, 0.2);
+    }
+
+    .message-text {
+      font-size: 0.9375rem;
+      line-height: 1.5;
+    }
+
+    .message-text p {
+      margin-bottom: 0.75rem;
+    }
+
+    .message-text p:last-child {
+      margin-bottom: 0;
+    }
+
+    .message-text ul {
+      margin-left: 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .message-text li {
+      margin-bottom: 0.25rem;
+    }
+
+    /* Typing Indicator */
+    .typing-indicator {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+
+    .typing-dots {
+      display: flex;
+      gap: 4px;
+      padding: 1rem;
+      background: var(--surface-dark);
+      border-radius: 16px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--claude-purple);
+      border-radius: 50%;
+      animation: typing 1.4s infinite;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typing {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* Input Area */
+    .input-area {
+      padding: 1rem 1.5rem;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .input-wrapper {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-end;
+    }
+
+    .message-input {
+      flex: 1;
+      background: var(--surface-dark);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 0.875rem 1rem;
+      color: var(--text-primary);
+      font-size: 0.9375rem;
+      resize: none;
+      min-height: 48px;
+      max-height: 150px;
+      font-family: inherit;
+    }
+
+    .message-input:focus {
+      outline: none;
+      border-color: var(--claude-purple);
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+
+    .message-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .send-btn {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--claude-purple), #6366F1);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      transition: all 0.2s ease;
+    }
+
+    .send-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+    }
+
+    .send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .quick-action {
+      padding: 0.375rem 0.75rem;
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .quick-action:hover {
+      border-color: var(--claude-purple);
+      color: var(--claude-purple);
+    }
+
+    /* Right Panel - Content Preview */
+    .content-panel {
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-title {
+      font-family: 'Cinzel', serif;
+      font-size: 0.9375rem;
+    }
+
+    .panel-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .panel-tab {
+      flex: 1;
+      padding: 0.75rem;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 0.8125rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-bottom: 2px solid transparent;
+    }
+
+    .panel-tab:hover {
+      color: var(--text-primary);
+    }
+
+    .panel-tab.active {
+      color: var(--primary-400);
+      border-bottom-color: var(--primary-500);
+    }
+
+    .panel-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+
+    /* Content Cards */
+    .content-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+
+    .section-title {
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .section-count {
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      background: var(--surface-dark);
+      padding: 0.125rem 0.5rem;
+      border-radius: 10px;
+    }
+
+    .content-card {
+      background: var(--surface-dark);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .content-card:hover {
+      border-color: var(--primary-600);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .content-card.generating {
+      border-color: var(--claude-purple);
+      animation: pulse-border 2s infinite;
+    }
+
+    @keyframes pulse-border {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(139, 92, 246, 0); }
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+
+    .card-icon.setting { background: rgba(139, 92, 246, 0.2); }
+    .card-icon.npc { background: rgba(34, 197, 94, 0.2); }
+    .card-icon.encounter { background: rgba(239, 68, 68, 0.2); }
+    .card-icon.quest { background: rgba(245, 158, 11, 0.2); }
+    .card-icon.location { background: rgba(59, 130, 246, 0.2); }
+
+    .card-title {
+      font-size: 0.9375rem;
+      font-weight: 500;
+    }
+
+    .card-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .card-description {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 0.75rem;
+    }
+
+    .card-tags {
+      display: flex;
+      gap: 0.375rem;
+      flex-wrap: wrap;
+    }
+
+    .card-tag {
+      font-size: 0.6875rem;
+      padding: 0.25rem 0.5rem;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      color: var(--text-muted);
+    }
+
+    .card-tag.tone { color: var(--secondary-400); }
+    .card-tag.difficulty { color: var(--error); }
+    .card-tag.xp { color: var(--success); }
+
+    /* NPC Card Specific */
+    .npc-portrait {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--bg-tertiary), var(--surface-dark));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      border: 2px solid var(--border-subtle);
+    }
+
+    .npc-stats {
+      display: flex;
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .npc-stat {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .npc-stat span {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-muted);
+    }
+
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .empty-text {
+      font-size: 0.875rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-hint {
+      font-size: 0.75rem;
+      opacity: 0.7;
+    }
+
+    /* Cost Display */
+    .cost-display {
+      padding: 0.75rem 1rem;
+      background: var(--surface-dark);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+    }
+
+    .cost-label {
+      color: var(--text-muted);
+    }
+
+    .cost-value {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--success);
+    }
+
+    /* Suggestion Chips in Messages */
+    .suggestion-chips {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.75rem;
+    }
+
+    .suggestion-chip {
+      padding: 0.5rem 0.875rem;
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 20px;
+      color: var(--secondary-400);
+      font-size: 0.8125rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .suggestion-chip:hover {
+      background: rgba(139, 92, 246, 0.2);
+      border-color: var(--claude-purple);
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      bottom: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+    }
+
+    .toast {
+      background: var(--surface-dark);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      animation: toast-in 0.3s ease-out;
+    }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-subtle);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="studio-layout">
+    <!-- Top Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-brand">
+        <span class="font-display">✨ AI Campaign Studio</span>
+      </div>
+
+      <span class="campaign-name">The Shadows of Eldergrove</span>
+      <span class="campaign-status">Draft • Auto-saved</span>
+
+      <div class="toolbar-actions">
+        <button class="toolbar-btn">
+          <span>📋</span> Export
+        </button>
+        <button class="toolbar-btn">
+          <span>👁️</span> Preview
+        </button>
+        <button class="toolbar-btn primary" onclick="showToast('Campaign saved!')">
+          <span>💾</span> Save Campaign
+        </button>
+      </div>
+    </div>
+
+    <!-- Chat Panel -->
+    <div class="chat-panel">
+      <!-- Phase Progress -->
+      <div class="phase-progress">
+        <div class="phase-item completed" onclick="setPhase('setting')">
+          <div class="phase-dot">✓</div>
+          <span class="phase-label">Setting</span>
+        </div>
+        <div class="phase-connector completed"></div>
+        <div class="phase-item active" onclick="setPhase('story')">
+          <div class="phase-dot">📖</div>
+          <span class="phase-label">Story</span>
+        </div>
+        <div class="phase-connector"></div>
+        <div class="phase-item" onclick="setPhase('locations')">
+          <div class="phase-dot">🗺️</div>
+          <span class="phase-label">Locations</span>
+        </div>
+        <div class="phase-connector"></div>
+        <div class="phase-item" onclick="setPhase('npcs')">
+          <div class="phase-dot">👤</div>
+          <span class="phase-label">NPCs</span>
+        </div>
+        <div class="phase-connector"></div>
+        <div class="phase-item" onclick="setPhase('encounters')">
+          <div class="phase-dot">⚔️</div>
+          <span class="phase-label">Encounters</span>
+        </div>
+        <div class="phase-connector"></div>
+        <div class="phase-item" onclick="setPhase('quests')">
+          <div class="phase-dot">📜</div>
+          <span class="phase-label">Quests</span>
+        </div>
+      </div>
+
+      <!-- Messages Area -->
+      <div class="messages-area" id="messagesArea">
+        <!-- Assistant Welcome -->
+        <div class="message assistant">
+          <div class="message-avatar">🤖</div>
+          <div class="message-content">
+            <div class="message-text">
+              <p>Excellent! Your setting sounds amazing. Let me summarize what we have so far:</p>
+              <p><strong>The Shadows of Eldergrove</strong> - A dark fantasy world where an ancient elven forest is slowly being corrupted by shadow magic. The tone is mysterious and ominous.</p>
+              <p>Now let's develop the main story. Tell me about:</p>
+              <ul>
+                <li>What is the central conflict?</li>
+                <li>Who or what is the main antagonist?</li>
+                <li>What are the stakes if the heroes fail?</li>
+              </ul>
+            </div>
+            <div class="suggestion-chips">
+              <span class="suggestion-chip" onclick="useSuggestion('A cult is summoning an ancient shadow entity')">Shadow cult summoning</span>
+              <span class="suggestion-chip" onclick="useSuggestion('A corrupted elf lord seeks revenge')">Corrupted elf lord</span>
+              <span class="suggestion-chip" onclick="useSuggestion('The forest itself is becoming sentient and hostile')">Living hostile forest</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Message -->
+        <div class="message user">
+          <div class="message-avatar">🧙</div>
+          <div class="message-content">
+            <div class="message-text">
+              <p>I like the shadow cult idea. They're trying to summon Malachar, an ancient shadow dragon who was sealed away centuries ago. If they succeed, the entire forest and nearby villages will be consumed by darkness.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Assistant Response -->
+        <div class="message assistant">
+          <div class="message-avatar">🤖</div>
+          <div class="message-content">
+            <div class="message-text">
+              <p>Perfect! Malachar the Shadow Dragon makes for an excellent "behind the scenes" threat. Here's how I see the story structure:</p>
+              <p><strong>Act 1:</strong> The party investigates strange disappearances near Eldergrove. They discover cult activity and learn about Malachar.</p>
+              <p><strong>Act 2:</strong> Racing against time, they must find and destroy three shadow anchors that weaken Malachar's prison.</p>
+              <p><strong>Act 3:</strong> Confrontation with the cult leader in the heart of the corrupted forest, with potential to either prevent or fight a weakened Malachar.</p>
+              <p>Should I generate some key NPCs for this campaign? I'm thinking:</p>
+            </div>
+            <div class="suggestion-chips">
+              <span class="suggestion-chip" onclick="generateNPC('cult leader')">🎭 Generate Cult Leader</span>
+              <span class="suggestion-chip" onclick="generateNPC('helpful elder')">🧓 Generate Village Elder</span>
+              <span class="suggestion-chip" onclick="generateNPC('mysterious ally')">🗡️ Generate Mysterious Ally</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Typing Indicator -->
+        <div class="typing-indicator" id="typingIndicator" style="display: none;">
+          <div class="message-avatar" style="background: linear-gradient(135deg, var(--claude-purple), #6366F1);">🤖</div>
+          <div class="typing-dots">
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input Area -->
+      <div class="input-area">
+        <div class="input-wrapper">
+          <textarea
+            class="message-input"
+            placeholder="Describe your campaign ideas..."
+            rows="1"
+            id="messageInput"
+            onkeydown="handleKeydown(event)"
+          ></textarea>
+          <button class="send-btn" onclick="sendMessage()" id="sendBtn">
+            <span>→</span>
+          </button>
+        </div>
+        <div class="quick-actions">
+          <button class="quick-action" onclick="quickAction('generate npc')">+ Generate NPC</button>
+          <button class="quick-action" onclick="quickAction('generate encounter')">+ Generate Encounter</button>
+          <button class="quick-action" onclick="quickAction('generate location')">+ Generate Location</button>
+          <button class="quick-action" onclick="quickAction('suggest plot twist')">💡 Suggest Plot Twist</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel - Content Preview -->
+    <div class="content-panel">
+      <div class="panel-header">
+        <span class="panel-title">Generated Content</span>
+      </div>
+
+      <div class="panel-tabs">
+        <button class="panel-tab active">All</button>
+        <button class="panel-tab">NPCs</button>
+        <button class="panel-tab">Encounters</button>
+        <button class="panel-tab">Quests</button>
+      </div>
+
+      <div class="panel-content">
+        <!-- Setting Card -->
+        <div class="content-section">
+          <div class="section-header">
+            <span class="section-title">Campaign Setting</span>
+          </div>
+          <div class="content-card">
+            <div class="card-header">
+              <div class="card-icon setting">🌍</div>
+              <div>
+                <div class="card-title">The Shadows of Eldergrove</div>
+                <div class="card-subtitle">Dark Fantasy • Low Magic</div>
+              </div>
+            </div>
+            <div class="card-description">
+              An ancient elven forest slowly being corrupted by shadow magic. Mysterious, ominous atmosphere with themes of corruption and redemption.
+            </div>
+            <div class="card-tags">
+              <span class="card-tag tone">Dark Fantasy</span>
+              <span class="card-tag">Mystery</span>
+              <span class="card-tag">Nature vs Corruption</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- NPCs -->
+        <div class="content-section">
+          <div class="section-header">
+            <span class="section-title">NPCs</span>
+            <span class="section-count">2</span>
+          </div>
+
+          <!-- NPC Card -->
+          <div class="content-card">
+            <div class="card-header">
+              <div class="npc-portrait">🧝</div>
+              <div>
+                <div class="card-title">Vaelith Shadowmere</div>
+                <div class="card-subtitle">High Elf • Cult Leader • Villain</div>
+              </div>
+            </div>
+            <div class="card-description">
+              Once a respected elder of Eldergrove, now corrupted by promises of power. Believes releasing Malachar will grant him immortality.
+            </div>
+            <div class="npc-stats">
+              <span class="npc-stat">CR <span>8</span></span>
+              <span class="npc-stat">HP <span>85</span></span>
+              <span class="npc-stat">AC <span>16</span></span>
+            </div>
+          </div>
+
+          <!-- Generating NPC Card -->
+          <div class="content-card generating" id="generatingCard" style="display: none;">
+            <div class="card-header">
+              <div class="npc-portrait" style="animation: pulse 1.5s infinite;">✨</div>
+              <div>
+                <div class="card-title">Generating NPC...</div>
+                <div class="card-subtitle">Claude is creating a character</div>
+              </div>
+            </div>
+            <div class="card-description" style="color: var(--claude-purple);">
+              Crafting personality, background, and statistics...
+            </div>
+          </div>
+        </div>
+
+        <!-- Encounters -->
+        <div class="content-section">
+          <div class="section-header">
+            <span class="section-title">Encounters</span>
+            <span class="section-count">1</span>
+          </div>
+
+          <div class="content-card">
+            <div class="card-header">
+              <div class="card-icon encounter">⚔️</div>
+              <div>
+                <div class="card-title">Shadow Anchor - The Fallen Shrine</div>
+                <div class="card-subtitle">Combat • Level 3-4 Party</div>
+              </div>
+            </div>
+            <div class="card-description">
+              The first shadow anchor, guarded by corrupted forest creatures and shadow cultists.
+            </div>
+            <div class="card-tags">
+              <span class="card-tag difficulty">Hard</span>
+              <span class="card-tag xp">1,200 XP</span>
+              <span class="card-tag">4-6 Enemies</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty Quest Section -->
+        <div class="content-section">
+          <div class="section-header">
+            <span class="section-title">Quests</span>
+            <span class="section-count">0</span>
+          </div>
+
+          <div class="empty-state">
+            <div class="empty-icon">📜</div>
+            <div class="empty-text">No quests generated yet</div>
+            <div class="empty-hint">Continue the conversation to create quests</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cost Display -->
+      <div class="cost-display">
+        <span class="cost-label">Session Cost</span>
+        <span class="cost-value">$0.42</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    // Auto-resize textarea
+    const input = document.getElementById('messageInput');
+    input.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+    });
+
+    function handleKeydown(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const message = input.value.trim();
+      if (!message) return;
+
+      // Add user message
+      addMessage(message, 'user');
+      input.value = '';
+      input.style.height = 'auto';
+
+      // Show typing indicator
+      showTyping();
+
+      // Simulate response after delay
+      setTimeout(() => {
+        hideTyping();
+        addMessage("That's a great addition to the story! I'll incorporate that into the campaign narrative. Would you like me to generate any specific content based on this?", 'assistant');
+      }, 2000);
+    }
+
+    function addMessage(text, type) {
+      const area = document.getElementById('messagesArea');
+      const typing = document.getElementById('typingIndicator');
+
+      const message = document.createElement('div');
+      message.className = `message ${type}`;
+      message.innerHTML = `
+        <div class="message-avatar">${type === 'user' ? '🧙' : '🤖'}</div>
+        <div class="message-content">
+          <div class="message-text"><p>${text}</p></div>
+        </div>
+      `;
+
+      area.insertBefore(message, typing);
+      area.scrollTop = area.scrollHeight;
+    }
+
+    function showTyping() {
+      document.getElementById('typingIndicator').style.display = 'flex';
+      document.getElementById('messagesArea').scrollTop = document.getElementById('messagesArea').scrollHeight;
+    }
+
+    function hideTyping() {
+      document.getElementById('typingIndicator').style.display = 'none';
+    }
+
+    function useSuggestion(text) {
+      document.getElementById('messageInput').value = text;
+      document.getElementById('messageInput').focus();
+    }
+
+    function generateNPC(type) {
+      showToast(`Generating ${type}...`);
+      document.getElementById('generatingCard').style.display = 'block';
+
+      setTimeout(() => {
+        document.getElementById('generatingCard').style.display = 'none';
+        showToast('NPC generated successfully!');
+      }, 3000);
+    }
+
+    function quickAction(action) {
+      document.getElementById('messageInput').value = `Please ${action} for my campaign.`;
+      document.getElementById('messageInput').focus();
+    }
+
+    function setPhase(phase) {
+      showToast(`Switched to ${phase} phase`);
+    }
+
+    function showToast(message) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `<span>✨</span> ${message}`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Tab functionality
+    document.querySelectorAll('.panel-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
