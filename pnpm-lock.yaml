@@ -248,7 +248,7 @@ importers:
         specifier: ^1.2.0
         version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
 
-  services/ai-service-ts:
+  services/ai-service:
     dependencies:
       '@anthropic-ai/sdk':
         specifier: ^0.52.0

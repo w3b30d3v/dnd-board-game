@@ -11,5 +11,4 @@ packages:
   # Exclude Rust services from pnpm (they use Cargo)
   - "!services/rules-engine"
   - "!services/grid-solver"
-  - "!services/ai-service"
   - "!services/shared-rust"
