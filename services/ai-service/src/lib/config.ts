@@ -1,8 +1,8 @@
 // AI Service Configuration
 
 export const config = {
-  // Server
-  port: parseInt(process.env.AI_SERVICE_PORT || '4003', 10),
+  // Server (Railway provides PORT automatically)
+  port: parseInt(process.env.PORT || process.env.AI_SERVICE_PORT || '4003', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
 
   // Claude AI
