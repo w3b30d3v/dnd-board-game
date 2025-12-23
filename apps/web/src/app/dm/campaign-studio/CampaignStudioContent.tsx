@@ -19,14 +19,11 @@ export default function CampaignStudioContent() {
   const searchParams = useSearchParams();
   const campaignId = searchParams?.get('campaign') ?? null;
 
-  const { token, user, _hasHydrated } = useAuthStore();
+  const { token, _hasHydrated } = useAuthStore();
   const [showMobileContent, setShowMobileContent] = useState(false);
 
   const {
-    conversationId,
     currentPhase,
-    currentPhaseIndex,
-    totalPhases,
     progressPercent,
     completedPhases,
     messages,
@@ -39,7 +36,6 @@ export default function CampaignStudioContent() {
     goToPhase,
     regenerateContent,
     clearConversation,
-    startConversation,
   } = useCampaignStudio(campaignId || undefined);
 
   // Wait for hydration before checking auth

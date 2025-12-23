@@ -256,7 +256,7 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
 
   // Advance to the next phase
   advancePhase: async () => {
-    const { id, currentPhase, completedPhases } = get();
+    const { id, currentPhase } = get();
     const token = getAuthToken();
 
     if (!token || !id) {
