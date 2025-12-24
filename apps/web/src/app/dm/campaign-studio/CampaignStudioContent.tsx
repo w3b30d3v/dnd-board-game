@@ -14,6 +14,7 @@ import {
   ContentPreview,
 } from '@/components/campaign-studio';
 import { VideoGenerator } from '@/components/cutscene';
+import { VoiceGenerator } from '@/components/narration';
 
 export default function CampaignStudioContent() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function CampaignStudioContent() {
   const { token, _hasHydrated } = useAuthStore();
   const [showMobileContent, setShowMobileContent] = useState(false);
   const [showVideoGenerator, setShowVideoGenerator] = useState(false);
+  const [showVoiceGenerator, setShowVoiceGenerator] = useState(false);
 
   const {
     currentPhase,
@@ -109,6 +111,29 @@ export default function CampaignStudioContent() {
 
           {/* Right: Actions */}
           <div className="flex items-center gap-2">
+            {/* Voice Generator button */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowVoiceGenerator(true)}
+              className="p-2 rounded-lg bg-bg-elevated hover:bg-border transition-colors"
+              title="Generate Narration"
+            >
+              <svg
+                className="w-5 h-5 text-text-secondary"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                />
+              </svg>
+            </motion.button>
+
             {/* Video Generator button */}
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -339,6 +364,57 @@ export default function CampaignStudioContent() {
                   onVideoGenerated={(url) => {
                     console.log('Video generated:', url);
                     // Could add to campaign content here
+                  }}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Voice Generator Modal */}
+      <AnimatePresence>
+        {showVoiceGenerator && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+            onClick={() => setShowVoiceGenerator(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="w-full max-w-lg max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="relative">
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setShowVoiceGenerator(false)}
+                  className="absolute -top-2 -right-2 z-10 p-2 rounded-full bg-bg-card border border-border shadow-lg"
+                >
+                  <svg
+                    className="w-4 h-4 text-text-secondary"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </motion.button>
+                <VoiceGenerator
+                  contentType={currentPhase === 'locations' ? 'location' : currentPhase === 'npcs' ? 'npc' : currentPhase === 'encounters' ? 'encounter' : currentPhase === 'quests' ? 'quest' : 'setting'}
+                  onGenerated={(audio) => {
+                    console.log('Voice generated:', audio);
                   }}
                 />
               </div>

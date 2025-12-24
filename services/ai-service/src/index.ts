@@ -10,7 +10,9 @@ import { authMiddleware } from './middleware/auth.js';
 import conversationRoutes from './routes/conversation.js';
 import generationRoutes from './routes/generation.js';
 import videoRoutes from './routes/video.js';
+import voiceRoutes from './routes/voice.js';
 import { isRunwayConfigured } from './lib/runway.js';
+import { isElevenLabsConfigured } from './lib/elevenlabs.js';
 
 const app: Express = express();
 
@@ -56,15 +58,17 @@ app.get('/health', (_req, res) => {
 app.get('/api', (_req, res) => {
   res.json({
     name: 'AI Service',
-    version: '0.2.0',
+    version: '0.3.0',
     description: 'Campaign Studio & Content Generation',
     endpoints: {
       conversation: '/ai/conversation',
       generation: '/ai/generate',
       video: '/ai/video',
+      voice: '/ai/voice',
     },
     integrations: {
       runway: isRunwayConfigured(),
+      elevenlabs: isElevenLabsConfigured(),
     },
   });
 });
@@ -101,10 +105,22 @@ app.get('/test/runway', (_req, res) => {
   });
 });
 
+// Test endpoint (no auth) - verifies ElevenLabs connection
+app.get('/test/elevenlabs', (_req, res) => {
+  res.json({
+    status: isElevenLabsConfigured() ? 'ok' : 'not_configured',
+    configured: isElevenLabsConfigured(),
+    message: isElevenLabsConfigured()
+      ? 'ElevenLabs TTS is configured and ready'
+      : 'ELEVENLABS_API_KEY not set - voice narration unavailable',
+  });
+});
+
 // Routes (protected)
 app.use('/ai/conversation', authMiddleware, conversationRoutes);
 app.use('/ai/generate', authMiddleware, generationRoutes);
 app.use('/ai/video', authMiddleware, videoRoutes);
+app.use('/ai/voice', authMiddleware, voiceRoutes);
 
 // Error handling middleware
 app.use(
