@@ -66,6 +66,9 @@ importers:
       framer-motion:
         specifier: ^12.23.25
         version: 12.23.25(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      howler:
+        specifier: ^2.2.4
+        version: 2.2.4
       lucide-react:
         specifier: ^0.559.0
         version: 0.559.0(react@18.3.1)
@@ -103,6 +106,9 @@ importers:
       '@testing-library/user-event':
         specifier: ^14.6.1
         version: 14.6.1(@testing-library/dom@10.4.1)
+      '@types/howler':
+        specifier: ^2.2.12
+        version: 2.2.12
       '@types/react':
         specifier: ^18.2.0
         version: 18.3.27
@@ -144,7 +150,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
 
   packages/proto:
     dependencies:
@@ -169,7 +175,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
 
   packages/shared:
     dependencies:
@@ -197,7 +203,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
 
   packages/ui:
     dependencies:
@@ -246,7 +252,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
 
   services/ai-service:
     dependencies:
@@ -322,7 +328,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
 
   services/api-gateway:
     dependencies:
@@ -401,7 +407,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
 
   services/game-state:
     dependencies:
@@ -429,7 +435,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
 
   services/media-service:
     dependencies:
@@ -463,7 +469,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
 
   services/ws-gateway:
     dependencies:
@@ -509,7 +515,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
 
 packages:
 
@@ -1704,6 +1710,9 @@ packages:
 
   '@types/express@4.17.25':
     resolution: {integrity: sha512-dVd04UKsfpINUnK0yBoYHDF3xu7xVH4BuDotC/xGuycx4CgbP48X/KF/586bcObxT0HENHXEU8Nqtu6NR+eKhw==}
+
+  '@types/howler@2.2.12':
+    resolution: {integrity: sha512-hy769UICzOSdK0Kn1FBk4gN+lswcj1EKRkmiDtMkUGvFfYJzgaDXmVXkSShS2m89ERAatGIPnTUlp2HhfkVo5g==}
 
   '@types/http-errors@2.0.5':
     resolution: {integrity: sha512-r8Tayk8HJnX0FztbZN7oVqGccWgw98T/0neJphO91KkmOzug1KkofZURD4UaD5uH8AqcFLfdPErnBod0u71/qg==}
@@ -2906,6 +2915,9 @@ packages:
 
   help-me@5.0.0:
     resolution: {integrity: sha512-7xgomUX6ADmcYzFik0HzAxh/73YlKR9bmFzf51CZwR+b6YtzU2m0u49hQCqV6SvlqIqsaxovfwdvbnsw3b/zpg==}
+
+  howler@2.2.4:
+    resolution: {integrity: sha512-iARIBPgcQrwtEr+tALF+rapJ8qSc+Set2GJQl7xT1MQzWaVkFebdJhR3alVlSiUf5U7nAANKuj3aWpwerocD5w==}
 
   html-encoding-sniffer@4.0.0:
     resolution: {integrity: sha512-Y22oTqIU4uuPgEemfz7NDJz6OeKf12Lsu+QC+s3BVpda64lTiMYCyGwg5ki4vFxkMwQdeZDl2adZoqUgdFuTgQ==}
@@ -5591,6 +5603,8 @@ snapshots:
       '@types/qs': 6.14.0
       '@types/serve-static': 1.15.10
 
+  '@types/howler@2.2.12': {}
+
   '@types/http-errors@2.0.5': {}
 
   '@types/json-schema@7.0.15': {}
@@ -7044,6 +7058,8 @@ snapshots:
   helmet@7.2.0: {}
 
   help-me@5.0.0: {}
+
+  howler@2.2.4: {}
 
   html-encoding-sniffer@4.0.0:
     dependencies:
@@ -8665,7 +8681,7 @@ snapshots:
       tsx: 4.21.0
       yaml: 2.8.2
 
-  vitest@1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6)):
+  vitest@1.6.1(@types/node@20.19.25)(jsdom@27.3.0):
     dependencies:
       '@vitest/expect': 1.6.1
       '@vitest/runner': 1.6.1
