@@ -218,7 +218,8 @@ export function VideoGenerator({ campaignId, onVideoGenerated, className }: Vide
                 value={customDescription}
                 onChange={(e) => setCustomDescription(e.target.value)}
                 placeholder="Describe your scene in detail (e.g., 'A dragon emerges from a volcanic mountain, spreading its wings against a sunset sky...')"
-                className="w-full h-24 px-3 py-2 bg-bg-elevated border border-border rounded-lg text-text-primary placeholder:text-text-muted resize-none focus:outline-none focus:border-primary/50"
+                className="w-full h-24 px-3 py-2 border border-input-border rounded-lg resize-none focus:outline-none focus:border-primary/50"
+                style={{ backgroundColor: '#FFFFFF', color: '#18181B' }}
                 maxLength={1000}
               />
               <p className="text-xs text-text-muted mt-1">{customDescription.length}/1000 characters</p>

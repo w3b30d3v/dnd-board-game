@@ -58,6 +58,15 @@ module.exports = {
           secondary: '#A1A1AA',
           muted: '#71717A',
           inverse: '#18181B',
+          input: '#18181B', // Dark text for input fields
+        },
+        // Input field colors
+        input: {
+          bg: '#FFFFFF',
+          text: '#18181B',
+          placeholder: '#71717A',
+          border: '#D4D4D8',
+          focus: '#F59E0B',
         },
         // Borders
         border: {

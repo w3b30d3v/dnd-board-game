@@ -60,13 +60,18 @@ export function ChatInput({
           disabled={isGenerating}
           rows={1}
           className={`
-            w-full resize-none rounded-xl border border-border bg-bg-elevated
-            px-4 py-3 pr-14 text-text-primary placeholder-text-muted
+            w-full resize-none rounded-xl border border-input-border
+            px-4 py-3 pr-14
             focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20
             disabled:opacity-50 disabled:cursor-not-allowed
             transition-all duration-200
           `}
-          style={{ minHeight: '48px', maxHeight: '200px' }}
+          style={{
+            minHeight: '48px',
+            maxHeight: '200px',
+            backgroundColor: '#FFFFFF',
+            color: '#18181B'
+          }}
         />
 
         {/* Send button */}

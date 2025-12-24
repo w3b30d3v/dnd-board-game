@@ -429,7 +429,8 @@ export function DynamicScene({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe the scene... (e.g., 'A dark forest at night with fog rolling between the ancient trees')"
-            className="w-full px-4 py-3 rounded-lg bg-bg-elevated border border-border text-text-primary placeholder-text-muted resize-none focus:border-secondary focus:outline-none"
+            className="w-full px-4 py-3 rounded-lg border border-input-border resize-none focus:border-secondary focus:outline-none"
+            style={{ backgroundColor: '#FFFFFF', color: '#18181B' }}
             rows={3}
           />
           <motion.button

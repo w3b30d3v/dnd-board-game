@@ -147,13 +147,17 @@
     transform: translateY(-2px);
   }
 
-  /* Input fields */
+  /* Input fields - WHITE BACKGROUND with BLACK TEXT */
   .input {
     @apply w-full px-4 py-3 rounded-lg
-           text-text-primary placeholder-text-muted
            transition-all duration-200;
-    background: #1A1720;
-    border: 1px solid #3F3F46;
+    background: #FFFFFF;
+    color: #18181B;
+    border: 1px solid #D4D4D8;
+  }
+
+  .input::placeholder {
+    color: #71717A;
   }
 
   .input:focus {
@@ -164,6 +168,7 @@
 
   .input:disabled {
     @apply opacity-50 cursor-not-allowed;
+    background: #F4F4F5;
   }
 
   /* Input with error */
@@ -174,6 +179,30 @@
   .input-error:focus {
     border-color: #EF4444;
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  }
+
+  /* Force all text inputs and textareas to have white bg and black text */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  textarea {
+    background-color: #FFFFFF !important;
+    color: #18181B !important;
+  }
+
+  input[type="text"]::placeholder,
+  input[type="email"]::placeholder,
+  input[type="password"]::placeholder,
+  input[type="number"]::placeholder,
+  input[type="search"]::placeholder,
+  input[type="tel"]::placeholder,
+  input[type="url"]::placeholder,
+  textarea::placeholder {
+    color: #71717A !important;
   }
 
   /* Label */
