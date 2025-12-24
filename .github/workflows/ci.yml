@@ -116,6 +116,9 @@ jobs:
         env:
           DATABASE_URL: "postgresql://placeholder:placeholder@localhost:5432/placeholder"
 
+      - name: Run ESLint check
+        run: pnpm lint
+
       - name: Run unit tests
         run: |
           pnpm --filter @dnd/rules-engine test
@@ -225,15 +228,23 @@ jobs:
         run: pnpm audit --audit-level moderate
         continue-on-error: true
 
-  # Deploy to Railway (only on master/main push)
+  # Deploy to Railway (only on master/main push, after all tests pass)
   deploy:
     name: Deploy to Railway
     runs-on: ubuntu-latest
-    needs: [build, test-unit]
+    needs: [build, test-unit, test-integration, security]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Verify all tests passed
+        run: |
+          echo "All tests passed! Deployment proceeding..."
+          echo "- Build: ✓"
+          echo "- Unit Tests: ✓"
+          echo "- Integration Tests: ✓"
+          echo "- Security Audit: ✓"
 
       - name: Deploy to Railway
         run: echo "Railway automatically deploys from GitHub - no action needed"

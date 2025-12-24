@@ -61,7 +61,7 @@ export function ChatInput({
           rows={1}
           className={`
             w-full resize-none rounded-xl border border-input-border
-            px-4 py-3 pr-14
+            px-4 py-3 pr-16
             focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20
             disabled:opacity-50 disabled:cursor-not-allowed
             transition-all duration-200
@@ -74,14 +74,14 @@ export function ChatInput({
           }}
         />
 
-        {/* Send button */}
+        {/* Send button - positioned outside scrollbar area */}
         <motion.button
           onClick={handleSubmit}
           disabled={!message.trim() || isGenerating}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           className={`
-            absolute right-2 bottom-2 p-2 rounded-lg
+            absolute right-3 bottom-2 p-2 rounded-lg
             transition-all duration-200
             ${
               message.trim() && !isGenerating

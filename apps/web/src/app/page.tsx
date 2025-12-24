@@ -194,7 +194,7 @@ export default function Home() {
               { label: 'RAW 5e Rules', value: '100%', icon: '📜' },
               { label: 'Character Options', value: '12+', icon: '⚔️' },
               { label: 'AI Portraits', value: 'Yes', icon: '🎨' },
-              { label: 'Multiplayer', value: 'Soon', icon: '🎭' },
+              { label: 'Campaign Studio', value: 'Live', icon: '✨' },
             ].map((stat, idx) => (
               <motion.div
                 key={stat.label}
@@ -305,8 +305,29 @@ export default function Home() {
           {/* Additional Features Row */}
           <motion.div
             variants={staggerContainer}
-            className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6"
           >
+            <motion.div variants={featureCardVariants}>
+              <EnchantedCard hover className="h-full">
+                <div className="flex items-start gap-4 p-2">
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="text-4xl"
+                  >
+                    ✨
+                  </motion.div>
+                  <div>
+                    <h3 className="dnd-heading-section text-base mb-2">Campaign Studio</h3>
+                    <p className="text-text-secondary text-sm">
+                      AI-assisted campaign creation with live preview,
+                      auto-save, and export functionality.
+                    </p>
+                  </div>
+                </div>
+              </EnchantedCard>
+            </motion.div>
+
             <motion.div variants={featureCardVariants}>
               <EnchantedCard hover className="h-full">
                 <div className="flex items-start gap-4 p-2">
@@ -318,10 +339,29 @@ export default function Home() {
                     🎲
                   </motion.div>
                   <div>
-                    <h3 className="dnd-heading-section text-base mb-2">Dice Rolling System</h3>
+                    <h3 className="dnd-heading-section text-base mb-2">Dice Rolling</h3>
                     <p className="text-text-secondary text-sm">
-                      Beautiful animated dice with physics, advantage/disadvantage,
-                      and all the drama of a natural 20.
+                      Animated dice with physics and advantage/disadvantage.
+                    </p>
+                  </div>
+                </div>
+              </EnchantedCard>
+            </motion.div>
+
+            <motion.div variants={featureCardVariants}>
+              <EnchantedCard hover className="h-full">
+                <div className="flex items-start gap-4 p-2">
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="text-4xl"
+                  >
+                    🎙️
+                  </motion.div>
+                  <div>
+                    <h3 className="dnd-heading-section text-base mb-2">Voice Narration</h3>
+                    <p className="text-text-secondary text-sm">
+                      AI-powered voice narration with multiple voice profiles.
                     </p>
                   </div>
                 </div>
@@ -341,8 +381,7 @@ export default function Home() {
                   <div>
                     <h3 className="dnd-heading-section text-base mb-2">Trading Cards</h3>
                     <p className="text-text-secondary text-sm">
-                      Print collectible character cards with stats, abilities,
-                      and your AI-generated artwork.
+                      Print collectible character cards with AI artwork.
                     </p>
                   </div>
                 </div>
@@ -415,7 +454,7 @@ export default function Home() {
                   <D20Icon size={20} color="#F59E0B" />
                 </motion.div>
                 <p className="text-sm text-primary font-medium">
-                  Phase 3 Complete — Game Board with PixiJS & AI Terrain
+                  Phase 6 Complete — AI Campaign Studio & DM Tools
                 </p>
                 <motion.span
                   animate={{ opacity: [0.5, 1, 0.5] }}
@@ -446,7 +485,7 @@ export default function Home() {
             </Link>
           </motion.div>
 
-          {/* Coming Soon Section */}
+          {/* Available Now Section */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -454,7 +493,7 @@ export default function Home() {
             className="mt-8 text-center"
           >
             <p className="text-text-muted text-sm">
-              Coming Soon: Rules Engine • Multiplayer • Campaign Builder
+              Now Available: Character Builder • AI Portraits • Campaign Studio • DM Dashboard • Voice Narration • Dynamic Scenes
             </p>
           </motion.div>
         </motion.div>
