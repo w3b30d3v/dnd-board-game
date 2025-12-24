@@ -447,7 +447,7 @@ export default function CampaignDashboardContent() {
 
                     {/* Actions */}
                     <div className="flex gap-2">
-                      <Link href={`/dm/campaigns/${campaign.id}`} className="flex-1">
+                      <Link href={`/dm/campaign-studio?id=${campaign.id}`} className="flex-1">
                         <motion.button
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}

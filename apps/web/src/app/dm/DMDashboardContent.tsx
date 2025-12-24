@@ -255,16 +255,7 @@ export default function DMDashboardContent() {
                   whileTap={{ scale: 0.98 }}
                   className="px-4 py-2 bg-gradient-to-r from-purple-500 to-primary text-white rounded-lg font-medium shadow-lg shadow-purple-500/20"
                 >
-                  AI Campaign Studio
-                </motion.button>
-              </Link>
-              <Link href="/dm/campaigns">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="btn-magic"
-                >
-                  Campaign Builder
+                  Campaign Studio
                 </motion.button>
               </Link>
             </div>
@@ -529,7 +520,7 @@ export default function DMDashboardContent() {
 
                       {/* Actions */}
                       <div className="flex gap-2 pt-3 border-t border-border">
-                        <Link href={`/dm/campaigns/${campaign.id}`} className="flex-1">
+                        <Link href={`/dm/campaign-studio?id=${campaign.id}`} className="flex-1">
                           <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
@@ -568,7 +559,7 @@ export default function DMDashboardContent() {
                 className="p-4 bg-gradient-to-br from-purple-900/30 to-bg-elevated rounded-lg text-center cursor-pointer hover:from-purple-900/50 transition-colors border border-purple-500/20"
               >
                 <span className="text-2xl block mb-2">✨</span>
-                <span className="text-sm text-purple-400">AI Campaign Studio</span>
+                <span className="text-sm text-purple-400">Campaign Studio</span>
               </motion.div>
             </Link>
             <Link href="/dm/campaigns">
@@ -577,7 +568,7 @@ export default function DMDashboardContent() {
                 className="p-4 bg-bg-elevated rounded-lg text-center cursor-pointer hover:bg-border transition-colors"
               >
                 <span className="text-2xl block mb-2">📚</span>
-                <span className="text-sm text-text-primary">Manage Campaigns</span>
+                <span className="text-sm text-text-primary">My Campaigns</span>
               </motion.div>
             </Link>
             <Link href="/characters">
