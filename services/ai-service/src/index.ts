@@ -116,6 +116,39 @@ app.get('/test/elevenlabs', (_req, res) => {
   });
 });
 
+// Test endpoint (no auth) - actually tests ElevenLabs voice generation
+app.get('/test/elevenlabs/generate', async (_req, res) => {
+  if (!isElevenLabsConfigured()) {
+    res.status(503).json({ error: 'ElevenLabs not configured' });
+    return;
+  }
+
+  try {
+    const { generateSpeech } = await import('./lib/elevenlabs.js');
+    const result = await generateSpeech({
+      text: 'Hello, this is a test of the ElevenLabs voice generation.',
+      voiceProfile: 'narrator',
+    });
+
+    res.json({
+      status: 'ok',
+      message: 'Voice generation successful',
+      duration: result.duration,
+      characterCount: result.characterCount,
+      voiceProfile: result.voiceProfile,
+      // Don't return the full audio URL in test - it's too large
+      hasAudio: !!result.audioUrl,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error({ error }, 'ElevenLabs test generation failed');
+    res.status(500).json({
+      status: 'error',
+      error: message,
+    });
+  }
+});
+
 // Routes (protected)
 app.use('/ai/conversation', authMiddleware, conversationRoutes);
 app.use('/ai/generate', authMiddleware, generationRoutes);
