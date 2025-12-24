@@ -14,6 +14,13 @@ import {
   D20Icon,
   SwordIcon,
 } from '@/components/dnd/DnDIcons';
+import type { GameMap, NPC, Encounter, Quest } from '@dnd/shared';
+
+// Dynamic imports for heavy editor components
+const MapEditor = dynamic(() => import('@/components/editors/MapEditor'), { ssr: false });
+const NPCEditor = dynamic(() => import('@/components/editors/NPCEditor'), { ssr: false });
+const EncounterEditor = dynamic(() => import('@/components/editors/EncounterEditor'), { ssr: false });
+const QuestEditor = dynamic(() => import('@/components/editors/QuestEditor'), { ssr: false });
 
 // Dynamic imports for heavy components
 const AmbientParticles = dynamic(
@@ -198,12 +205,16 @@ export default function CampaignEditorContent({ campaignId }: CampaignEditorCont
     fetchCampaign,
     updateCampaign,
     createMap,
+    updateMap,
     deleteMap,
     createEncounter,
+    updateEncounter,
     deleteEncounter,
     createNPC,
+    updateNPC,
     deleteNPC,
     createQuest,
+    updateQuest,
     deleteQuest,
     validateCampaign,
     clearError,
@@ -218,6 +229,12 @@ export default function CampaignEditorContent({ campaignId }: CampaignEditorCont
   const [nameValue, setNameValue] = useState('');
   const [descriptionValue, setDescriptionValue] = useState('');
   const [validationResult, setValidationResult] = useState<{ valid: boolean; score: number; issues: unknown[]; warnings: unknown[] } | null>(null);
+
+  // Editor states
+  const [editingMap, setEditingMap] = useState<GameMap | null>(null);
+  const [editingNPC, setEditingNPC] = useState<NPC | null>(null);
+  const [editingEncounter, setEditingEncounter] = useState<Encounter | null>(null);
+  const [editingQuest, setEditingQuest] = useState<Quest | null>(null);
 
   // Fetch campaign on mount
   useEffect(() => {
@@ -576,7 +593,12 @@ export default function CampaignEditorContent({ campaignId }: CampaignEditorCont
                         <h3 className="font-semibold text-text-primary truncate">{map.name}</h3>
                         <p className="text-sm text-text-muted">{map.width}x{map.height} tiles</p>
                         <div className="flex gap-2 mt-3">
-                          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="btn-magic text-sm flex-1">
+                          <motion.button
+                            onClick={() => setEditingMap(map)}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="btn-magic text-sm flex-1"
+                          >
                             Edit
                           </motion.button>
                           <motion.button
@@ -637,7 +659,12 @@ export default function CampaignEditorContent({ campaignId }: CampaignEditorCont
                           {encounter.difficulty}
                         </span>
                         <div className="flex gap-2 mt-3">
-                          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="btn-magic text-sm flex-1">
+                          <motion.button
+                            onClick={() => setEditingEncounter(encounter)}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="btn-magic text-sm flex-1"
+                          >
                             Edit
                           </motion.button>
                           <motion.button
@@ -704,7 +731,12 @@ export default function CampaignEditorContent({ campaignId }: CampaignEditorCont
                           {npc.description || 'No description'}
                         </p>
                         <div className="flex gap-2 mt-3">
-                          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="btn-magic text-sm flex-1">
+                          <motion.button
+                            onClick={() => setEditingNPC(npc)}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="btn-magic text-sm flex-1"
+                          >
                             Edit
                           </motion.button>
                           <motion.button
@@ -769,7 +801,12 @@ export default function CampaignEditorContent({ campaignId }: CampaignEditorCont
                           {quest.type}
                         </span>
                         <div className="flex gap-2 mt-3">
-                          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="btn-magic text-sm flex-1">
+                          <motion.button
+                            onClick={() => setEditingQuest(quest)}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="btn-magic text-sm flex-1"
+                          >
                             Edit
                           </motion.button>
                           <motion.button
@@ -887,6 +924,61 @@ export default function CampaignEditorContent({ campaignId }: CampaignEditorCont
           'Find the Lost Artifact...'
         }
       />
+
+      {/* Content Editors */}
+      {editingMap && (
+        <MapEditor
+          map={editingMap}
+          onSave={async (updates) => {
+            if (token) {
+              await updateMap(campaignId, editingMap.id, updates, token);
+              setEditingMap(null);
+            }
+          }}
+          onClose={() => setEditingMap(null)}
+        />
+      )}
+
+      {editingNPC && (
+        <NPCEditor
+          npc={editingNPC}
+          onSave={async (updates) => {
+            if (token) {
+              await updateNPC(campaignId, editingNPC.id, updates, token);
+              setEditingNPC(null);
+            }
+          }}
+          onClose={() => setEditingNPC(null)}
+        />
+      )}
+
+      {editingEncounter && (
+        <EncounterEditor
+          encounter={editingEncounter}
+          maps={currentCampaign?.maps}
+          onSave={async (updates) => {
+            if (token) {
+              await updateEncounter(campaignId, editingEncounter.id, updates, token);
+              setEditingEncounter(null);
+            }
+          }}
+          onClose={() => setEditingEncounter(null)}
+        />
+      )}
+
+      {editingQuest && (
+        <QuestEditor
+          quest={editingQuest}
+          npcs={currentCampaign?.npcs}
+          onSave={async (updates) => {
+            if (token) {
+              await updateQuest(campaignId, editingQuest.id, updates, token);
+              setEditingQuest(null);
+            }
+          }}
+          onClose={() => setEditingQuest(null)}
+        />
+      )}
     </div>
   );
 }
