@@ -20,8 +20,9 @@ import { logger } from '../lib/logger.js';
 const router: RouterType = Router();
 
 // Validation schemas
+// Accept either a UUID or a temporary campaign ID (temp_timestamp format)
 const startSchema = z.object({
-  campaignId: z.string().uuid(),
+  campaignId: z.string().min(1).max(100),
 });
 
 const messageSchema = z.object({
