@@ -12,14 +12,6 @@ interface NPCEditorProps {
 }
 
 const ABILITY_SCORES = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const;
-const ABILITY_LABELS: Record<string, string> = {
-  str: 'Strength',
-  dex: 'Dexterity',
-  con: 'Constitution',
-  int: 'Intelligence',
-  wis: 'Wisdom',
-  cha: 'Charisma',
-};
 
 const CR_OPTIONS = [
   '0', '1/8', '1/4', '1/2', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
