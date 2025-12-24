@@ -41,19 +41,31 @@ router.get('/status', async (_req: Request, res: Response) => {
     if (!configured) {
       res.json({
         available: false,
+        configured: false,
         reason: 'ElevenLabs API key not configured',
       });
       return;
     }
 
-    const subscription = await getSubscriptionInfo();
+    // API is configured, try to get subscription info
+    try {
+      const subscription = await getSubscriptionInfo();
 
-    res.json({
-      available: subscription.canGenerate,
-      characterCount: subscription.characterCount,
-      characterLimit: subscription.characterLimit,
-      remainingCharacters: subscription.characterLimit - subscription.characterCount,
-    });
+      res.json({
+        available: subscription.canGenerate,
+        configured: true,
+        characterCount: subscription.characterCount,
+        characterLimit: subscription.characterLimit,
+        remainingCharacters: subscription.characterLimit - subscription.characterCount,
+      });
+    } catch {
+      // Subscription check failed but API is configured - allow generation
+      res.json({
+        available: true,
+        configured: true,
+        reason: 'Could not fetch subscription info, but API is configured',
+      });
+    }
   } catch (error) {
     logger.error({ error }, 'Failed to get voice status');
     res.status(500).json({ error: 'Failed to get voice status' });

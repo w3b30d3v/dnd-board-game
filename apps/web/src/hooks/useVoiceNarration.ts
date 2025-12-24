@@ -16,6 +16,7 @@ export interface VoiceProfile {
 // Voice status info
 export interface VoiceStatus {
   available: boolean;
+  configured?: boolean;
   characterCount?: number;
   characterLimit?: number;
   remainingCharacters?: number;
@@ -79,7 +80,7 @@ export function useVoiceStatus() {
     checkStatus();
   }, [token]);
 
-  return { status, isLoading, isConfigured: status?.available ?? false };
+  return { status, isLoading, isConfigured: status?.configured ?? status?.available ?? false };
 }
 
 /**

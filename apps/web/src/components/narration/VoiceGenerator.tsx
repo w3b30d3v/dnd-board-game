@@ -145,7 +145,7 @@ export function VoiceGenerator({
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Enter the text you want to convert to speech..."
-          className="w-full h-32 px-3 py-2 bg-bg-elevated border border-border rounded-lg text-text-primary placeholder:text-text-muted resize-none focus:outline-none focus:border-primary/50"
+          className="w-full h-32 px-3 py-2 bg-[#1E1B26] border border-[#3f3f46] rounded-lg text-white placeholder:text-[#71717a] resize-none focus:outline-none focus:border-[#F59E0B]/50"
           maxLength={5000}
         />
         <p className="text-xs text-text-muted mt-1">{text.length}/5000 characters</p>
