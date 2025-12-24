@@ -22,30 +22,32 @@ export interface VoiceProfile {
 }
 
 // Pre-defined voice profiles for D&D
+// Using ElevenLabs pre-made voices available on all tiers
+// See: https://elevenlabs.io/docs/voices/premade-voices
 export const VOICE_PROFILES: Record<string, VoiceProfile> = {
   // DM/Narrator voices
   narrator: {
     id: 'narrator',
     name: 'Dungeon Master',
-    voiceId: 'pNInz6obpgDQGcFmaJgB', // Adam - deep, narrative
+    voiceId: '21m00Tcm4TlvDq8ikWAM', // Rachel - clear, warm (pre-made)
     description: 'Deep, dramatic narrator voice for scene descriptions',
-    settings: { stability: 0.75, similarityBoost: 0.75, style: 0.5 },
+    settings: { stability: 0.75, similarityBoost: 0.75 },
     category: 'narrator',
   },
   narrator_mysterious: {
     id: 'narrator_mysterious',
     name: 'Mysterious Narrator',
-    voiceId: 'SOYHLrjzK2X1ezoPC6cr', // Antoni - soft, mysterious
+    voiceId: 'AZnzlk1XvdvUeBnXmlld', // Domi - soft (pre-made)
     description: 'Soft, mysterious voice for dark or suspenseful scenes',
-    settings: { stability: 0.85, similarityBoost: 0.7, style: 0.3 },
+    settings: { stability: 0.85, similarityBoost: 0.7 },
     category: 'narrator',
   },
   narrator_epic: {
     id: 'narrator_epic',
     name: 'Epic Narrator',
-    voiceId: 'VR6AewLTigWG4xSOukaG', // Arnold - strong, commanding
+    voiceId: 'ErXwobaYiN019PkySvjV', // Antoni - strong (pre-made)
     description: 'Powerful voice for epic battles and heroic moments',
-    settings: { stability: 0.6, similarityBoost: 0.8, style: 0.7 },
+    settings: { stability: 0.6, similarityBoost: 0.8 },
     category: 'narrator',
   },
 
@@ -53,49 +55,49 @@ export const VOICE_PROFILES: Record<string, VoiceProfile> = {
   noble_male: {
     id: 'noble_male',
     name: 'Noble Male',
-    voiceId: 'VR6AewLTigWG4xSOukaG', // Arnold
+    voiceId: 'VR6AewLTigWG4xSOukaG', // Arnold (pre-made)
     description: 'Refined, aristocratic male voice',
-    settings: { stability: 0.8, similarityBoost: 0.75, style: 0.4 },
+    settings: { stability: 0.8, similarityBoost: 0.75 },
     category: 'npc',
   },
   warrior_male: {
     id: 'warrior_male',
     name: 'Warrior Male',
-    voiceId: 'TxGEqnHWrfWFTfGW9XjX', // Josh - gruff
+    voiceId: 'TxGEqnHWrfWFTfGW9XjX', // Josh (pre-made)
     description: 'Gruff, battle-hardened warrior voice',
-    settings: { stability: 0.65, similarityBoost: 0.8, style: 0.5 },
+    settings: { stability: 0.65, similarityBoost: 0.8 },
     category: 'npc',
   },
   wizard_male: {
     id: 'wizard_male',
     name: 'Wizard Male',
-    voiceId: 'SOYHLrjzK2X1ezoPC6cr', // Antoni
+    voiceId: 'ErXwobaYiN019PkySvjV', // Antoni (pre-made)
     description: 'Wise, measured wizard voice',
-    settings: { stability: 0.85, similarityBoost: 0.7, style: 0.3 },
+    settings: { stability: 0.85, similarityBoost: 0.7 },
     category: 'npc',
   },
   noble_female: {
     id: 'noble_female',
     name: 'Noble Female',
-    voiceId: 'EXAVITQu4vr4xnSDxMaL', // Bella
+    voiceId: 'EXAVITQu4vr4xnSDxMaL', // Bella (pre-made)
     description: 'Elegant, noble female voice',
-    settings: { stability: 0.8, similarityBoost: 0.75, style: 0.4 },
+    settings: { stability: 0.8, similarityBoost: 0.75 },
     category: 'npc',
   },
   tavern_keeper: {
     id: 'tavern_keeper',
     name: 'Tavern Keeper',
-    voiceId: 'jBpfuIE2acCO8z3wKNLl', // Rachel - warm
+    voiceId: '21m00Tcm4TlvDq8ikWAM', // Rachel (pre-made)
     description: 'Friendly, welcoming tavern keeper voice',
-    settings: { stability: 0.7, similarityBoost: 0.75, style: 0.5 },
+    settings: { stability: 0.7, similarityBoost: 0.75 },
     category: 'npc',
   },
   villain: {
     id: 'villain',
     name: 'Villain',
-    voiceId: 'pNInz6obpgDQGcFmaJgB', // Adam - can sound menacing
+    voiceId: 'VR6AewLTigWG4xSOukaG', // Arnold - can sound menacing (pre-made)
     description: 'Dark, menacing villain voice',
-    settings: { stability: 0.6, similarityBoost: 0.85, style: 0.7 },
+    settings: { stability: 0.6, similarityBoost: 0.85 },
     category: 'npc',
   },
 
@@ -103,9 +105,9 @@ export const VOICE_PROFILES: Record<string, VoiceProfile> = {
   system: {
     id: 'system',
     name: 'System',
-    voiceId: 'jsCqWAovK2LkecY7zXl4', // Domi - clear, neutral
+    voiceId: 'AZnzlk1XvdvUeBnXmlld', // Domi - clear, neutral (pre-made)
     description: 'Clear, neutral voice for game notifications',
-    settings: { stability: 0.9, similarityBoost: 0.7, style: 0.2 },
+    settings: { stability: 0.9, similarityBoost: 0.7 },
     category: 'system',
   },
 };
@@ -160,15 +162,15 @@ export async function generateSpeech(request: TTSRequest): Promise<TTSResponse> 
     : EMOTION_MODIFIERS.neutral;
 
   // Apply emotion modifiers to voice settings
-  const settings: VoiceSettings = {
+  // Only use stability and similarity_boost - style is only for certain models
+  const settings = {
     stability: Math.max(0, Math.min(1, profile.settings.stability + (emotion.stability || 0))),
-    similarityBoost: Math.max(0, Math.min(1, profile.settings.similarityBoost + (emotion.similarityBoost || 0))),
-    style: Math.max(0, Math.min(1, (profile.settings.style || 0.5) + (emotion.style || 0))),
-    useSpeakerBoost: true,
+    similarity_boost: Math.max(0, Math.min(1, profile.settings.similarityBoost + (emotion.similarityBoost || 0))),
   };
 
   const voiceId = request.customVoiceId || profile.voiceId;
-  const modelId = request.modelId || 'eleven_multilingual_v2';
+  // Use eleven_monolingual_v1 for better compatibility
+  const modelId = request.modelId || 'eleven_monolingual_v1';
 
   logger.info({ voiceId, modelId, textLength: request.text.length }, 'Generating speech');
 
