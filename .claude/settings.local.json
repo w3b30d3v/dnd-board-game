@@ -29,7 +29,8 @@
       "WebFetch(domain:github.com)",
       "Bash(timeout 60 pnpm --filter @dnd/web test:unit:*)",
       "Bash(npm info:*)",
-      "Bash(timeout 60 pnpm:*)"
+      "Bash(timeout 60 pnpm:*)",
+      "Bash(timeout 120 pnpm:*)"
     ],
     "deny": [],
     "ask": []

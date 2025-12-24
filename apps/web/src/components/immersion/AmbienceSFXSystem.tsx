@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useCallback, useEffect, useRef, useState } from 'react';
-import { Howl, Howler } from 'howler';
+import { Howl } from 'howler';
 
 // ============================================================================
 // TYPES
