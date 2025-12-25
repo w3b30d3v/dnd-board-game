@@ -1,0 +1,527 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// User & Authentication
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  username      String    @unique
+  displayName   String
+  passwordHash  String?
+  avatarUrl     String?
+
+  // OAuth
+  googleId      String?   @unique
+  discordId     String?   @unique
+
+  // Status
+  emailVerified Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+
+  // Limits
+  aiCharactersGenerated Int @default(0)  // Max 5 characters (15 images)
+  maxActiveSessions     Int @default(3)  // Max active game sessions as DM
+
+  // Preferences
+  preferences   Json      @default("{}")
+
+  // Relations
+  characters    Character[]
+  sessions      Session[]
+  campaigns     Campaign[]  @relation("CampaignOwner")
+  campaignPlayers CampaignPlayer[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// ============================================
+// Character
+// ============================================
+
+model Character {
+  id            String    @id @default(cuid())
+  userId        String
+  name          String
+
+  // Core stats
+  race          String
+  subrace       String?
+  class         String
+  subclass      String?
+  background    String
+  level         Int       @default(1)
+  experiencePoints Int    @default(0)
+
+  // Ability scores
+  strength      Int
+  dexterity     Int
+  constitution  Int
+  intelligence  Int
+  wisdom        Int
+  charisma      Int
+
+  // Derived stats
+  maxHitPoints  Int
+  currentHitPoints Int
+  tempHitPoints Int       @default(0)
+  armorClass    Int
+  initiative    Int
+  speed         Int
+  proficiencyBonus Int
+
+  // Proficiencies (stored as arrays)
+  savingThrows  String[]
+  skills        String[]
+  tools         String[]
+  weapons       String[]
+  armor         String[]
+  languages     String[]
+
+  // Features and traits
+  features      Json      @default("[]")
+  traits        String[]
+
+  // Spellcasting
+  spellcastingAbility String?
+  spellSlots    Json?
+  spellsKnown   String[]
+  spellsPrepared String[]
+
+  // Equipment
+  equipment     Json      @default("[]")
+  currency      Json      @default("{\"cp\":0,\"sp\":0,\"gp\":0,\"pp\":0}")
+
+  // Appearance & Images
+  portraitUrl   String?          // Primary portrait (head/shoulders)
+  fullBodyUrls  String[]         // Full-body action pose images
+  imageSource   String?          // 'nanobanana', 'dicebear', or null
+  appearance    Json?
+
+  // Character Status
+  status        String    @default("draft") // draft, generating, complete
+
+  // Metadata
+  isPublic      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("characters")
+}
+
+// ============================================
+// Campaign
+// ============================================
+
+model Campaign {
+  id            String    @id @default(cuid())
+  ownerId       String
+  name          String
+  description   String?
+  coverImageUrl String?
+
+  // Settings
+  isPublic      Boolean   @default(false)
+  status        String    @default("draft") // draft, active, completed, archived
+
+  // Recommended level range
+  recommendedLevel Json   @default("{\"min\":1,\"max\":5}")
+
+  // Content
+  settings      Json      @default("{}")
+
+  // Game state persistence - saved from sessions
+  gameState     Json?     // Full game state snapshot for resuming
+  lastSavedAt   DateTime? // When game state was last saved
+
+  // Metadata
+  tags          String[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  owner         User      @relation("CampaignOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  players       CampaignPlayer[]
+  gameSessions  GameSession[]
+  maps          Map[]
+  encounters    Encounter[]
+  npcs          NPC[]
+  dialogues     Dialogue[]
+  quests        Quest[]
+
+  @@map("campaigns")
+}
+
+model CampaignPlayer {
+  id          String   @id @default(cuid())
+  campaignId  String
+  userId      String
+  role        String   @default("player") // dm, player
+  joinedAt    DateTime @default(now())
+
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, userId])
+  @@map("campaign_players")
+}
+
+// ============================================
+// Game Session (Persisted - survives disconnects)
+// ============================================
+
+model GameSession {
+  id            String    @id @default(cuid())
+  campaignId    String
+  name          String
+  inviteCode    String    @unique @default(cuid()) // 6-char code for rejoining
+  status        String    @default("lobby") // lobby, active, paused, completed
+
+  // Current map
+  currentMapId  String?
+
+  // Session lock - DM can prevent new players from joining
+  isLocked      Boolean   @default(false)
+  allowedUsers  String[]  @default([]) // User IDs allowed to join when locked
+
+  // Combat state
+  inCombat      Boolean   @default(false)
+  currentTurn   Int?
+  round         Int       @default(0)
+  initiativeOrder Json?   // Array of {creatureId, initiative, tieBreaker}
+
+  // Token positions - persisted for ALL tokens (players & monsters)
+  // Format: {creatureId: {x, y, conditions[], tempHp, currentHp}}
+  tokenStates   Json      @default("{}")
+
+  // Fog of war - which cells each player has revealed
+  // Format: {playerId: [[x,y], [x,y], ...]}
+  revealedCells Json      @default("{}")
+
+  // Session journal/history (for recap)
+  journal       Json      @default("[]") // Array of {timestamp, type, content}
+
+  // Metadata
+  lastActivityAt DateTime @default(now()) // For cleanup of abandoned sessions
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  endedAt       DateTime?
+
+  // Relations
+  campaign      Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  participants  GameSessionParticipant[]
+
+  @@map("game_sessions")
+}
+
+// Track which players are in which game session with their character
+model GameSessionParticipant {
+  id            String      @id @default(cuid())
+  sessionId     String
+
+  // Player info
+  userId        String
+  characterId   String?     // The character they're playing
+  role          String      @default("player") // dm, player
+
+  // Session-specific state (can differ from Character model)
+  currentHp     Int?        // Overrides character HP for this session
+  tempHp        Int         @default(0)
+  conditions    String[]    @default([]) // Active conditions
+  inspiration   Boolean     @default(false)
+
+  // Connection tracking
+  isConnected   Boolean     @default(false)
+  lastSeenAt    DateTime    @default(now())
+
+  // Relations
+  session       GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@map("game_session_participants")
+}
+
+// ============================================
+// Map
+// ============================================
+
+model Map {
+  id            String    @id @default(cuid())
+  campaignId    String
+  name          String
+  description   String?
+
+  // Grid settings
+  width         Int
+  height        Int
+  gridSize      Int       @default(5) // feet per cell
+  tileSize      Int       @default(64) // pixels per tile
+
+  // Map data - layers contain tiles
+  layers        Json      @default("[]")
+  tiles         Json      @default("[]") // Legacy, use layers
+  backgroundUrl String?
+
+  // Lighting & Ambience
+  lighting      Json      @default("{}")
+  ambience      Json      @default("{}")
+
+  // Metadata
+  tags          String[]
+  isPublic      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  campaign      Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  encounters    Encounter[]
+
+  @@map("maps")
+}
+
+// ============================================
+// Encounter
+// ============================================
+
+model Encounter {
+  id            String    @id @default(cuid())
+  campaignId    String
+  mapId         String?
+  name          String
+  description   String?
+
+  // Difficulty
+  difficulty    String    @default("medium") // trivial, easy, medium, hard, deadly
+  recommendedLevel Json   @default("{\"min\":1,\"max\":5}")
+
+  // Monsters placed in encounter
+  monsters      Json      @default("[]") // PlacedMonster[]
+
+  // Objectives
+  objectives    Json      @default("[]") // EncounterObjective[]
+
+  // Rewards
+  rewards       Json      @default("[]") // EncounterReward[]
+
+  // Triggers (event-based actions)
+  triggers      Json      @default("[]") // EncounterTrigger[]
+
+  // Environment settings
+  environment   Json      @default("{}")
+
+  // Audio settings
+  audio         Json      @default("{}")
+
+  // Metadata
+  tags          String[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  campaign      Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  map           Map?      @relation(fields: [mapId], references: [id], onDelete: SetNull)
+
+  @@map("encounters")
+}
+
+// ============================================
+// NPC (Non-Player Character)
+// ============================================
+
+model NPC {
+  id            String    @id @default(cuid())
+  campaignId    String
+  name          String
+  title         String?   // e.g., "Innkeeper", "Court Wizard"
+
+  // Stats (optional, for combatant NPCs)
+  monsterId     String?   // Reference to monster template
+  stats         Json?     // Override stats
+
+  // Appearance
+  portraitUrl   String?
+  description   String?
+
+  // Personality
+  personality   String?
+  motivation    String?
+  secrets       String?   // DM-only notes
+
+  // Location
+  defaultLocation String?
+  currentMapId  String?
+
+  // Dialogue
+  defaultDialogueId String?
+
+  // Metadata
+  tags          String[]
+  isHostile     Boolean   @default(false)
+  faction       String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  campaign      Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  dialogues     Dialogue[]
+
+  @@map("npcs")
+}
+
+// ============================================
+// Dialogue Tree
+// ============================================
+
+model Dialogue {
+  id            String    @id @default(cuid())
+  campaignId    String
+  npcId         String?
+  name          String
+  description   String?
+
+  // Dialogue structure
+  startNodeId   String
+  nodes         Json      @default("[]") // DialogueNode[]
+  variables     Json      @default("[]") // DialogueVariable[]
+
+  // Metadata
+  tags          String[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  campaign      Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  npc           NPC?      @relation(fields: [npcId], references: [id], onDelete: SetNull)
+
+  @@map("dialogues")
+}
+
+// ============================================
+// Quest
+// ============================================
+
+model Quest {
+  id            String    @id @default(cuid())
+  campaignId    String
+  name          String
+  description   String?
+
+  // Quest type
+  type          String    @default("main") // main, side, personal
+  status        String    @default("draft") // draft, active, completed, failed
+
+  // Objectives
+  objectives    Json      @default("[]") // QuestObjective[]
+
+  // Rewards
+  rewards       Json      @default("[]") // QuestReward[]
+
+  // Prerequisites
+  prerequisites Json      @default("[]") // Other quests, levels, items
+
+  // Giver
+  questGiverId  String?   // NPC ID
+
+  // Metadata
+  recommendedLevel Int?
+  tags          String[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  campaign      Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@map("quests")
+}
+
+// ============================================
+// Campaign Studio Conversation (AI Chat Persistence)
+// ============================================
+
+model CampaignConversation {
+  id            String    @id @default(cuid())
+  userId        String
+  campaignId    String?   // Optional - can be associated with a campaign
+
+  // Conversation phase
+  phase         String    @default("setting") // setting, story, locations, npcs, encounters, quests
+
+  // Chat messages stored as JSON array
+  // Format: [{role: "user"|"assistant", content: string, timestamp: string}]
+  messages      Json      @default("[]")
+
+  // Generated content from the conversation
+  // Format: [{id, type, data, createdAt}]
+  generatedContent Json   @default("[]")
+
+  // Cost tracking for AI usage
+  totalCost     Float     @default(0)
+
+  // Metadata
+  title         String    @default("New Campaign")  // User-friendly title
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([campaignId])
+  @@map("campaign_conversations")
+}
+
+// ============================================
+// Published Campaign (for sharing)
+// ============================================
+
+model PublishedCampaign {
+  id            String    @id @default(cuid())
+  campaignId    String
+  version       String
+  name          String
+  description   String?
+
+  // Publishing settings
+  visibility    String    @default("public") // public, private, unlisted
+  price         Int       @default(0) // In cents
+
+  // Content snapshot
+  content       Json      // Full campaign data at publish time
+  thumbnailUrl  String?
+
+  // Stats
+  downloads     Int       @default(0)
+  rating        Float?
+  ratingCount   Int       @default(0)
+
+  // Metadata
+  tags          String[]
+  publishedAt   DateTime  @default(now())
+
+  @@map("published_campaigns")
+}
