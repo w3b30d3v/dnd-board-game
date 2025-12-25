@@ -40,11 +40,20 @@ Phase 9 adds AI-powered campaign creation with Claude integration, video cutscen
 | Sprint | Name | Focus | Key Deliverables |
 |--------|------|-------|------------------|
 | 9.1 | AI Service Foundation | Backend | ✅ Claude integration, conversation routes, Redis state |
-| 9.2 | Campaign Studio UI | Frontend | Chat interface, phase progress, content preview |
+| 9.2 | Campaign Studio UI | Frontend | ✅ Chat interface, phase progress, content persistence, image generation |
 | 9.3 | Runway Video Integration | Media | Video cutscene generation pipeline |
 | 9.4 | ElevenLabs TTS | Media | Voice narration for NPCs and DM |
 | 9.5 | Content Editors | Frontend | Map, NPC, Encounter, Quest editors |
 | 9.6 | Player Immersion | Frontend | Cutscene playback, atmospheric effects |
+
+### Sprint 9.2 Completed Features
+- **Content Persistence**: Save all generated content (settings, locations, NPCs, encounters, quests) to database
+- **Content Loading**: Resume campaign creation from previously saved state
+- **AI Image Generation**: Generate portraits for NPCs and scene images for locations via NanoBanana API
+- **Webhook Support**: Async image generation with callback handling
+- **DiceBear Fallback**: Automatic fallback to DiceBear avatars when NanoBanana unavailable
+- **API Routes**: `/campaign-studio/:campaignId/save`, `/content`, `/generate-image`
+- **Store Integration**: `saveContent()`, `loadContent()`, `generateImage()` actions in campaignStudioStore
 
 ### Production URLs (Phase 9)
 - **AI Service:** https://ai-production-0566.up.railway.app

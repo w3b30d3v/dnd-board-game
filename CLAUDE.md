@@ -404,7 +404,7 @@ See `docs/44_NanoBanana_API_Integration.md` for complete implementation details.
 
 ---
 
-## AI Campaign Studio (Phase 6A - NEW)
+## AI Campaign Studio (Phase 6A - IN PROGRESS)
 
 The AI Campaign Studio transforms campaign creation into a conversational, creative experience.
 
@@ -415,6 +415,13 @@ The AI Campaign Studio transforms campaign creation into a conversational, creat
 - **Video Cutscenes**: Runway Gen-3 for cinematic moments (MANDATORY)
 - **Voice Narration**: ElevenLabs TTS for NPCs and read-aloud text
 - **AI Images**: NanoBanana for scene and NPC portraits
+
+### Implemented Features (✅)
+- **Content Persistence**: Save all generated content (settings, locations, NPCs, encounters, quests) to database
+- **Content Loading**: Resume campaign creation from saved state
+- **AI Image Generation**: Generate portraits for NPCs and scene images for locations via NanoBanana API
+- **Webhook Support**: Async image generation with callback handling
+- **DiceBear Fallback**: Automatic fallback to DiceBear avatars when NanoBanana unavailable
 
 ### AI Service Endpoints
 | Endpoint | Method | Description |
@@ -427,6 +434,14 @@ The AI Campaign Studio transforms campaign creation into a conversational, creat
 | `/ai/generate/encounter` | POST | Generate balanced encounter |
 | `/ai/generate/quest` | POST | Generate quest with objectives |
 | `/ai/generate/map` | POST | Generate map layout |
+
+### Campaign Studio Content Persistence (NEW)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/campaign-studio/:campaignId/save` | POST | Save all generated content to database |
+| `/campaign-studio/:campaignId/content` | GET | Load saved content for a campaign |
+| `/campaign-studio/:campaignId/generate-image` | POST | Generate AI image for NPC/location |
+| `/campaign-studio/webhook/nanobanana` | POST | Webhook callback for async image generation |
 
 ### API Keys Required
 ```env
@@ -472,7 +487,8 @@ The platform includes a comprehensive DM Dashboard for managing campaigns and ga
 ### Frontend Pages
 - `/dm` - DM Dashboard overview
 - `/dm/campaigns` - Campaign management
-- `/dm/campaigns/:id` - Campaign editor
+- `/dm/campaign-studio` - AI-powered campaign creation wizard
+- `/dm/map-editor` - Visual map editor with PixiJS
 
 ### Session Lifecycle
 1. DM creates session from active campaign

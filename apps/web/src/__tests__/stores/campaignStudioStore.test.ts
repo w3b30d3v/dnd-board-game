@@ -316,4 +316,221 @@ describe('campaignStudioStore', () => {
       expect(state.generatedContent.map((c) => c.type)).toEqual(types);
     });
   });
+
+  describe('saveContent', () => {
+    beforeEach(() => {
+      useCampaignStudioStore.setState({
+        id: 'conv-123',
+        campaignId: 'campaign-123',
+        generatedContent: [
+          {
+            id: 'content-1',
+            type: 'location',
+            data: { id: 'loc-1', name: 'Test Location', description: 'A test', type: 'city', features: [], connections: [] },
+            createdAt: new Date(),
+          },
+          {
+            id: 'content-2',
+            type: 'npc',
+            data: { id: 'npc-1', name: 'Test NPC', description: 'A test NPC', race: 'human', class: 'fighter', personality: [], motivations: [], secrets: [] },
+            createdAt: new Date(),
+          },
+        ],
+        isSaving: false,
+        lastSavedAt: null,
+      });
+    });
+
+    it('should handle missing campaign ID', async () => {
+      useCampaignStudioStore.setState({ campaignId: null });
+
+      const { saveContent } = useCampaignStudioStore.getState();
+      await saveContent();
+
+      const state = useCampaignStudioStore.getState();
+      expect(state.error).toBe('No campaign selected');
+    });
+
+    it('should set isSaving while saving', async () => {
+      mockFetch.mockImplementation(() => new Promise(() => {})); // Never resolves
+
+      const { saveContent } = useCampaignStudioStore.getState();
+      saveContent();
+
+      const state = useCampaignStudioStore.getState();
+      expect(state.isSaving).toBe(true);
+    });
+
+    it('should handle successful save', async () => {
+      const savedAt = new Date().toISOString();
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          success: true,
+          savedAt,
+          counts: { locations: 1, npcs: 1, encounters: 0, quests: 0 },
+        }),
+      });
+
+      const { saveContent } = useCampaignStudioStore.getState();
+      await saveContent();
+
+      const state = useCampaignStudioStore.getState();
+      expect(state.isSaving).toBe(false);
+      expect(state.lastSavedAt).toBeDefined();
+      expect(state.error).toBeNull();
+    });
+
+    it('should handle API error during save', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ error: 'Save failed' }),
+      });
+
+      const { saveContent } = useCampaignStudioStore.getState();
+      await saveContent();
+
+      const state = useCampaignStudioStore.getState();
+      expect(state.error).toBe('Save failed');
+      expect(state.isSaving).toBe(false);
+    });
+  });
+
+  describe('loadContent', () => {
+    beforeEach(() => {
+      useCampaignStudioStore.setState({
+        id: 'conv-123',
+        campaignId: 'campaign-123',
+        generatedContent: [],
+        isGenerating: false,
+      });
+    });
+
+    it('should return early when missing campaign ID or token', async () => {
+      useCampaignStudioStore.setState({ campaignId: null });
+
+      const { loadContent } = useCampaignStudioStore.getState();
+      await loadContent();
+
+      // Should return early without making fetch call or setting error
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('should set isGenerating while loading', async () => {
+      mockFetch.mockImplementation(() => new Promise(() => {})); // Never resolves
+
+      const { loadContent } = useCampaignStudioStore.getState();
+      loadContent();
+
+      // Need to wait a tick for state to update
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const state = useCampaignStudioStore.getState();
+      expect(state.isGenerating).toBe(true);
+    });
+
+    it('should handle API error during load', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ error: 'Load failed' }),
+      });
+
+      const { loadContent } = useCampaignStudioStore.getState();
+      await loadContent();
+
+      const state = useCampaignStudioStore.getState();
+      expect(state.error).toBe('Load failed');
+      expect(state.isGenerating).toBe(false);
+    });
+  });
+
+  describe('generateImage', () => {
+    beforeEach(() => {
+      useCampaignStudioStore.setState({
+        id: 'conv-123',
+        campaignId: 'campaign-123',
+        generatedContent: [
+          {
+            id: 'content-1',
+            type: 'npc',
+            data: { id: 'npc-1', name: 'Test NPC', description: 'A test NPC', race: 'human', class: 'fighter', personality: [], motivations: [], secrets: [] },
+            createdAt: new Date(),
+          },
+        ],
+        isGenerating: false,
+      });
+    });
+
+    it('should handle missing campaign ID or token', async () => {
+      useCampaignStudioStore.setState({ campaignId: null });
+
+      const { generateImage } = useCampaignStudioStore.getState();
+      await generateImage('content-1');
+
+      const state = useCampaignStudioStore.getState();
+      expect(state.error).toBe('Not authenticated or no campaign');
+    });
+
+    it('should handle content not found', async () => {
+      const { generateImage } = useCampaignStudioStore.getState();
+      await generateImage('nonexistent-content');
+
+      const state = useCampaignStudioStore.getState();
+      expect(state.error).toBe('Content not found');
+    });
+
+    it('should handle successful NPC image generation', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          success: true,
+          imageUrl: 'https://example.com/npc-portrait.png',
+        }),
+      });
+
+      const { generateImage } = useCampaignStudioStore.getState();
+      await generateImage('content-1');
+
+      const state = useCampaignStudioStore.getState();
+      expect(state.isGenerating).toBe(false);
+      const npc = state.generatedContent[0].data as { portraitUrl?: string };
+      expect(npc.portraitUrl).toBe('https://example.com/npc-portrait.png');
+      expect(state.error).toBeNull();
+    });
+
+    it('should handle API error during image generation', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ error: 'Image generation failed' }),
+      });
+
+      const { generateImage } = useCampaignStudioStore.getState();
+      await generateImage('content-1');
+
+      const state = useCampaignStudioStore.getState();
+      expect(state.error).toBe('Image generation failed');
+      expect(state.isGenerating).toBe(false);
+    });
+  });
+
+  describe('Initial State with new fields', () => {
+    it('should have isSaving and lastSavedAt in initial state', () => {
+      useCampaignStudioStore.setState({
+        id: null,
+        campaignId: null,
+        currentPhase: 'setting',
+        completedPhases: [],
+        messages: [],
+        generatedContent: [],
+        isGenerating: false,
+        isSaving: false,
+        lastSavedAt: null,
+        error: null,
+      });
+
+      const state = useCampaignStudioStore.getState();
+      expect(state.isSaving).toBe(false);
+      expect(state.lastSavedAt).toBeNull();
+    });
+  });
 });
