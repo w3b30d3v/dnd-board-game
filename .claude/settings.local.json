@@ -30,7 +30,16 @@
       "Bash(timeout 60 pnpm --filter @dnd/web test:unit:*)",
       "Bash(npm info:*)",
       "Bash(timeout 60 pnpm:*)",
-      "Bash(timeout 120 pnpm:*)"
+      "Bash(timeout 120 pnpm:*)",
+      "Bash(timeout 180 pnpm test:*)",
+      "Bash(timeout 180 pnpm:*)",
+      "Bash(cat:*)",
+      "Bash(git restore:*)",
+      "Bash(git -C \"C:/Chandru/Education/AI/ClaudeCode/dnd-board-game\" log --oneline)",
+      "Bash(xargs:*)",
+      "Bash(npx tsc:*)",
+      "Bash(gh run:*)",
+      "WebFetch(domain:web-production-85b97.up.railway.app)"
     ],
     "deny": [],
     "ask": []

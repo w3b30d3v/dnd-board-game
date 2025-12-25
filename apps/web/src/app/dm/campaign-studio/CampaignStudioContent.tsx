@@ -290,24 +290,28 @@ export default function CampaignStudioContent() {
 
       {/* Main content area - Two panel layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Chat panel (left) */}
-        <div className="flex-1 flex flex-col min-w-0 lg:max-w-[60%]">
-          <ChatPanel messages={messages} isGenerating={isGenerating} />
+        {/* Chat panel (left) - with its own scroll */}
+        <div className="flex-1 flex flex-col min-w-0 lg:max-w-[60%] overflow-hidden">
+          <div className="flex-1 overflow-y-auto">
+            <ChatPanel messages={messages} isGenerating={isGenerating} />
+          </div>
           <ChatInput onSend={sendMessage} isGenerating={isGenerating} />
         </div>
 
-        {/* Live preview panel (right) - Desktop */}
-        <div className="hidden lg:block w-[40%] min-w-[320px] max-w-[480px]">
-          <LiveCampaignPreview
-            campaignName={campaignName}
-            campaignId={campaignId || undefined}
-            content={generatedContent}
-            onItemClick={handleItemClick}
-            onRegenerate={regenerateContent}
-            onGenerateImage={handleGenerateImage}
-            isGeneratingImage={isGenerating}
-            onOpenMapEditor={handleOpenMapEditor}
-          />
+        {/* Live preview panel (right) - Desktop - with its own scroll */}
+        <div className="hidden lg:block w-[40%] min-w-[320px] max-w-[480px] overflow-hidden">
+          <div className="h-full overflow-y-auto">
+              <LiveCampaignPreview
+              campaignName={campaignName}
+              campaignId={campaignId || undefined}
+              content={generatedContent}
+              onItemClick={handleItemClick}
+              onRegenerate={regenerateContent}
+              onGenerateImage={handleGenerateImage}
+              isGeneratingImage={isGenerating}
+              onOpenMapEditor={handleOpenMapEditor}
+            />
+          </div>
         </div>
 
         {/* Live preview - Mobile overlay */}
@@ -416,6 +420,7 @@ export default function CampaignStudioContent() {
           <ExportModal
             campaignName={campaignName}
             content={generatedContent}
+            messages={messages}
             onClose={() => setShowExportModal(false)}
           />
         )}
@@ -499,10 +504,12 @@ function ModalWrapper({
 function ExportModal({
   campaignName,
   content,
+  messages,
   onClose,
 }: {
   campaignName: string;
   content: ContentBlock[];
+  messages: Array<{ id: string; role: string; content: string; timestamp: Date }>;
   onClose: () => void;
 }) {
   const [exportType, setExportType] = useState<'json' | 'zip'>('json');
@@ -512,19 +519,27 @@ function ExportModal({
     setIsExporting(true);
 
     try {
+      // Build the export data with both content and chat history
+      const exportData = {
+        name: campaignName,
+        exportedAt: new Date().toISOString(),
+        version: '1.0',
+        content: content.map((c) => ({
+          id: c.id,
+          type: c.type,
+          data: c.data,
+          createdAt: c.createdAt,
+        })),
+        chatHistory: messages.map((m) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          timestamp: m.timestamp,
+        })),
+      };
+
       if (exportType === 'json') {
         // Quick export - JSON only
-        const exportData = {
-          name: campaignName,
-          exportedAt: new Date().toISOString(),
-          version: '1.0',
-          content: content.map((c) => ({
-            type: c.type,
-            data: c.data,
-            createdAt: c.createdAt,
-          })),
-        };
-
         const blob = new Blob([JSON.stringify(exportData, null, 2)], {
           type: 'application/json',
         });
@@ -537,12 +552,98 @@ function ExportModal({
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       } else {
-        // Full export - ZIP with media (placeholder for now)
-        // TODO: Implement ZIP export with JSZip
-        alert('ZIP export coming soon! For now, please use JSON export.');
+        // Full export - ZIP with media
+        const JSZip = (await import('jszip')).default;
+        const zip = new JSZip();
+
+        // Add the campaign JSON
+        zip.file('campaign.json', JSON.stringify(exportData, null, 2));
+
+        // Add chat history as a readable text file
+        const chatText = messages.map((m) => {
+          const time = new Date(m.timestamp).toLocaleString();
+          const role = m.role === 'user' ? 'You' : 'Campaign Assistant';
+          return `[${time}] ${role}:\n${m.content}\n`;
+        }).join('\n---\n\n');
+        zip.file('chat_history.txt', chatText);
+
+        // Create folders for different content types
+        const mediaFolder = zip.folder('media');
+        const settingsFolder = zip.folder('settings');
+        const locationsFolder = zip.folder('locations');
+        const npcsFolder = zip.folder('npcs');
+        const encountersFolder = zip.folder('encounters');
+        const questsFolder = zip.folder('quests');
+
+        // Organize content by type
+        for (const item of content) {
+          const filename = `${item.id}.json`;
+          const jsonContent = JSON.stringify(item.data, null, 2);
+
+          switch (item.type) {
+            case 'setting':
+              settingsFolder?.file(filename, jsonContent);
+              break;
+            case 'location':
+              locationsFolder?.file(filename, jsonContent);
+              // If location has imageUrl, add a reference
+              if ((item.data as { imageUrl?: string }).imageUrl) {
+                mediaFolder?.file(`${item.id}_image.txt`, (item.data as { imageUrl?: string }).imageUrl || '');
+              }
+              break;
+            case 'npc':
+              npcsFolder?.file(filename, jsonContent);
+              // If NPC has portrait, add a reference
+              if ((item.data as { portraitUrl?: string }).portraitUrl) {
+                mediaFolder?.file(`${item.id}_portrait.txt`, (item.data as { portraitUrl?: string }).portraitUrl || '');
+              }
+              break;
+            case 'encounter':
+              encountersFolder?.file(filename, jsonContent);
+              break;
+            case 'quest':
+              questsFolder?.file(filename, jsonContent);
+              break;
+          }
+        }
+
+        // Add a README
+        const readme = `# ${campaignName}
+
+Exported from D&D Campaign Studio on ${new Date().toLocaleDateString()}
+
+## Contents
+
+- campaign.json - Complete campaign data including all content and chat history
+- chat_history.txt - Human-readable conversation log
+- settings/ - Campaign setting files
+- locations/ - Location data
+- npcs/ - NPC character data
+- encounters/ - Encounter definitions
+- quests/ - Quest objectives
+- media/ - References to generated images (URLs)
+
+## Importing
+
+To continue working on this campaign, import the campaign.json file
+in the Campaign Studio.
+`;
+        zip.file('README.md', readme);
+
+        // Generate and download the ZIP
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${campaignName.replace(/[^a-z0-9]/gi, '_')}_campaign.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       }
     } catch (error) {
       console.error('Export failed:', error);
+      alert('Export failed. Please try again.');
     } finally {
       setIsExporting(false);
       onClose();

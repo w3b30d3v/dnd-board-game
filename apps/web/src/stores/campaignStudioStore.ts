@@ -246,22 +246,24 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
 
       const data = await response.json();
 
+      // Process generated content from AI - it now comes with type and data
+      const newContent: ContentBlock[] = (data.generatedContent || []).map(
+        (item: { id?: string; type: string; data: Record<string, unknown>; createdAt?: string }) => ({
+          id: item.id || `content_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          type: item.type as ContentBlock['type'],
+          data: item.data as unknown as ContentBlock['data'],
+          createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
+        })
+      );
+
       // Add assistant response
       const assistantMessage: Message = {
         id: `msg_${Date.now()}_response`,
         role: 'assistant',
         content: data.response,
         timestamp: new Date(),
-        generatedContent: data.generatedContent,
+        generatedContent: newContent,
       };
-
-      // Update generated content if any
-      const newContent = data.generatedContent?.map((item: ContentBlock['data'], index: number) => ({
-        id: `content_${Date.now()}_${index}`,
-        type: getContentTypeForPhase(currentPhase),
-        data: item,
-        createdAt: new Date(),
-      })) || [];
 
       set((state) => ({
         messages: [...state.messages, assistantMessage],
