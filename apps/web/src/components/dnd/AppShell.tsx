@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { D20Icon } from './DnDIcons';
+import { useAuthStore } from '@/stores/authStore';
 
 // Navigation icons
 function HomeIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
@@ -63,15 +64,6 @@ function ChevronIcon({ size = 20, color = 'currentColor', direction = 'left' }: 
   );
 }
 
-function CampaignIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-    </svg>
-  );
-}
-
 function MultiplayerIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -79,6 +71,16 @@ function MultiplayerIcon({ size = 20, color = 'currentColor' }: { size?: number;
       <circle cx="9" cy="7" r="4" />
       <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
       <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function LogoutIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   );
 }
@@ -132,6 +134,7 @@ const navigationItems: NavItem[] = [
 interface SidebarContextValue {
   isExpanded: boolean;
   setIsExpanded: (value: boolean) => void;
+  toggleSidebar: () => void;
 }
 
 const SidebarContext = createContext<SidebarContextValue | null>(null);
@@ -139,10 +142,13 @@ const SidebarContext = createContext<SidebarContextValue | null>(null);
 export function useSidebar() {
   const context = useContext(SidebarContext);
   if (!context) {
-    return { isExpanded: true, setIsExpanded: () => {} };
+    return { isExpanded: true, setIsExpanded: () => {}, toggleSidebar: () => {} };
   }
   return context;
 }
+
+// Mobile breakpoint
+const MOBILE_BREAKPOINT = 768;
 
 // Animation variants
 const sidebarVariants = {
@@ -192,24 +198,64 @@ interface AppShellProps {
 export function AppShell({ children, showSidebar = true }: AppShellProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
-  // Load persisted state
+  // Get user and logout from auth store
+  const { user, logout } = useAuthStore((state) => ({
+    user: state.user,
+    logout: state.logout,
+  }));
+
+  // Check if mobile on mount and resize
   useEffect(() => {
-    const stored = localStorage.getItem('sidebar-expanded');
-    if (stored !== null) {
-      setIsExpanded(stored === 'true');
-    }
-  }, []);
+    const checkMobile = () => {
+      const mobile = window.innerWidth < MOBILE_BREAKPOINT;
+      setIsMobile(mobile);
+      // Auto-collapse on mobile
+      if (mobile && isExpanded) {
+        setIsExpanded(false);
+        localStorage.setItem('sidebar-expanded', 'false');
+      }
+    };
 
-  const toggleSidebar = () => {
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, [isExpanded]);
+
+  // Load persisted state (only on desktop)
+  useEffect(() => {
+    if (!isMobile) {
+      const stored = localStorage.getItem('sidebar-expanded');
+      if (stored !== null) {
+        setIsExpanded(stored === 'true');
+      }
+    }
+  }, [isMobile]);
+
+  const toggleSidebar = useCallback(() => {
     const newState = !isExpanded;
     setIsExpanded(newState);
     localStorage.setItem('sidebar-expanded', String(newState));
     if (!newState) {
       setExpandedMenu(null);
     }
-  };
+  }, [isExpanded]);
+
+  // Keyboard shortcut: Ctrl+B to toggle sidebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        toggleSidebar();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleSidebar]);
 
   const toggleSubMenu = (label: string) => {
     if (isExpanded) {
@@ -224,6 +270,11 @@ export function AppShell({ children, showSidebar = true }: AppShellProps) {
     return pathname?.startsWith(href) ?? false;
   };
 
+  const handleLogout = async () => {
+    await logout();
+    router.push('/');
+  };
+
   // Pages that shouldn't show sidebar
   const hideSidebarPaths = ['/', '/login', '/register'];
   const shouldShowSidebar = showSidebar && pathname !== null && !hideSidebarPaths.includes(pathname);
@@ -233,14 +284,28 @@ export function AppShell({ children, showSidebar = true }: AppShellProps) {
   }
 
   return (
-    <SidebarContext.Provider value={{ isExpanded, setIsExpanded }}>
+    <SidebarContext.Provider value={{ isExpanded, setIsExpanded, toggleSidebar }}>
       <div className="flex min-h-screen">
+        {/* Mobile overlay */}
+        <AnimatePresence>
+          {isMobile && isExpanded && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-30 md:hidden"
+              onClick={toggleSidebar}
+            />
+          )}
+        </AnimatePresence>
+
         {/* Sidebar */}
         <motion.aside
           variants={sidebarVariants}
           initial={isExpanded ? 'expanded' : 'collapsed'}
           animate={isExpanded ? 'expanded' : 'collapsed'}
-          className="fixed left-0 top-0 h-full z-40 flex flex-col"
+          className={`fixed left-0 top-0 h-full z-40 flex flex-col ${isMobile && !isExpanded ? '-translate-x-full' : ''}`}
+          style={isMobile && !isExpanded ? { transform: 'translateX(-100%)' } : undefined}
         >
           {/* Glass background */}
           <div className="absolute inset-0 bg-bg-card/95 backdrop-blur-md border-r border-border/50" />
@@ -369,6 +434,44 @@ export function AppShell({ children, showSidebar = true }: AppShellProps) {
               </ul>
             </nav>
 
+            {/* User Section */}
+            {user && (
+              <div className="p-3 border-t border-border/50">
+                <div className="flex items-center gap-3 px-2 py-2">
+                  {/* User Avatar */}
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-bg-primary font-bold text-sm shadow-glow flex-shrink-0 cursor-pointer"
+                    title={user.displayName}
+                  >
+                    {user.displayName.charAt(0).toUpperCase()}
+                  </motion.div>
+
+                  {/* User Info */}
+                  <motion.div variants={textVariants} className="flex-1 min-w-0">
+                    <div className="font-medium text-sm text-text-primary truncate">
+                      {user.displayName}
+                    </div>
+                    <div className="text-xs text-text-muted truncate">
+                      @{user.username}
+                    </div>
+                  </motion.div>
+
+                  {/* Logout Button */}
+                  <motion.button
+                    variants={textVariants}
+                    onClick={handleLogout}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="p-2 rounded-lg hover:bg-danger/10 text-text-muted hover:text-danger transition-colors"
+                    title="Logout"
+                  >
+                    <LogoutIcon size={18} />
+                  </motion.button>
+                </div>
+              </div>
+            )}
+
             {/* Collapse Toggle Button */}
             <div className="p-3 border-t border-border/50">
               <motion.button
@@ -376,7 +479,7 @@ export function AppShell({ children, showSidebar = true }: AppShellProps) {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-secondary hover:text-text-primary transition-colors"
-                title={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+                title={isExpanded ? 'Collapse sidebar (Ctrl+B)' : 'Expand sidebar (Ctrl+B)'}
               >
                 <motion.span
                   animate={{ rotate: isExpanded ? 0 : 180 }}
@@ -388,16 +491,38 @@ export function AppShell({ children, showSidebar = true }: AppShellProps) {
                   Collapse
                 </motion.span>
               </motion.button>
+
+              {/* Keyboard shortcut hint */}
+              <motion.div
+                variants={textVariants}
+                className="text-center mt-2"
+              >
+                <span className="text-[10px] text-text-muted px-1.5 py-0.5 rounded bg-white/5 font-mono">
+                  Ctrl+B
+                </span>
+              </motion.div>
             </div>
           </div>
         </motion.aside>
 
+        {/* Mobile toggle button (when sidebar is collapsed) */}
+        {isMobile && !isExpanded && (
+          <motion.button
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            onClick={toggleSidebar}
+            className="fixed top-4 left-4 z-50 w-10 h-10 rounded-lg bg-bg-card/90 backdrop-blur-md border border-border/50 flex items-center justify-center text-text-primary shadow-lg"
+          >
+            <D20Icon size={24} color="#F59E0B" />
+          </motion.button>
+        )}
+
         {/* Main content with margin */}
         <motion.main
           animate={{
-            marginLeft: isExpanded ? 260 : 64,
+            marginLeft: isMobile ? 0 : (isExpanded ? 260 : 64),
           }}
-          transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+          transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] }}
           className="flex-1 min-h-screen w-full"
         >
           {children}
