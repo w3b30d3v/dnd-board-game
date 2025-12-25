@@ -40,104 +40,6 @@ const cardVariants = {
   }),
 };
 
-// Create Campaign Modal
-interface CreateCampaignModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onCreate: (name: string, description: string) => void;
-  isLoading: boolean;
-}
-
-function CreateCampaignModal({ isOpen, onClose, onCreate, isLoading }: CreateCampaignModalProps) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (name.trim()) {
-      onCreate(name.trim(), description.trim());
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-        onClick={onClose}
-      >
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-md"
-        >
-          <EnchantedCard variant="magical" showCorners>
-            <h2 className="dnd-heading-epic text-2xl mb-6">Create New Campaign</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">
-                  Campaign Name
-                </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter campaign name..."
-                  className="w-full px-4 py-3 rounded-lg bg-bg-primary/50 border border-border/50 focus:border-primary focus:ring-1 focus:ring-primary text-text-primary placeholder-text-muted"
-                  required
-                  maxLength={100}
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">
-                  Description (Optional)
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe your campaign..."
-                  className="w-full px-4 py-3 rounded-lg bg-bg-primary/50 border border-border/50 focus:border-primary focus:ring-1 focus:ring-primary text-text-primary placeholder-text-muted resize-none"
-                  rows={3}
-                  maxLength={500}
-                />
-              </div>
-              <div className="flex gap-3 pt-4">
-                <motion.button
-                  type="button"
-                  onClick={onClose}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="btn-stone flex-1"
-                  disabled={isLoading}
-                >
-                  Cancel
-                </motion.button>
-                <motion.button
-                  type="submit"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="btn-adventure flex-1"
-                  disabled={isLoading || !name.trim()}
-                >
-                  {isLoading ? 'Creating...' : 'Create Campaign'}
-                </motion.button>
-              </div>
-            </form>
-          </EnchantedCard>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
-  );
-}
-
 // Status badge component
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
@@ -163,13 +65,10 @@ export default function CampaignDashboardContent() {
     isLoading,
     error,
     fetchCampaigns,
-    createCampaign,
     deleteCampaign,
     clearError,
   } = useCampaignStore();
 
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   // Fetch campaigns on mount
@@ -178,18 +77,6 @@ export default function CampaignDashboardContent() {
       fetchCampaigns(token);
     }
   }, [token, user, fetchCampaigns]);
-
-  const handleCreateCampaign = async (name: string, description: string) => {
-    if (!token) return;
-    setCreating(true);
-    const campaign = await createCampaign({ name, description }, token);
-    setCreating(false);
-    if (campaign) {
-      setShowCreateModal(false);
-      // Navigate to Campaign Studio with the new campaign
-      router.push(`/dm/campaign-studio?id=${campaign.id}`);
-    }
-  };
 
   const handleDeleteCampaign = async (id: string) => {
     if (!token) return;
@@ -332,14 +219,15 @@ export default function CampaignDashboardContent() {
                   </p>
                 </div>
               </div>
-              <motion.button
-                onClick={() => setShowCreateModal(true)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="btn-magic px-6 py-3 flex items-center gap-2"
-              >
-                <span className="text-xl">+</span> New Campaign
-              </motion.button>
+              <Link href="/dm/campaign-studio">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="btn-magic px-6 py-3 flex items-center gap-2"
+                >
+                  <span className="text-xl">+</span> New Campaign
+                </motion.button>
+              </Link>
             </div>
           </motion.div>
 
@@ -387,16 +275,17 @@ export default function CampaignDashboardContent() {
                   No Campaigns Yet
                 </h3>
                 <p className="text-text-secondary mb-6">
-                  Begin your journey as a Dungeon Master by creating your first campaign.
+                  Begin your journey as a Dungeon Master by creating your first campaign with our AI-powered Campaign Studio.
                 </p>
-                <motion.button
-                  onClick={() => setShowCreateModal(true)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="btn-magic"
-                >
-                  Create Your First Campaign
-                </motion.button>
+                <Link href="/dm/campaign-studio">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="btn-magic"
+                  >
+                    Open Campaign Studio
+                  </motion.button>
+                </Link>
               </EnchantedCard>
             </motion.div>
           )}
@@ -494,14 +383,6 @@ export default function CampaignDashboardContent() {
           )}
         </main>
       </div>
-
-      {/* Create Campaign Modal */}
-      <CreateCampaignModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onCreate={handleCreateCampaign}
-        isLoading={creating}
-      />
     </div>
   );
 }
