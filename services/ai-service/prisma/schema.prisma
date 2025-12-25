@@ -176,6 +176,8 @@ model Campaign {
   npcs          NPC[]
   dialogues     Dialogue[]
   quests        Quest[]
+  videos        CampaignVideo[]
+  audioClips    CampaignAudio[]
 
   @@map("campaigns")
 }
@@ -524,4 +526,90 @@ model PublishedCampaign {
   publishedAt   DateTime  @default(now())
 
   @@map("published_campaigns")
+}
+
+// ============================================
+// Campaign Video (AI-Generated Cutscenes)
+// ============================================
+
+model CampaignVideo {
+  id            String    @id @default(cuid())
+  campaignId    String
+
+  // Video metadata
+  name          String?
+  type          String    @default("cutscene") // intro, location, npc, battle, cutscene, outro
+
+  // Generation details
+  prompt        String
+  style         String?   // cinematic, fantasy, dark, epic
+  duration      Int?      // Duration in seconds
+  aspectRatio   String?   // 16:9, 9:16, 1:1
+
+  // Runway integration
+  runwayTaskId  String?   @unique
+  model         String?   // veo-3.1-4s, gen3a_turbo, etc.
+
+  // Output
+  videoUrl      String?
+  thumbnailUrl  String?
+
+  // Status tracking
+  status        String    @default("pending") // pending, processing, completed, failed
+  error         String?
+
+  // Cost tracking
+  cost          Float     @default(0)
+
+  // Metadata
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  campaign      Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([runwayTaskId])
+  @@map("campaign_videos")
+}
+
+// ============================================
+// Campaign Audio (AI-Generated Voice/TTS)
+// ============================================
+
+model CampaignAudio {
+  id            String    @id @default(cuid())
+  campaignId    String
+
+  // Audio metadata
+  name          String?
+  type          String    @default("narration") // narration, npc_dialogue, read_aloud, ambient
+
+  // Generation details
+  text          String
+  voiceId       String
+  voiceProfile  String?   // dungeon_master, noble_male, etc.
+  emotion       String?   // neutral, excited, mysterious, etc.
+
+  // Output
+  audioUrl      String?
+  duration      Int?      // Duration in milliseconds
+
+  // Status tracking
+  status        String    @default("pending") // pending, processing, completed, failed
+  error         String?
+
+  // Cost tracking
+  characterCount Int      @default(0)
+  cost          Float     @default(0)
+
+  // Metadata
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  campaign      Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@map("campaign_audio")
 }

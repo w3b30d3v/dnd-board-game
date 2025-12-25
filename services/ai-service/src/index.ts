@@ -11,6 +11,7 @@ import conversationRoutes from './routes/conversation.js';
 import generationRoutes from './routes/generation.js';
 import videoRoutes from './routes/video.js';
 import voiceRoutes from './routes/voice.js';
+import campaignStudioRoutes from './routes/campaign-studio.js';
 import { isRunwayConfigured } from './lib/runway.js';
 import { isElevenLabsConfigured } from './lib/elevenlabs.js';
 
@@ -58,13 +59,15 @@ app.get('/health', (_req, res) => {
 app.get('/api', (_req, res) => {
   res.json({
     name: 'AI Service',
-    version: '0.3.0',
+    version: '0.4.0',
     description: 'Campaign Studio & Content Generation',
     endpoints: {
       conversation: '/ai/conversation',
       generation: '/ai/generate',
       video: '/ai/video',
       voice: '/ai/voice',
+      campaignStudio: '/ai/campaign-studio',
+      webhooks: '/ai/webhook',
     },
     integrations: {
       runway: isRunwayConfigured(),
@@ -149,11 +152,16 @@ app.get('/test/elevenlabs/generate', async (_req, res) => {
   }
 });
 
+// Webhook route (no auth - receives callbacks from external services)
+// Must be defined BEFORE protected routes to avoid auth middleware
+app.use('/ai/webhook', campaignStudioRoutes);
+
 // Routes (protected)
 app.use('/ai/conversation', authMiddleware, conversationRoutes);
 app.use('/ai/generate', authMiddleware, generationRoutes);
 app.use('/ai/video', authMiddleware, videoRoutes);
 app.use('/ai/voice', authMiddleware, voiceRoutes);
+app.use('/ai/campaign-studio', authMiddleware, campaignStudioRoutes);
 
 // Error handling middleware
 app.use(
