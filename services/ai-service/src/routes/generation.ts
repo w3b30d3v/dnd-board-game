@@ -53,9 +53,9 @@ router.post('/npc', async (req: Request, res: Response) => {
 
     // Store in conversation if provided
     if (conversationId) {
-      const conversation = getConversation(conversationId);
+      const conversation = await getConversation(conversationId);
       if (conversation) {
-        storeContent(conversationId, 'npcs', result.npc as unknown as Record<string, unknown>);
+        await storeContent(conversationId, 'npcs', result.npc as unknown as Record<string, unknown>);
       }
     }
 
@@ -82,9 +82,9 @@ router.post('/encounter', async (req: Request, res: Response) => {
 
     // Store in conversation if provided
     if (conversationId) {
-      const conversation = getConversation(conversationId);
+      const conversation = await getConversation(conversationId);
       if (conversation) {
-        storeContent(conversationId, 'encounters', result.encounter as unknown as Record<string, unknown>);
+        await storeContent(conversationId, 'encounters', result.encounter as unknown as Record<string, unknown>);
       }
     }
 
@@ -111,9 +111,9 @@ router.post('/quest', async (req: Request, res: Response) => {
 
     // Store in conversation if provided
     if (conversationId) {
-      const conversation = getConversation(conversationId);
+      const conversation = await getConversation(conversationId);
       if (conversation) {
-        storeContent(conversationId, 'quests', result.quest as unknown as Record<string, unknown>);
+        await storeContent(conversationId, 'quests', result.quest as unknown as Record<string, unknown>);
       }
     }
 
@@ -140,9 +140,9 @@ router.post('/map', async (req: Request, res: Response) => {
 
     // Store in conversation if provided
     if (conversationId) {
-      const conversation = getConversation(conversationId);
+      const conversation = await getConversation(conversationId);
       if (conversation) {
-        storeContent(conversationId, 'maps', result.map as unknown as Record<string, unknown>);
+        await storeContent(conversationId, 'maps', result.map as unknown as Record<string, unknown>);
       }
     }
 
@@ -169,9 +169,9 @@ router.post('/setting', async (req: Request, res: Response) => {
 
     // Store in conversation if provided
     if (conversationId) {
-      const conversation = getConversation(conversationId);
+      const conversation = await getConversation(conversationId);
       if (conversation) {
-        storeContent(conversationId, 'setting', result.setting as unknown as Record<string, unknown>);
+        await storeContent(conversationId, 'setting', result.setting as unknown as Record<string, unknown>);
       }
     }
 

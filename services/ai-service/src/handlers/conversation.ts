@@ -1,10 +1,12 @@
 // Conversation Handler
 // Manages the stateful conversation for campaign creation
+// Uses PostgreSQL for persistence with in-memory caching for performance
 
 import { v4 as uuidv4 } from 'uuid';
 import { chat, ConversationMessage, estimateCost } from '../lib/claude.js';
 import { getPhasePrompt, extractCampaignContent, checkContentSafety } from '../prompts/campaignStudio.js';
 import { logger } from '../lib/logger.js';
+import { prisma } from '../lib/db.js';
 
 // Conversation phases
 export type ConversationPhase = 'setting' | 'story' | 'locations' | 'npcs' | 'encounters' | 'quests';
@@ -26,15 +28,74 @@ export interface ConversationState {
   messages: ConversationMessage[];
   generatedContent: GeneratedContentBlock[];
   totalCost: number;
+  title: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-// In-memory store (will be replaced with Redis/PostgreSQL for persistence)
-const conversations = new Map<string, ConversationState>();
+// In-memory cache for active conversations (fast access during session)
+const conversationCache = new Map<string, ConversationState>();
+
+// Helper to convert DB record to ConversationState
+function dbToState(record: {
+  id: string;
+  campaignId: string | null;
+  userId: string;
+  phase: string;
+  messages: unknown;
+  generatedContent: unknown;
+  totalCost: number;
+  title: string;
+  createdAt: Date;
+  updatedAt: Date;
+}): ConversationState {
+  return {
+    id: record.id,
+    campaignId: record.campaignId || '',
+    userId: record.userId,
+    phase: record.phase as ConversationPhase,
+    messages: (record.messages as ConversationMessage[]) || [],
+    generatedContent: (record.generatedContent as GeneratedContentBlock[]) || [],
+    totalCost: record.totalCost,
+    title: record.title,
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
+  };
+}
+
+// Helper to persist state to database
+async function persistState(state: ConversationState): Promise<void> {
+  try {
+    await prisma.campaignConversation.upsert({
+      where: { id: state.id },
+      update: {
+        phase: state.phase,
+        messages: state.messages as unknown as object,
+        generatedContent: state.generatedContent as unknown as object,
+        totalCost: state.totalCost,
+        title: state.title,
+        updatedAt: new Date(),
+      },
+      create: {
+        id: state.id,
+        userId: state.userId,
+        campaignId: state.campaignId || null,
+        phase: state.phase,
+        messages: state.messages as unknown as object,
+        generatedContent: state.generatedContent as unknown as object,
+        totalCost: state.totalCost,
+        title: state.title,
+      },
+    });
+    logger.debug({ conversationId: state.id }, 'Conversation persisted to database');
+  } catch (error) {
+    logger.error({ error, conversationId: state.id }, 'Failed to persist conversation');
+    // Don't throw - allow in-memory operation to continue
+  }
+}
 
 // Start a new conversation
-export function startConversation(userId: string, campaignId: string): ConversationState {
+export async function startConversation(userId: string, campaignId: string, title?: string): Promise<ConversationState> {
   const id = uuidv4();
 
   const state: ConversationState = {
@@ -45,29 +106,87 @@ export function startConversation(userId: string, campaignId: string): Conversat
     messages: [],
     generatedContent: [],
     totalCost: 0,
+    title: title || 'New Campaign',
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
-  conversations.set(id, state);
+  // Cache and persist
+  conversationCache.set(id, state);
+  await persistState(state);
+
   logger.info({ conversationId: id, userId, campaignId }, 'Started new conversation');
 
   return state;
 }
 
-// Get conversation by ID
-export function getConversation(id: string): ConversationState | undefined {
-  return conversations.get(id);
+// Get conversation by ID (from cache or database)
+export async function getConversation(id: string): Promise<ConversationState | undefined> {
+  // Check cache first
+  const cached = conversationCache.get(id);
+  if (cached) {
+    return cached;
+  }
+
+  // Load from database
+  try {
+    const record = await prisma.campaignConversation.findUnique({
+      where: { id },
+    });
+
+    if (record) {
+      const state = dbToState(record);
+      conversationCache.set(id, state); // Cache for subsequent access
+      return state;
+    }
+  } catch (error) {
+    logger.error({ error, conversationId: id }, 'Failed to load conversation from database');
+  }
+
+  return undefined;
 }
 
 // Get conversation by campaign ID (for resuming)
-export function getConversationByCampaignId(campaignId: string, userId: string): ConversationState | undefined {
-  for (const state of conversations.values()) {
+export async function getConversationByCampaignId(campaignId: string, userId: string): Promise<ConversationState | undefined> {
+  // Check cache first
+  for (const state of conversationCache.values()) {
     if (state.campaignId === campaignId && state.userId === userId) {
       return state;
     }
   }
+
+  // Load from database
+  try {
+    const record = await prisma.campaignConversation.findFirst({
+      where: { campaignId, userId },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    if (record) {
+      const state = dbToState(record);
+      conversationCache.set(state.id, state);
+      return state;
+    }
+  } catch (error) {
+    logger.error({ error, campaignId, userId }, 'Failed to load conversation by campaign');
+  }
+
   return undefined;
+}
+
+// Get all conversations for a user
+export async function getUserConversations(userId: string): Promise<ConversationState[]> {
+  try {
+    const records = await prisma.campaignConversation.findMany({
+      where: { userId },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    return records.map(dbToState);
+  } catch (error) {
+    logger.error({ error, userId }, 'Failed to load user conversations');
+    return [];
+  }
 }
 
 // Send a message and get Claude's response
@@ -80,7 +199,7 @@ export async function sendMessage(
   cost: number;
   generatedContent: GeneratedContentBlock[];
 }> {
-  const state = conversations.get(conversationId);
+  const state = await getConversation(conversationId);
   if (!state) {
     throw new Error('Conversation not found');
   }
@@ -140,6 +259,9 @@ export async function sendMessage(
   state.totalCost += cost;
   state.updatedAt = new Date();
 
+  // Persist to database
+  await persistState(state);
+
   logger.debug(
     {
       conversationId,
@@ -160,8 +282,8 @@ export async function sendMessage(
 }
 
 // Advance to the next phase
-export function advancePhase(conversationId: string): ConversationPhase {
-  const state = conversations.get(conversationId);
+export async function advancePhase(conversationId: string): Promise<ConversationPhase> {
+  const state = await getConversation(conversationId);
   if (!state) {
     throw new Error('Conversation not found');
   }
@@ -172,6 +294,7 @@ export function advancePhase(conversationId: string): ConversationPhase {
   if (currentIndex < phaseOrder.length - 1) {
     state.phase = phaseOrder[currentIndex + 1];
     state.updatedAt = new Date();
+    await persistState(state);
     logger.info({ conversationId, newPhase: state.phase }, 'Advanced to next phase');
   }
 
@@ -179,24 +302,25 @@ export function advancePhase(conversationId: string): ConversationPhase {
 }
 
 // Set specific phase
-export function setPhase(conversationId: string, phase: ConversationPhase): void {
-  const state = conversations.get(conversationId);
+export async function setPhase(conversationId: string, phase: ConversationPhase): Promise<void> {
+  const state = await getConversation(conversationId);
   if (!state) {
     throw new Error('Conversation not found');
   }
 
   state.phase = phase;
   state.updatedAt = new Date();
+  await persistState(state);
   logger.info({ conversationId, phase }, 'Phase set');
 }
 
 // Store generated content manually
-export function storeContent(
+export async function storeContent(
   conversationId: string,
   type: string,
   data: Record<string, unknown>
-): GeneratedContentBlock {
-  const state = conversations.get(conversationId);
+): Promise<GeneratedContentBlock> {
+  const state = await getConversation(conversationId);
   if (!state) {
     throw new Error('Conversation not found');
   }
@@ -210,37 +334,49 @@ export function storeContent(
 
   state.generatedContent.push(contentBlock);
   state.updatedAt = new Date();
+  await persistState(state);
   logger.info({ conversationId, type }, 'Content stored');
 
   return contentBlock;
 }
 
 // Get all generated content
-export function getGeneratedContent(conversationId: string): GeneratedContentBlock[] {
-  const state = conversations.get(conversationId);
+export async function getGeneratedContent(conversationId: string): Promise<GeneratedContentBlock[]> {
+  const state = await getConversation(conversationId);
   return state?.generatedContent || [];
 }
 
 // Get conversation history
-export function getHistory(conversationId: string): ConversationMessage[] {
-  const state = conversations.get(conversationId);
+export async function getHistory(conversationId: string): Promise<ConversationMessage[]> {
+  const state = await getConversation(conversationId);
   return state?.messages || [];
 }
 
 // Delete conversation
-export function deleteConversation(conversationId: string): boolean {
-  return conversations.delete(conversationId);
+export async function deleteConversation(conversationId: string): Promise<boolean> {
+  conversationCache.delete(conversationId);
+
+  try {
+    await prisma.campaignConversation.delete({
+      where: { id: conversationId },
+    });
+    logger.info({ conversationId }, 'Conversation deleted');
+    return true;
+  } catch (error) {
+    logger.error({ error, conversationId }, 'Failed to delete conversation');
+    return false;
+  }
 }
 
 // Get total cost for a conversation
-export function getTotalCost(conversationId: string): number {
-  const state = conversations.get(conversationId);
+export async function getTotalCost(conversationId: string): Promise<number> {
+  const state = await getConversation(conversationId);
   return state?.totalCost || 0;
 }
 
 // Export full conversation state for saving
-export function exportConversation(conversationId: string): ConversationState | null {
-  const state = conversations.get(conversationId);
+export async function exportConversation(conversationId: string): Promise<ConversationState | null> {
+  const state = await getConversation(conversationId);
   if (!state) return null;
 
   return {
@@ -251,11 +387,25 @@ export function exportConversation(conversationId: string): ConversationState | 
 }
 
 // Import conversation state (for resuming)
-export function importConversation(state: ConversationState): void {
-  conversations.set(state.id, {
+export async function importConversation(state: ConversationState): Promise<void> {
+  conversationCache.set(state.id, {
     ...state,
     messages: [...state.messages],
     generatedContent: [...state.generatedContent],
   });
+  await persistState(state);
   logger.info({ conversationId: state.id }, 'Conversation imported');
+}
+
+// Update conversation title
+export async function updateTitle(conversationId: string, title: string): Promise<void> {
+  const state = await getConversation(conversationId);
+  if (!state) {
+    throw new Error('Conversation not found');
+  }
+
+  state.title = title;
+  state.updatedAt = new Date();
+  await persistState(state);
+  logger.info({ conversationId, title }, 'Conversation title updated');
 }

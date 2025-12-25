@@ -8,6 +8,7 @@ import {
   startConversation,
   getConversation,
   getConversationByCampaignId,
+  getUserConversations,
   sendMessage,
   advancePhase,
   setPhase,
@@ -17,6 +18,7 @@ import {
   getGeneratedContent,
   exportConversation,
   importConversation,
+  updateTitle,
   ConversationPhase,
   ConversationState,
 } from '../handlers/conversation.js';
@@ -28,6 +30,7 @@ const router: RouterType = Router();
 // Accept either a UUID or a temporary campaign ID (temp_timestamp format)
 const startSchema = z.object({
   campaignId: z.string().min(1).max(100),
+  title: z.string().min(1).max(200).optional(),
 });
 
 const messageSchema = z.object({
@@ -38,10 +41,14 @@ const phaseSchema = z.object({
   phase: z.enum(['setting', 'story', 'locations', 'npcs', 'encounters', 'quests']),
 });
 
+const titleSchema = z.object({
+  title: z.string().min(1).max(200),
+});
+
 // Start a new conversation
 router.post('/start', async (req: Request, res: Response) => {
   try {
-    const { campaignId } = startSchema.parse(req.body);
+    const { campaignId, title } = startSchema.parse(req.body);
     const userId = (req as Request & { user?: { userId: string } }).user?.userId;
 
     if (!userId) {
@@ -49,7 +56,7 @@ router.post('/start', async (req: Request, res: Response) => {
       return;
     }
 
-    const state = startConversation(userId, campaignId);
+    const state = await startConversation(userId, campaignId, title);
 
     // Send initial greeting
     const greeting = `Welcome to the Campaign Studio! I'm here to help you create an amazing D&D campaign.
@@ -76,25 +83,57 @@ Just share your ideas naturally, and I'll help bring them to life!`;
   }
 });
 
+// Get all conversations for the current user
+router.get('/list', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as Request & { user?: { userId: string } }).user?.userId;
+
+    if (!userId) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+
+    const conversations = await getUserConversations(userId);
+
+    res.json({
+      conversations: conversations.map((c) => ({
+        id: c.id,
+        campaignId: c.campaignId,
+        title: c.title,
+        phase: c.phase,
+        messageCount: c.messages.length,
+        contentCount: c.generatedContent.length,
+        totalCost: c.totalCost,
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt,
+      })),
+    });
+  } catch (error) {
+    logger.error({ error }, 'Failed to list conversations');
+    res.status(500).json({ error: 'Failed to list conversations' });
+  }
+});
+
 // Send a message
 router.post('/:conversationId/message', async (req: Request, res: Response) => {
   try {
     const { conversationId } = req.params;
     const { message } = messageSchema.parse(req.body);
 
-    const conversation = getConversation(conversationId);
+    const conversation = await getConversation(conversationId);
     if (!conversation) {
       res.status(404).json({ error: 'Conversation not found' });
       return;
     }
 
     const result = await sendMessage(conversationId, message);
+    const totalCost = await getTotalCost(conversationId);
 
     res.json({
       response: result.response,
       phase: result.phase,
       cost: result.cost,
-      totalCost: getTotalCost(conversationId),
+      totalCost,
       // Return any generated content blocks from this response
       generatedContent: result.generatedContent,
     });
@@ -109,23 +148,24 @@ router.post('/:conversationId/message', async (req: Request, res: Response) => {
 });
 
 // Get conversation history
-router.get('/:conversationId/history', (req: Request, res: Response) => {
+router.get('/:conversationId/history', async (req: Request, res: Response) => {
   try {
     const { conversationId } = req.params;
 
-    const conversation = getConversation(conversationId);
+    const conversation = await getConversation(conversationId);
     if (!conversation) {
       res.status(404).json({ error: 'Conversation not found' });
       return;
     }
 
-    const history = getHistory(conversationId);
+    const history = await getHistory(conversationId);
+    const totalCost = await getTotalCost(conversationId);
 
     res.json({
       conversationId,
       phase: conversation.phase,
       messages: history,
-      totalCost: getTotalCost(conversationId),
+      totalCost,
     });
   } catch (error) {
     logger.error({ error }, 'Failed to get history');
@@ -134,17 +174,17 @@ router.get('/:conversationId/history', (req: Request, res: Response) => {
 });
 
 // Advance to next phase
-router.post('/:conversationId/advance', (req: Request, res: Response) => {
+router.post('/:conversationId/advance', async (req: Request, res: Response) => {
   try {
     const { conversationId } = req.params;
 
-    const conversation = getConversation(conversationId);
+    const conversation = await getConversation(conversationId);
     if (!conversation) {
       res.status(404).json({ error: 'Conversation not found' });
       return;
     }
 
-    const newPhase = advancePhase(conversationId);
+    const newPhase = await advancePhase(conversationId);
 
     const phaseMessages: Record<ConversationPhase, string> = {
       setting: "Let's establish your campaign setting!",
@@ -166,18 +206,18 @@ router.post('/:conversationId/advance', (req: Request, res: Response) => {
 });
 
 // Set specific phase
-router.post('/:conversationId/phase', (req: Request, res: Response) => {
+router.post('/:conversationId/phase', async (req: Request, res: Response) => {
   try {
     const { conversationId } = req.params;
     const { phase } = phaseSchema.parse(req.body);
 
-    const conversation = getConversation(conversationId);
+    const conversation = await getConversation(conversationId);
     if (!conversation) {
       res.status(404).json({ error: 'Conversation not found' });
       return;
     }
 
-    setPhase(conversationId, phase);
+    await setPhase(conversationId, phase);
 
     res.json({
       phase,
@@ -193,12 +233,40 @@ router.post('/:conversationId/phase', (req: Request, res: Response) => {
   }
 });
 
+// Update conversation title
+router.patch('/:conversationId/title', async (req: Request, res: Response) => {
+  try {
+    const { conversationId } = req.params;
+    const { title } = titleSchema.parse(req.body);
+
+    const conversation = await getConversation(conversationId);
+    if (!conversation) {
+      res.status(404).json({ error: 'Conversation not found' });
+      return;
+    }
+
+    await updateTitle(conversationId, title);
+
+    res.json({
+      success: true,
+      title,
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ error: 'Invalid request', details: error.errors });
+      return;
+    }
+    logger.error({ error }, 'Failed to update title');
+    res.status(500).json({ error: 'Failed to update title' });
+  }
+});
+
 // Delete conversation
-router.delete('/:conversationId', (req: Request, res: Response) => {
+router.delete('/:conversationId', async (req: Request, res: Response) => {
   try {
     const { conversationId } = req.params;
 
-    const deleted = deleteConversation(conversationId);
+    const deleted = await deleteConversation(conversationId);
 
     if (!deleted) {
       res.status(404).json({ error: 'Conversation not found' });
@@ -213,9 +281,9 @@ router.delete('/:conversationId', (req: Request, res: Response) => {
 });
 
 // Resume an existing conversation for a campaign
-router.post('/resume', (req: Request, res: Response) => {
+router.post('/resume', async (req: Request, res: Response) => {
   try {
-    const { campaignId } = startSchema.parse(req.body);
+    const { campaignId, title } = startSchema.parse(req.body);
     const userId = (req as Request & { user?: { userId: string } }).user?.userId;
 
     if (!userId) {
@@ -224,12 +292,13 @@ router.post('/resume', (req: Request, res: Response) => {
     }
 
     // Try to find existing conversation
-    const existing = getConversationByCampaignId(campaignId, userId);
+    const existing = await getConversationByCampaignId(campaignId, userId);
 
     if (existing) {
       res.json({
         conversationId: existing.id,
         phase: existing.phase,
+        title: existing.title,
         messages: existing.messages,
         generatedContent: existing.generatedContent,
         totalCost: existing.totalCost,
@@ -237,7 +306,7 @@ router.post('/resume', (req: Request, res: Response) => {
       });
     } else {
       // No existing conversation, create new one
-      const state = startConversation(userId, campaignId);
+      const state = await startConversation(userId, campaignId, title);
 
       const greeting = `Welcome to the Campaign Studio! I'm here to help you create an amazing D&D campaign.
 
@@ -251,6 +320,7 @@ Just share your ideas naturally, and I'll help bring them to life!`;
       res.json({
         conversationId: state.id,
         phase: state.phase,
+        title: state.title,
         messages: [],
         generatedContent: [],
         message: greeting,
@@ -268,19 +338,21 @@ Just share your ideas naturally, and I'll help bring them to life!`;
 });
 
 // Get all generated content for a conversation
-router.get('/:conversationId/content', (req: Request, res: Response) => {
+router.get('/:conversationId/content', async (req: Request, res: Response) => {
   try {
     const { conversationId } = req.params;
 
-    const conversation = getConversation(conversationId);
+    const conversation = await getConversation(conversationId);
     if (!conversation) {
       res.status(404).json({ error: 'Conversation not found' });
       return;
     }
 
+    const content = await getGeneratedContent(conversationId);
+
     res.json({
       conversationId,
-      generatedContent: getGeneratedContent(conversationId),
+      generatedContent: content,
     });
   } catch (error) {
     logger.error({ error }, 'Failed to get content');
@@ -289,11 +361,11 @@ router.get('/:conversationId/content', (req: Request, res: Response) => {
 });
 
 // Export full conversation state (for saving to database or downloading)
-router.get('/:conversationId/export', (req: Request, res: Response) => {
+router.get('/:conversationId/export', async (req: Request, res: Response) => {
   try {
     const { conversationId } = req.params;
 
-    const state = exportConversation(conversationId);
+    const state = await exportConversation(conversationId);
     if (!state) {
       res.status(404).json({ error: 'Conversation not found' });
       return;
@@ -311,7 +383,7 @@ router.get('/:conversationId/export', (req: Request, res: Response) => {
 });
 
 // Import conversation state (for resuming from database or file)
-router.post('/import', (req: Request, res: Response) => {
+router.post('/import', async (req: Request, res: Response) => {
   try {
     const userId = (req as Request & { user?: { userId: string } }).user?.userId;
     if (!userId) {
@@ -332,7 +404,7 @@ router.post('/import', (req: Request, res: Response) => {
       return;
     }
 
-    importConversation(conversation);
+    await importConversation(conversation);
 
     res.json({
       success: true,

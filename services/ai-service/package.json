@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
+    "@prisma/client": "5.22.0",
     "@runwayml/sdk": "^3.11.0",
     "axios": "^1.6.0",
     "cors": "^2.8.5",

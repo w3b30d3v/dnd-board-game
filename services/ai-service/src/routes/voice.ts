@@ -14,6 +14,7 @@ import {
   NARRATION_TEMPLATES,
 } from '../lib/elevenlabs.js';
 import { logger } from '../lib/logger.js';
+import { validateAndSanitize, ContentSafetyError } from '../lib/contentSafety.js';
 
 const router: RouterType = Router();
 
@@ -125,10 +126,26 @@ router.post('/generate', async (req: Request, res: Response) => {
 
     const { text, voiceProfile, emotion, customVoiceId } = generateSchema.parse(req.body);
 
-    logger.info({ textLength: text.length, voiceProfile, emotion }, 'Generating speech');
+    // Content safety check - validate text before sending to ElevenLabs
+    let safeText: string;
+    try {
+      safeText = validateAndSanitize(text, 'voice');
+    } catch (error) {
+      if (error instanceof ContentSafetyError) {
+        logger.warn({ issues: error.issues }, 'Voice content safety violation');
+        res.status(400).json({
+          error: 'Content violates family-friendly policy',
+          issues: error.issues,
+        });
+        return;
+      }
+      throw error;
+    }
+
+    logger.info({ textLength: safeText.length, voiceProfile, emotion }, 'Generating speech');
 
     const result = await generateSpeech({
-      text,
+      text: safeText,
       voiceProfile,
       emotion,
       customVoiceId,
@@ -176,10 +193,26 @@ router.post('/generate-template', async (req: Request, res: Response) => {
       }
     }
 
-    logger.info({ template, category, textLength: text.length }, 'Generating speech from template');
+    // Content safety check - validate text (including user-provided variables)
+    let safeText: string;
+    try {
+      safeText = validateAndSanitize(text, 'voice');
+    } catch (error) {
+      if (error instanceof ContentSafetyError) {
+        logger.warn({ issues: error.issues }, 'Template content safety violation');
+        res.status(400).json({
+          error: 'Content violates family-friendly policy',
+          issues: error.issues,
+        });
+        return;
+      }
+      throw error;
+    }
+
+    logger.info({ template, category, textLength: safeText.length }, 'Generating speech from template');
 
     const result = await generateSpeech({
-      text,
+      text: safeText,
       voiceProfile: voiceProfile || 'narrator',
       emotion,
     });
@@ -219,6 +252,22 @@ router.post('/narrate', async (req: Request, res: Response) => {
 
     const { content, contentType, speakerName, voiceProfile, emotion } = schema.parse(req.body);
 
+    // Content safety check - validate narration content
+    let safeContent: string;
+    try {
+      safeContent = validateAndSanitize(content, 'voice');
+    } catch (error) {
+      if (error instanceof ContentSafetyError) {
+        logger.warn({ issues: error.issues, contentType }, 'Narration content safety violation');
+        res.status(400).json({
+          error: 'Content violates family-friendly policy',
+          issues: error.issues,
+        });
+        return;
+      }
+      throw error;
+    }
+
     // Select appropriate voice based on content type
     let selectedVoice = voiceProfile;
     let selectedEmotion = emotion;
@@ -248,10 +297,10 @@ router.post('/narrate', async (req: Request, res: Response) => {
       }
     }
 
-    logger.info({ contentType, textLength: content.length, selectedVoice }, 'Generating narration');
+    logger.info({ contentType, textLength: safeContent.length, selectedVoice }, 'Generating narration');
 
     const result = await generateSpeech({
-      text: content,
+      text: safeContent,
       voiceProfile: selectedVoice,
       emotion: selectedEmotion,
     });

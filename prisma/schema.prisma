@@ -463,6 +463,39 @@ model Quest {
 }
 
 // ============================================
+// Campaign Studio Conversation (AI Chat Persistence)
+// ============================================
+
+model CampaignConversation {
+  id            String    @id @default(cuid())
+  userId        String
+  campaignId    String?   // Optional - can be associated with a campaign
+
+  // Conversation phase
+  phase         String    @default("setting") // setting, story, locations, npcs, encounters, quests
+
+  // Chat messages stored as JSON array
+  // Format: [{role: "user"|"assistant", content: string, timestamp: string}]
+  messages      Json      @default("[]")
+
+  // Generated content from the conversation
+  // Format: [{id, type, data, createdAt}]
+  generatedContent Json   @default("[]")
+
+  // Cost tracking for AI usage
+  totalCost     Float     @default(0)
+
+  // Metadata
+  title         String    @default("New Campaign")  // User-friendly title
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([campaignId])
+  @@map("campaign_conversations")
+}
+
+// ============================================
 // Published Campaign (for sharing)
 // ============================================
 

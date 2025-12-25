@@ -17,6 +17,7 @@ import {
   VeoRatio,
 } from '../lib/runway.js';
 import { config } from '../lib/config.js';
+import { validateAndSanitize, ContentSafetyError } from '../lib/contentSafety.js';
 
 const router: RouterType = Router();
 
@@ -114,6 +115,21 @@ router.post('/generate', async (req: Request, res: Response) => {
 
     const { sceneDescription, style, duration, aspectRatio, campaignId, audio, model } = validation.data;
 
+    // Content safety check - validate scene description before sending to Runway
+    let safeDescription: string;
+    try {
+      safeDescription = validateAndSanitize(sceneDescription, 'video');
+    } catch (error) {
+      if (error instanceof ContentSafetyError) {
+        logger.warn({ issues: error.issues }, 'Video content safety violation');
+        return res.status(400).json({
+          error: 'Content violates family-friendly policy',
+          issues: error.issues,
+        });
+      }
+      throw error;
+    }
+
     // Check if Runway is configured
     if (!isRunwayConfigured()) {
       logger.warn('Video generation requested but Runway not configured');
@@ -123,8 +139,8 @@ router.post('/generate', async (req: Request, res: Response) => {
       });
     }
 
-    // Build enhanced prompt
-    const prompt = buildVideoPrompt(sceneDescription, style);
+    // Build enhanced prompt with safe description
+    const prompt = buildVideoPrompt(safeDescription, style);
 
     logger.info(
       { campaignId, style, duration, model },
@@ -171,6 +187,21 @@ router.post('/generate-from-image', async (req: Request, res: Response) => {
     const { imageUrl, sceneDescription, style, duration, aspectRatio, campaignId, seed, model } =
       validation.data;
 
+    // Content safety check - validate scene description before sending to Runway
+    let safeDescription: string;
+    try {
+      safeDescription = validateAndSanitize(sceneDescription, 'video');
+    } catch (error) {
+      if (error instanceof ContentSafetyError) {
+        logger.warn({ issues: error.issues }, 'Image-to-video content safety violation');
+        return res.status(400).json({
+          error: 'Content violates family-friendly policy',
+          issues: error.issues,
+        });
+      }
+      throw error;
+    }
+
     if (!isRunwayConfigured()) {
       return res.status(503).json({
         error: 'Video generation not available',
@@ -178,7 +209,7 @@ router.post('/generate-from-image', async (req: Request, res: Response) => {
       });
     }
 
-    const prompt = buildVideoPrompt(sceneDescription, style);
+    const prompt = buildVideoPrompt(safeDescription, style);
 
     logger.info(
       { campaignId, style, duration, model, hasImage: true },
