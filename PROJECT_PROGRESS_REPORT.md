@@ -1,6 +1,6 @@
 # D&D Digital Board Game Platform - Progress Report
 
-**Last Updated:** December 14, 2025
+**Last Updated:** December 25, 2025
 
 ---
 
@@ -8,7 +8,9 @@
 
 The D&D Digital Board Game Platform is a cinematic, multiplayer, AI-powered D&D 5e digital board game. This report tracks implementation progress across 8 development phases.
 
-**Current Status:** Phase 6 In Progress - Campaign Builder & DM Tools
+**Current Status:** Phase 6 In Progress - Campaign Builder & DM Tools (60% complete)
+
+**Overall Project:** ~70% Complete
 
 ---
 
@@ -18,8 +20,21 @@ The D&D Digital Board Game Platform is a cinematic, multiplayer, AI-powered D&D 
 |---------|-----|--------|
 | Web App | https://web-production-b649.up.railway.app | Live |
 | API Gateway | https://api-production-2f00.up.railway.app | Live |
-| WS Gateway | https://ws-gateway-production-xxxx.up.railway.app | Deploying |
+| WS Gateway | ws-gateway-production-xxxx.up.railway.app | Live |
 | Game Test Page | https://web-production-b649.up.railway.app/game/test | Live |
+| DM Dashboard | https://web-production-b649.up.railway.app/dm | Live |
+
+---
+
+## Test Coverage Summary
+
+| Package | Tests | Status |
+|---------|-------|--------|
+| Web App (@dnd/web) | 274 | All Passing |
+| API Gateway (@dnd/api-gateway) | 83 | All Passing |
+| Rules Engine (@dnd/rules-engine) | 54 | All Passing |
+| WebSocket Gateway (@dnd/ws-gateway) | 17 | All Passing |
+| **TOTAL** | **428** | **All Passing** |
 
 ---
 
@@ -50,6 +65,7 @@ The D&D Digital Board Game Platform is a cinematic, multiplayer, AI-powered D&D 
 - ESLint + Prettier code quality tools
 - Docker Compose for local development
 - Railway deployment configuration
+- GitHub Actions CI/CD pipeline (pnpm 9)
 
 ### Tech Stack Established
 - **Frontend:** Next.js 14, TypeScript, Tailwind CSS, Framer Motion
@@ -64,11 +80,13 @@ turbo.json
 package.json (root)
 docker-compose.yml
 .env.example
+.github/workflows/ci.yml
 apps/web/
 services/api-gateway/
 packages/shared/
 packages/ui/
 packages/proto/
+packages/rules-engine/
 ```
 
 ---
@@ -110,6 +128,8 @@ apps/web/src/app/login/page.tsx
 apps/web/src/app/register/page.tsx
 ```
 
+### Test Coverage: 13 tests (authService.test.ts)
+
 ---
 
 ## Phase 2: Character Builder - COMPLETE
@@ -117,10 +137,10 @@ apps/web/src/app/register/page.tsx
 **Completed:** December 2024
 
 ### Features
-- Full RAW 5e character creation wizard
-- All PHB races with subraces
-- All PHB classes
-- All PHB backgrounds
+- Full RAW 5e character creation wizard (9 steps)
+- All PHB races with subraces (9 races)
+- All PHB classes (12 classes)
+- All PHB backgrounds (13 backgrounds)
 - Standard array ability score allocation
 - Skill selection based on class/background
 - Spell selection for spellcasting classes
@@ -166,6 +186,8 @@ services/api-gateway/src/routes/characters.ts
 services/api-gateway/src/routes/media.ts
 ```
 
+### Test Coverage: 19 tests (characterService.test.ts)
+
 ---
 
 ## Phase 3: Game Board Core - COMPLETE
@@ -200,23 +222,6 @@ services/api-gateway/src/routes/media.ts
 - Floating healing numbers
 - Condition particle effects
 
-### Enhanced Visual Features (NEW)
-- **Token Visuals:**
-  - Portrait image loading with circular masks
-  - Gradient-styled placeholder tokens with 3D effects
-  - Enhanced health bars with gradient fills
-  - Glow effects on selection
-- **Board Visuals:**
-  - Animated water tiles (shimmer, ripples, bubbles)
-  - Animated lava tiles (glow pulses, embers)
-  - Ambient particle system (dust, embers, bubbles)
-  - Pulsing highlight effects with corner accents
-  - Vignette overlay for depth
-- **Combat Feedback:**
-  - Floating damage numbers (-X in red/gold for crits)
-  - Floating healing numbers (+X in green)
-  - Condition particle effects (poisoned, frightened, etc.)
-
 ### Terrain Types
 1. NORMAL - Basic floor
 2. DIFFICULT - Movement cost x2, pebble details
@@ -248,21 +253,21 @@ services/api-gateway/src/routes/media.ts
 
 ### Key Files
 ```
-apps/web/src/game/GameApplication.ts    (504 lines - with combat effects)
-apps/web/src/game/BoardRenderer.ts      (996 lines - with animations)
-apps/web/src/game/TokenManager.ts       (1200 lines - with particles)
+apps/web/src/game/GameApplication.ts    (504 lines)
+apps/web/src/game/BoardRenderer.ts      (996 lines)
+apps/web/src/game/TokenManager.ts       (1200 lines)
 apps/web/src/game/FogOfWarRenderer.ts   (394 lines)
 apps/web/src/game/AoEOverlayRenderer.ts (369 lines)
-apps/web/src/game/CameraController.ts   (301 lines - with tweening)
+apps/web/src/game/CameraController.ts   (301 lines)
 apps/web/src/game/InputHandler.ts       (376 lines)
-apps/web/src/game/useGameCanvas.ts      (305 lines - React hook)
+apps/web/src/game/useGameCanvas.ts      (305 lines)
+apps/web/src/game/CombatManager.ts      (800 lines)
 apps/web/src/game/types.ts              (188 lines)
-apps/web/src/game/index.ts              (18 lines)
 apps/web/src/app/game/test/page.tsx
-apps/web/src/app/game/test/GameBoardTest.tsx (550 lines - enhanced demo)
+apps/web/src/app/game/test/GameBoardTest.tsx (550 lines)
 ```
 
-### Test Coverage (152 tests)
+### Test Coverage: 152 tests
 ```
 apps/web/src/__tests__/game/
 ├── BoardRenderer.test.ts      (12 tests)
@@ -271,11 +276,9 @@ apps/web/src/__tests__/game/
 ├── FogOfWarRenderer.test.ts   (29 tests)
 ├── AoEOverlayRenderer.test.ts (20 tests)
 ├── InputHandler.test.ts       (14 tests)
-└── types.test.ts              (8 tests)
-
-Other tests:
-├── utils/helpers.test.ts      (23 tests)
-└── stores/authStore.test.ts   (7 tests)
+├── CombatManager.test.ts      (30 tests)
+├── types.test.ts              (8 tests)
+└── helpers.test.ts            (23 tests)
 ```
 
 ### Test Page
@@ -284,19 +287,13 @@ URL: `/game/test`
 Interactive demo featuring:
 - Sample dungeon map (20x15 grid) with lava and water
 - Multiple creature types (PCs, monsters, NPCs)
-- Creatures with various conditions (Frightened, Poisoned, etc.)
+- Creatures with various conditions
 - Health bar visualization with temp HP
 - Fog of war toggle
 - AoE preview toggle (Fireball)
-- Combat demo buttons:
-  - Deal Damage (with random critical hits)
-  - Heal
-  - Death Animation
-  - Respawn Animation
+- Combat demo buttons (Deal Damage, Heal, Death, Respawn)
 - Zoom controls
 - Animated terrain (water shimmer, lava glow, embers)
-- Ambient dust particles
-- Camera centering
 
 ---
 
@@ -362,41 +359,23 @@ Interactive demo featuring:
 - Natural 1 = 2 failures
 - Natural 20 = regain consciousness at 1 HP
 
-### Game Board Integration
-- CombatManager class bridges rules engine with game board
-- Event system for UI updates
-- Integration with TokenManager for visual effects
-- Floating damage/healing numbers
-- Damage/healing flash animations
-
-### Test Coverage (54 golden tests)
-All tests verify RAW 5e compliance:
-- Dice rolling with modifiers
-- Advantage/disadvantage behavior
-- Attack resolution rules
-- Damage calculation with resistances
-- Saving throw conditions
-- Death save mechanics
-- Concentration checks
-
 ### Key Files
 ```
 packages/rules-engine/
 ├── src/
 │   ├── index.ts           # Main exports
-│   ├── types.ts           # D&D 5e type definitions (~310 lines)
-│   ├── dice.ts            # Dice rolling system (~150 lines)
-│   ├── abilities.ts       # Ability checks & saves (~300 lines)
+│   ├── types.ts           # D&D 5e type definitions (~343 lines)
+│   ├── dice.ts            # Dice rolling system (~257 lines)
+│   ├── abilities.ts       # Ability checks & saves (~299 lines)
 │   ├── combat.ts          # Attack & damage (~425 lines)
-│   ├── conditions.ts      # 15 conditions (~290 lines)
-│   └── spells.ts          # Spell system (~350 lines)
+│   ├── conditions.ts      # 15 conditions (~305 lines)
+│   └── spells.ts          # Spell system (~351 lines)
 ├── tests/
 │   └── golden.test.ts     # RAW compliance tests (54 tests)
 └── package.json
-
-apps/web/src/game/
-└── CombatManager.ts       # Game board integration (~800 lines)
 ```
+
+### Test Coverage: 54 golden tests (RAW 5e compliance)
 
 ---
 
@@ -415,28 +394,6 @@ apps/web/src/game/
 - Dice rolling broadcasts
 - Turn-based game coordination
 - Auto-reconnection handling
-
-### WebSocket Server Architecture
-```
-services/ws-gateway/
-├── src/
-│   ├── index.ts                    # Entry point with graceful shutdown
-│   ├── config.ts                   # Server configuration
-│   ├── WebSocketServer.ts          # Main WS server class
-│   ├── ConnectionManager.ts        # Connection tracking & broadcasting
-│   ├── SessionManager.ts           # Game session state (Redis/in-memory)
-│   ├── auth/
-│   │   └── validateToken.ts        # JWT validation
-│   ├── handlers/
-│   │   ├── MessageHandler.ts       # Message routing
-│   │   ├── chatHandlers.ts         # Chat & whisper handling
-│   │   └── gameHandlers.ts         # Dice rolls, turn management
-│   └── lib/
-│       └── logger.ts               # Pino logger
-├── __tests__/
-│   └── ConnectionManager.test.ts   # 17 unit tests
-└── package.json
-```
 
 ### WebSocket Message Types
 | Message Type | Direction | Description |
@@ -466,11 +423,6 @@ services/ws-gateway/
 - **ChatPanel component** - Chat with in-character mode toggle
 - **Lobby component** - Session management UI
 
-### API Endpoints (HTTP)
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Server health check |
-
 ### Key Files
 ```
 services/ws-gateway/
@@ -488,69 +440,13 @@ apps/web/src/
 │   ├── PlayerList.tsx              (80 lines)
 │   ├── ChatPanel.tsx               (150 lines)
 │   └── Lobby.tsx                   (160 lines)
-
-packages/shared/src/types/
-└── websocket.ts                    (200 lines)
 ```
 
-### Test Coverage (17 tests)
-```
-services/ws-gateway/src/__tests__/
-└── ConnectionManager.test.ts
-    ├── registerConnection (3 tests)
-    ├── authenticateConnection (3 tests)
-    ├── joinSession (4 tests)
-    ├── leaveSession (1 test)
-    ├── removeConnection (1 test)
-    ├── send (2 tests)
-    ├── broadcastToSession (2 tests)
-    └── getStats (1 test)
-```
+### Test Coverage: 17 tests (ConnectionManager.test.ts)
 
 ---
 
-## Phase 7: Media Pipeline - PARTIAL (50%)
-
-**Implemented Early:** AI character portrait generation + Static asset library
-
-### Features Implemented
-- NanoBanana API integration (Google Gemini-powered)
-- 3-image character cards (portrait, heroic pose, action pose)
-- User generation limits (5 characters = 15 images max)
-- DiceBear fallback for failures
-- Async webhook-based generation
-- **Self-hosted AI image library (40 images)**:
-  - 9 race preview images (Human, Elf, Dwarf, Halfling, etc.)
-  - 12 class preview images (Fighter, Wizard, Rogue, etc.)
-  - 8 background images (Acolyte, Criminal, Noble, etc.)
-  - 8 terrain textures (stone, grass, water, lava, etc.)
-  - 3 hero banner images (Epic Battle, Tavern Gathering, Dungeon Entrance)
-- Image proxy endpoint for CORS bypass
-- Homepage hero image showcase
-
-### Static Image System
-```
-apps/web/public/images/
-├── races/         (9 images)
-├── classes/       (12 images)
-├── backgrounds/   (8 images)
-├── terrain/       (8 images)
-└── heroes/        (3 images)
-
-apps/web/src/data/staticImages.ts  (image path exports)
-scripts/download-images.mjs        (image download script)
-```
-
-### Not Yet Implemented
-- Scene generation
-- Monster portraits
-- Item images
-- Location backgrounds
-- Video rendering
-
----
-
-## Phase 6: Campaign Builder - IN PROGRESS
+## Phase 6: Campaign Builder - IN PROGRESS (60%)
 
 **Started:** December 2024
 
@@ -597,6 +493,12 @@ scripts/download-images.mjs        (image download script)
 - Session status management (lobby, active, paused, completed)
 - Persistent game state (token positions, fog of war, journal)
 - Invite code generation for player joining
+
+#### AI Campaign Studio
+- Conversational AI interface for campaign creation
+- Live campaign preview panel
+- Chat-based content generation
+- Export functionality (JSON/ZIP)
 
 ### API Endpoints (DM)
 | Endpoint | Method | Description |
@@ -647,96 +549,111 @@ model User {
 ### Key Files
 ```
 services/api-gateway/src/routes/
-├── dm.ts                           (370 lines - DM dashboard API)
-├── campaigns.ts                    (500 lines - Campaign CRUD)
+├── dm.ts                           (830 lines)
+├── campaigns.ts                    (437 lines)
 
 apps/web/src/app/dm/
-├── page.tsx                        (DM dashboard page)
-├── DMDashboardContent.tsx          (632 lines - Full dashboard UI)
+├── page.tsx
+├── DMDashboardContent.tsx          (632 lines)
 ├── campaigns/
-│   ├── page.tsx                    (Campaign list page)
-│   ├── CampaignDashboardContent.tsx (Campaign management)
+│   ├── page.tsx
+│   ├── CampaignDashboardContent.tsx
 │   └── [id]/
-│       ├── page.tsx                (Campaign editor page)
-│       └── CampaignEditorContent.tsx (Editor UI)
+│       ├── page.tsx
+│       └── CampaignEditorContent.tsx
+├── campaign-studio/
+│   └── CampaignStudioContent.tsx
 ```
+
+### Test Coverage: 51 tests
+- dmService.test.ts: 14 tests
+- campaignService.test.ts: 37 tests
 
 ### Still To Implement
 - Map Editor (tile-based creation)
-- Encounter Builder
-- NPC/Monster Management
+- Encounter Builder with difficulty calculator
+- NPC/Monster Management with stat blocks
 - Dialogue Tree Editor
 - Quest System
 
 ---
 
-## Next Steps: Complete Phase 6
+## Phase 7: Media Pipeline - PARTIAL (50%)
 
-### Remaining Features
+**Implemented Early:** AI character portrait generation + Static asset library
 
-1. **Map Editor**
-   - Tile-based map creation
-   - Terrain type placement
-   - Prop placement (doors, chests, etc.)
-   - Grid size configuration
-   - Save/load maps
+### Features Implemented
+- NanoBanana API integration (Google Gemini-powered)
+- 3-image character cards (portrait, heroic pose, action pose)
+- User generation limits (5 characters = 15 images max)
+- DiceBear fallback for failures
+- Async webhook-based generation
+- **Self-hosted AI image library (40 images)**:
+  - 9 race preview images
+  - 12 class preview images
+  - 8 background images
+  - 8 terrain textures
+  - 3 hero banner images
+- Image proxy endpoint for CORS bypass
+- Homepage hero image showcase
 
-2. **Encounter Builder**
-   - Monster placement on maps
-   - Encounter difficulty calculator
-   - Initiative order presets
-   - Environmental hazards
+### ElevenLabs Voice Integration
+- TTS voice narration system
+- Test endpoint for voice generation
+- NarrationPlayer component
 
-3. **NPC/Monster Management**
-   - Custom NPC creation
-   - Monster stat block editor
-   - Import from SRD data
-   - NPC dialogue trees
+### Static Image System
+```
+apps/web/public/images/
+├── races/         (9 images)
+├── classes/       (12 images)
+├── backgrounds/   (8 images)
+├── terrain/       (8 images)
+└── heroes/        (3 images)
 
-4. **Story System**
-   - Quest creation and tracking
-   - Branching dialogue
-   - Journal/notes system
-   - Read-aloud text boxes
+apps/web/src/data/staticImages.ts
+scripts/download-images.mjs
+```
 
-### Integration Points
-- **Game Board:** Load maps into play
-- **Multiplayer:** Share campaigns with players
-- **Rules Engine:** Validate encounters
-- **Media Pipeline:** Generate location art
+### Not Yet Implemented
+- Scene generation from DM descriptions
+- Monster portrait generation
+- Item image generation
+- Location background generation
+- Video rendering/cutscenes
+- Dynamic music system
 
 ---
 
-## Tech Stack Summary
+## Phase 8: Polish & Launch - NOT STARTED
 
-### Frontend
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| Next.js | 14.x | React framework |
-| TypeScript | 5.x | Type safety |
-| Tailwind CSS | 3.x | Styling |
-| Framer Motion | 10.x | Animations |
-| PixiJS | 8.x | Game rendering |
-| Zustand | 4.x | State management |
-| tsparticles | 3.x | Particle effects |
+### Planned
+- Production deployment hardening
+- Performance optimization
+- Load testing
+- Security audit
+- User documentation
+- Admin dashboard
+- Rate limiting
+- Monitoring/alerting
 
-### Backend
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| Express.js | 4.x | API server |
-| Prisma | 5.x | ORM |
-| PostgreSQL | 16 | Database |
-| Redis | 7 | Caching |
-| JWT | - | Authentication |
+---
 
-### Infrastructure
-| Technology | Purpose |
-|------------|---------|
-| Docker | Containerization |
-| Railway | Hosting |
-| GitHub Actions | CI/CD |
-| pnpm | Package manager |
-| Turborepo | Monorepo tooling |
+## CI/CD Pipeline Status
+
+**Current Status:** All Passing
+
+### Pipeline Configuration
+- **pnpm version:** 9 (matches lockfile version 9.0)
+- **Node version:** 20
+- **Jobs:** Lint, Build, Unit Tests, Integration Tests, Security Audit, Deploy
+
+### Recent CI/CD Fixes (December 25, 2025)
+- Updated pnpm from version 8 to 9
+- Added rules-engine build step before web unit tests
+- Fixed lint errors in api-gateway (unused imports, variables)
+- Fixed namespace declaration in auth.ts
+- Removed duplicate unused functions in media.ts
 
 ---
 
@@ -745,27 +662,16 @@ apps/web/src/app/dm/
 | Metric | Value |
 |--------|-------|
 | Total Commits | 100+ |
+| Lines of Code (total) | ~82,000+ |
 | Lines of Code (game module) | 4,500+ |
 | Lines of Code (rules engine) | 2,600+ |
-| Lines of Code (ws-gateway) | 1,500+ |
+| Lines of Code (ws-gateway) | 4,300+ |
 | Lines of Code (dm-tools) | 1,500+ |
-| Lines of Code (total) | 32,000+ |
-| Documentation Files | 50+ |
-| Test Files | 15 (10 web + 3 API + 1 rules + 1 ws) |
-| Total Tests | 330 (190 web + 69 API + 54 rules + 17 ws) |
+| Documentation Files | 56 |
+| Test Files | 21 |
+| Total Tests | 428 |
 | AI Images Hosted | 40 |
-
----
-
-## Verification Scripts
-
-| Script | Phase | Status |
-|--------|-------|--------|
-| `scripts/verify-phase-0.sh` | Project Setup | ✅ Available |
-| `scripts/verify-phase-1.sh` | Authentication | ✅ Available |
-| `scripts/verify-phase-2.sh` | Character Builder | ✅ Available |
-| `scripts/verify-phase-3.sh` | Game Board Core | ✅ Available |
-| `pnpm --filter @dnd/rules-engine test` | Rules Engine | ✅ 54 tests |
+| Mockup Prototypes | 26 |
 
 ---
 
@@ -773,7 +679,7 @@ apps/web/src/app/dm/
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/your-username/dnd-board-game.git
+git clone https://github.com/w3b30d3v/dnd-board-game.git
 cd dnd-board-game
 
 # 2. Install dependencies
@@ -793,7 +699,31 @@ pnpm dev
 # Web: http://localhost:3000
 # API: http://localhost:4000
 # Game Test: http://localhost:3000/game/test
+# DM Dashboard: http://localhost:3000/dm
 ```
+
+---
+
+## Recent Updates (December 25, 2025)
+
+### CI/CD Pipeline Fixes
+- Updated pnpm version from 8 to 9 to match lockfile
+- Added build step for rules-engine before web tests
+- Fixed all lint errors causing pipeline failures
+
+### Test Coverage Improvements
+- Added comprehensive tests for Campaign Studio store
+- Added tests for useWebSocket hook
+- Added tests for DM service
+- Added tests for multiplayer store
+- Added tests for LiveCampaignPreview component
+- **Total tests increased from 330 to 428**
+
+### Bug Fixes
+- Fixed 503 database errors with explicit select in DM routes
+- Added migration for session lock and game state persistence
+- Fixed input field styling (white background, black text)
+- Fixed unused imports and variables causing lint errors
 
 ---
 
@@ -803,25 +733,4 @@ See `CLAUDE.md` for implementation guidelines and coding standards.
 
 ---
 
-**Report Generated:** December 14, 2025
-
----
-
-## Recent Bug Fixes (December 14, 2025)
-
-### Multiplayer Ready Status Fix
-- Fixed: "Toggle Ready" button had no effect
-- Fixed: Player ready status not updating in UI
-- Root cause: PLAYER_LIST handler wasn't updating Zustand store
-- Solution: Added `setIsHost` and `setIsReady` calls on PLAYER_LIST message
-
-### DM Dashboard API Hardening
-- Added defensive try-catch for database queries
-- Handle missing `maxActiveSessions` column gracefully
-- Handle missing `game_session_participants` table
-- Better error logging with detailed messages
-
-### Database Migration Safety
-- Added startup verification for required columns
-- Fallback to default values when columns missing
-- Prisma client generation added to build script
+**Report Generated:** December 25, 2025
