@@ -78,7 +78,7 @@ export function buildSafeNegativePrompt(userNegative?: string): string {
   return [...new Set(combined)].join(', ');
 }
 
-export function validateGeneratedImage(imageUrl: string): Promise<boolean> {
+export function validateGeneratedImage(_imageUrl: string): Promise<boolean> {
   // TODO: Integrate with image moderation service (e.g., Google Vision SafeSearch)
   // For now, trust the negative prompt to do its job
   return Promise.resolve(true);

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { WebSocket } from 'ws';
-import { ConnectionManager, type Connection } from '../ConnectionManager';
+import { ConnectionManager } from '../ConnectionManager';
 
 // Mock WebSocket
 function createMockSocket(readyState = 1): WebSocket {
@@ -256,7 +256,7 @@ describe('ConnectionManager', () => {
       const socket2 = createMockSocket();
 
       const id1 = manager.registerConnection(socket1);
-      const id2 = manager.registerConnection(socket2);
+      manager.registerConnection(socket2); // Register second connection (id not needed)
 
       manager.authenticateConnection(id1, { userId: 'user-1' });
       manager.joinSession(id1, 'session-1');
