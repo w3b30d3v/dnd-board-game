@@ -9,6 +9,7 @@ export interface CutscenePlayerProps {
   progress?: number;
   error?: string;
   onClose?: () => void;
+  onEnded?: () => void;
   autoPlay?: boolean;
   showControls?: boolean;
   title?: string;
@@ -20,6 +21,7 @@ export function CutscenePlayer({
   progress = 0,
   error,
   onClose,
+  onEnded,
   autoPlay = true,
   showControls = true,
   title,
@@ -205,7 +207,10 @@ export function CutscenePlayer({
         onPause={() => setIsPlaying(false)}
         onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime || 0)}
         onLoadedMetadata={() => setDuration(videoRef.current?.duration || 0)}
-        onEnded={() => setIsPlaying(false)}
+        onEnded={() => {
+          setIsPlaying(false);
+          onEnded?.();
+        }}
         playsInline
       />
 
