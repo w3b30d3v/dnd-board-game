@@ -85,26 +85,50 @@ function LogoutIcon({ size = 20, color = 'currentColor' }: { size?: number; colo
   );
 }
 
+function SettingsIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  );
+}
+
+function ProfileIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
 interface NavItem {
   label: string;
   href: string;
   icon: React.ReactNode;
   description?: string;
-  subItems?: { label: string; href: string }[];
+  badge?: number | string;
+  badgeColor?: 'primary' | 'danger' | 'success' | 'warning';
+  subItems?: { label: string; href: string; badge?: number | string }[];
+  section?: 'main' | 'bottom';
 }
 
 const navigationItems: NavItem[] = [
+  // Main navigation
   {
     label: 'Dashboard',
     href: '/dashboard',
     icon: <HomeIcon />,
     description: 'Your home base',
+    section: 'main',
   },
   {
     label: 'Characters',
     href: '/characters/create',
     icon: <CharacterIcon />,
     description: 'Create & manage heroes',
+    section: 'main',
   },
   {
     label: 'DM Dashboard',
@@ -115,20 +139,64 @@ const navigationItems: NavItem[] = [
       { label: 'My Campaigns', href: '/dm/campaigns' },
       { label: 'Campaign Studio', href: '/dm/campaign-studio' },
     ],
+    section: 'main',
   },
   {
     label: 'Game Board',
     href: '/game/test',
     icon: <GameIcon />,
     description: 'Play session',
+    section: 'main',
   },
   {
     label: 'Multiplayer',
     href: '/multiplayer/test',
     icon: <MultiplayerIcon />,
     description: 'Join games',
+    section: 'main',
+  },
+  // Bottom navigation
+  {
+    label: 'Profile',
+    href: '/profile',
+    icon: <ProfileIcon />,
+    description: 'Your profile',
+    section: 'bottom',
+  },
+  {
+    label: 'Settings',
+    href: '/settings',
+    icon: <SettingsIcon />,
+    description: 'App settings',
+    section: 'bottom',
   },
 ];
+
+// Notification Badge Component
+function NotificationBadge({
+  count,
+  color = 'primary'
+}: {
+  count: number | string;
+  color?: 'primary' | 'danger' | 'success' | 'warning';
+}) {
+  const colorClasses = {
+    primary: 'bg-primary text-bg-primary',
+    danger: 'bg-danger text-white',
+    success: 'bg-success text-bg-primary',
+    warning: 'bg-amber-500 text-bg-primary',
+  };
+
+  return (
+    <motion.span
+      initial={{ scale: 0 }}
+      animate={{ scale: 1 }}
+      className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold rounded-full ${colorClasses[color]} shadow-glow`}
+    >
+      {typeof count === 'number' && count > 99 ? '99+' : count}
+    </motion.span>
+  );
+}
 
 // Sidebar context for sharing state
 interface SidebarContextValue {
@@ -334,10 +402,10 @@ export function AppShell({ children, showSidebar = true }: AppShellProps) {
               </Link>
             </div>
 
-            {/* Navigation */}
+            {/* Navigation - Main Section */}
             <nav className="flex-1 py-4 overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
               <ul className="space-y-1 px-2">
-                {navigationItems.map((item) => {
+                {navigationItems.filter(item => item.section !== 'bottom').map((item) => {
                   const active = isActive(item.href);
                   const hasSubItems = item.subItems && item.subItems.length > 0;
                   const isSubMenuOpen = expandedMenu === item.label;
@@ -357,11 +425,26 @@ export function AppShell({ children, showSidebar = true }: AppShellProps) {
                             }`}
                             title={!isExpanded ? item.label : undefined}
                           >
-                            <span className={`flex-shrink-0 ${active ? 'text-primary' : 'text-text-muted group-hover:text-primary'}`}>
+                            <span className={`relative flex-shrink-0 ${active ? 'text-primary' : 'text-text-muted group-hover:text-primary'}`}>
                               {item.icon}
+                              {item.badge !== undefined && !isExpanded && (
+                                <NotificationBadge count={item.badge} color={item.badgeColor} />
+                              )}
                             </span>
                             <motion.div variants={textVariants} className="flex-1 text-left">
-                              <div className="font-medium truncate text-sm">{item.label}</div>
+                              <div className="font-medium truncate text-sm flex items-center gap-2">
+                                {item.label}
+                                {item.badge !== undefined && isExpanded && (
+                                  <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full ${
+                                    item.badgeColor === 'danger' ? 'bg-danger text-white' :
+                                    item.badgeColor === 'success' ? 'bg-success text-bg-primary' :
+                                    item.badgeColor === 'warning' ? 'bg-amber-500 text-bg-primary' :
+                                    'bg-primary text-bg-primary'
+                                  }`}>
+                                    {typeof item.badge === 'number' && item.badge > 99 ? '99+' : item.badge}
+                                  </span>
+                                )}
+                              </div>
                               {item.description && (
                                 <div className="text-xs text-text-muted truncate">{item.description}</div>
                               )}
@@ -389,13 +472,18 @@ export function AppShell({ children, showSidebar = true }: AppShellProps) {
                                       <motion.span
                                         whileHover={{ scale: 1.02, x: 4 }}
                                         whileTap={{ scale: 0.98 }}
-                                        className={`block px-3 py-2 rounded-md text-sm transition-colors ${
+                                        className={`block px-3 py-2 rounded-md text-sm transition-colors flex items-center justify-between ${
                                           pathname === subItem.href
                                             ? 'bg-primary/10 text-primary'
                                             : 'text-text-muted hover:text-text-primary hover:bg-white/5'
                                         }`}
                                       >
                                         {subItem.label}
+                                        {subItem.badge !== undefined && (
+                                          <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-primary text-bg-primary">
+                                            {typeof subItem.badge === 'number' && subItem.badge > 99 ? '99+' : subItem.badge}
+                                          </span>
+                                        )}
                                       </motion.span>
                                     </Link>
                                   </li>
@@ -416,11 +504,26 @@ export function AppShell({ children, showSidebar = true }: AppShellProps) {
                             }`}
                             title={!isExpanded ? item.label : undefined}
                           >
-                            <span className={`flex-shrink-0 ${active ? 'text-primary' : 'text-text-muted group-hover:text-primary'}`}>
+                            <span className={`relative flex-shrink-0 ${active ? 'text-primary' : 'text-text-muted group-hover:text-primary'}`}>
                               {item.icon}
+                              {item.badge !== undefined && !isExpanded && (
+                                <NotificationBadge count={item.badge} color={item.badgeColor} />
+                              )}
                             </span>
                             <motion.div variants={textVariants} className="flex-1">
-                              <div className="font-medium truncate text-sm">{item.label}</div>
+                              <div className="font-medium truncate text-sm flex items-center gap-2">
+                                {item.label}
+                                {item.badge !== undefined && isExpanded && (
+                                  <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full ${
+                                    item.badgeColor === 'danger' ? 'bg-danger text-white' :
+                                    item.badgeColor === 'success' ? 'bg-success text-bg-primary' :
+                                    item.badgeColor === 'warning' ? 'bg-amber-500 text-bg-primary' :
+                                    'bg-primary text-bg-primary'
+                                  }`}>
+                                    {typeof item.badge === 'number' && item.badge > 99 ? '99+' : item.badge}
+                                  </span>
+                                )}
+                              </div>
                               {item.description && (
                                 <div className="text-xs text-text-muted truncate">{item.description}</div>
                               )}
@@ -428,6 +531,55 @@ export function AppShell({ children, showSidebar = true }: AppShellProps) {
                           </motion.div>
                         </Link>
                       )}
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {/* Divider before bottom section */}
+              <div className="my-4 mx-2 border-t border-border/30" />
+
+              {/* Bottom Section (Profile, Settings) */}
+              <ul className="space-y-1 px-2">
+                {navigationItems.filter(item => item.section === 'bottom').map((item) => {
+                  const active = isActive(item.href);
+
+                  return (
+                    <li key={item.href}>
+                      <Link href={item.href}>
+                        <motion.div
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                            active
+                              ? 'bg-primary/20 text-primary border border-primary/30'
+                              : 'hover:bg-white/5 text-text-secondary hover:text-text-primary'
+                          }`}
+                          title={!isExpanded ? item.label : undefined}
+                        >
+                          <span className={`relative flex-shrink-0 ${active ? 'text-primary' : 'text-text-muted group-hover:text-primary'}`}>
+                            {item.icon}
+                            {item.badge !== undefined && !isExpanded && (
+                              <NotificationBadge count={item.badge} color={item.badgeColor} />
+                            )}
+                          </span>
+                          <motion.div variants={textVariants} className="flex-1">
+                            <div className="font-medium truncate text-sm flex items-center gap-2">
+                              {item.label}
+                              {item.badge !== undefined && isExpanded && (
+                                <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full ${
+                                  item.badgeColor === 'danger' ? 'bg-danger text-white' :
+                                  item.badgeColor === 'success' ? 'bg-success text-bg-primary' :
+                                  item.badgeColor === 'warning' ? 'bg-amber-500 text-bg-primary' :
+                                  'bg-primary text-bg-primary'
+                                }`}>
+                                  {typeof item.badge === 'number' && item.badge > 99 ? '99+' : item.badge}
+                                </span>
+                              )}
+                            </div>
+                          </motion.div>
+                        </motion.div>
+                      </Link>
                     </li>
                   );
                 })}
