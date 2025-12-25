@@ -45,6 +45,35 @@ function GameIcon({ size = 20, color = 'currentColor' }: { size?: number; color?
   );
 }
 
+function MultiplayerIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function SettingsIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  );
+}
+
+function ProfileIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
 function ChevronIcon({ size = 20, color = 'currentColor', direction = 'left' }: { size?: number; color?: string; direction?: 'left' | 'right' }) {
   return (
     <svg
@@ -101,6 +130,27 @@ const navigationItems: NavItem[] = [
     href: '/game/test',
     icon: <GameIcon />,
     description: 'Play session',
+  },
+  {
+    label: 'Multiplayer',
+    href: '/multiplayer',
+    icon: <MultiplayerIcon />,
+    description: 'Join or host games',
+  },
+];
+
+const bottomNavItems: NavItem[] = [
+  {
+    label: 'Profile',
+    href: '/profile',
+    icon: <ProfileIcon />,
+    description: 'Your profile',
+  },
+  {
+    label: 'Settings',
+    href: '/settings',
+    icon: <SettingsIcon />,
+    description: 'App settings',
   },
 ];
 
@@ -316,6 +366,38 @@ export function CollapsibleSidebar({ defaultExpanded = true }: CollapsibleSideba
             })}
           </ul>
         </nav>
+
+        {/* Bottom Navigation (Profile & Settings) */}
+        <div className="py-2 px-2 border-t border-border/50">
+          <ul className="space-y-1">
+            {bottomNavItems.map((item) => {
+              const active = isActive(item.href);
+              return (
+                <li key={item.href}>
+                  <Link href={item.href}>
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group ${
+                        active
+                          ? 'bg-primary/20 text-primary border border-primary/30'
+                          : 'hover:bg-white/5 text-text-secondary hover:text-text-primary'
+                      }`}
+                      title={!isExpanded ? item.label : undefined}
+                    >
+                      <span className={`flex-shrink-0 ${active ? 'text-primary' : 'text-text-muted group-hover:text-primary'}`}>
+                        {item.icon}
+                      </span>
+                      <motion.div variants={textVariants} className="flex-1">
+                        <div className="font-medium truncate text-sm">{item.label}</div>
+                      </motion.div>
+                    </motion.div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
 
         {/* Collapse Toggle Button */}
         <div className="p-4 border-t border-border/50">
