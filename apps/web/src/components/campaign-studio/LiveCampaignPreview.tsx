@@ -13,20 +13,28 @@ import {
 
 interface LiveCampaignPreviewProps {
   campaignName: string;
+  campaignId?: string;
   content: ContentBlock[];
   onItemClick?: (item: ContentBlock) => void;
   onEdit?: (id: string) => void;
   onRegenerate?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onGenerateImage?: (id: string) => void;
+  isGeneratingImage?: boolean;
+  onOpenMapEditor?: (locationId: string, locationName: string) => void;
 }
 
 export function LiveCampaignPreview({
   campaignName,
+  campaignId: _campaignId, // Available for future use
   content,
   onItemClick,
   onEdit,
   onRegenerate,
   onDelete,
+  onGenerateImage,
+  isGeneratingImage,
+  onOpenMapEditor,
 }: LiveCampaignPreviewProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -94,6 +102,7 @@ export function LiveCampaignPreview({
                 {locations.map((item) => (
                   <LocationCard
                     key={item.id}
+                    contentId={item.id}
                     data={item.data as LocationData}
                     isExpanded={expandedId === item.id}
                     onToggle={() => setExpandedId(expandedId === item.id ? null : item.id)}
@@ -101,6 +110,9 @@ export function LiveCampaignPreview({
                     onEdit={() => onEdit?.(item.id)}
                     onRegenerate={() => onRegenerate?.(item.id)}
                     onDelete={() => onDelete?.(item.id)}
+                    onGenerateImage={() => onGenerateImage?.(item.id)}
+                    isGeneratingImage={isGeneratingImage}
+                    onOpenMapEditor={onOpenMapEditor ? () => onOpenMapEditor(item.id, (item.data as LocationData).name) : undefined}
                   />
                 ))}
               </ContentSection>
@@ -117,6 +129,7 @@ export function LiveCampaignPreview({
                 {npcs.map((item) => (
                   <NPCCard
                     key={item.id}
+                    contentId={item.id}
                     data={item.data as NPCData}
                     isExpanded={expandedId === item.id}
                     onToggle={() => setExpandedId(expandedId === item.id ? null : item.id)}
@@ -124,6 +137,8 @@ export function LiveCampaignPreview({
                     onEdit={() => onEdit?.(item.id)}
                     onRegenerate={() => onRegenerate?.(item.id)}
                     onDelete={() => onDelete?.(item.id)}
+                    onGenerateImage={() => onGenerateImage?.(item.id)}
+                    isGeneratingImage={isGeneratingImage}
                   />
                 ))}
               </ContentSection>
@@ -258,12 +273,16 @@ function ContentSection({
 
 // Base card component props
 interface BaseCardProps {
+  contentId?: string;
   isExpanded: boolean;
   onToggle: () => void;
   onClick?: () => void;
   onEdit?: () => void;
   onRegenerate?: () => void;
   onDelete?: () => void;
+  onGenerateImage?: () => void;
+  isGeneratingImage?: boolean;
+  onOpenMapEditor?: () => void;
 }
 
 // Setting Card
@@ -332,7 +351,12 @@ function LocationCard({
   onEdit,
   onRegenerate,
   onDelete,
+  onGenerateImage,
+  isGeneratingImage,
+  onOpenMapEditor,
 }: BaseCardProps & { data: LocationData }) {
+  const hasImage = !!(data as LocationData & { imageUrl?: string }).imageUrl;
+
   return (
     <motion.div
       layout
@@ -343,6 +367,13 @@ function LocationCard({
         className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-bg-card/50 transition-colors"
       >
         <div className="flex items-center gap-2 min-w-0">
+          {hasImage && (
+            <img
+              src={(data as LocationData & { imageUrl?: string }).imageUrl}
+              alt={data.name}
+              className="w-8 h-8 rounded object-cover"
+            />
+          )}
           <span className="text-sm font-medium text-text-primary truncate">
             {data.name}
           </span>
@@ -356,6 +387,13 @@ function LocationCard({
       <AnimatePresence>
         {isExpanded && (
           <ExpandedContent>
+            {hasImage && (
+              <img
+                src={(data as LocationData & { imageUrl?: string }).imageUrl}
+                alt={data.name}
+                className="w-full h-32 rounded-lg object-cover mb-2"
+              />
+            )}
             <p className="text-xs text-text-secondary line-clamp-2 mb-2">
               {data.description}
             </p>
@@ -368,7 +406,16 @@ function LocationCard({
                 ))}
               </div>
             )}
-            <CardActions onClick={onClick} onEdit={onEdit} onRegenerate={onRegenerate} onDelete={onDelete} />
+            <CardActions
+              onClick={onClick}
+              onEdit={onEdit}
+              onRegenerate={onRegenerate}
+              onDelete={onDelete}
+              onGenerateImage={onGenerateImage}
+              isGeneratingImage={isGeneratingImage}
+              hasImage={hasImage}
+              onOpenMapEditor={onOpenMapEditor}
+            />
           </ExpandedContent>
         )}
       </AnimatePresence>
@@ -385,7 +432,12 @@ function NPCCard({
   onEdit,
   onRegenerate,
   onDelete,
+  onGenerateImage,
+  isGeneratingImage,
 }: BaseCardProps & { data: NPCData }) {
+  const hasPortrait = !!(data as NPCData & { portraitUrl?: string }).portraitUrl;
+  const portraitUrl = (data as NPCData & { portraitUrl?: string }).portraitUrl;
+
   return (
     <motion.div
       layout
@@ -396,6 +448,17 @@ function NPCCard({
         className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-bg-card/50 transition-colors"
       >
         <div className="flex items-center gap-2 min-w-0">
+          {hasPortrait ? (
+            <img
+              src={portraitUrl}
+              alt={data.name}
+              className="w-8 h-8 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500/30 to-green-600/30 flex items-center justify-center text-xs text-green-400">
+              {data.name.charAt(0).toUpperCase()}
+            </div>
+          )}
           <span className="text-sm font-medium text-text-primary truncate">
             {data.name}
           </span>
@@ -410,6 +473,15 @@ function NPCCard({
       <AnimatePresence>
         {isExpanded && (
           <ExpandedContent>
+            {hasPortrait && (
+              <div className="flex justify-center mb-2">
+                <img
+                  src={portraitUrl}
+                  alt={data.name}
+                  className="w-24 h-24 rounded-lg object-cover border border-border"
+                />
+              </div>
+            )}
             <p className="text-xs text-text-secondary line-clamp-2 mb-2">
               {data.description}
             </p>
@@ -418,7 +490,15 @@ function NPCCard({
                 <span className="text-text-secondary">Traits:</span> {data.personality.traits.join(', ')}
               </p>
             )}
-            <CardActions onClick={onClick} onEdit={onEdit} onRegenerate={onRegenerate} onDelete={onDelete} />
+            <CardActions
+              onClick={onClick}
+              onEdit={onEdit}
+              onRegenerate={onRegenerate}
+              onDelete={onDelete}
+              onGenerateImage={onGenerateImage}
+              isGeneratingImage={isGeneratingImage}
+              hasImage={hasPortrait}
+            />
           </ExpandedContent>
         )}
       </AnimatePresence>
@@ -582,11 +662,19 @@ function CardActions({
   onEdit,
   onRegenerate,
   onDelete,
+  onGenerateImage,
+  isGeneratingImage,
+  hasImage,
+  onOpenMapEditor,
 }: {
   onClick?: () => void;
   onEdit?: () => void;
   onRegenerate?: () => void;
   onDelete?: () => void;
+  onGenerateImage?: () => void;
+  isGeneratingImage?: boolean;
+  hasImage?: boolean;
+  onOpenMapEditor?: () => void;
 }) {
   return (
     <div className="flex gap-2 pt-2 border-t border-border/30">
@@ -614,6 +702,35 @@ function CardActions({
           className="flex-1 px-2 py-1.5 text-xs bg-bg-card hover:bg-border text-text-primary rounded transition-colors"
         >
           Edit
+        </motion.button>
+      )}
+      {onGenerateImage && (
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onGenerateImage();
+          }}
+          disabled={isGeneratingImage}
+          className="px-2 py-1.5 text-xs bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title={hasImage ? 'Regenerate Image' : 'Generate AI Image'}
+        >
+          {isGeneratingImage ? '⏳' : hasImage ? '🖼️' : '✨'}
+        </motion.button>
+      )}
+      {onOpenMapEditor && (
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenMapEditor();
+          }}
+          className="px-2 py-1.5 text-xs bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded transition-colors"
+          title="Open in Map Editor"
+        >
+          🗺️
         </motion.button>
       )}
       {onRegenerate && (

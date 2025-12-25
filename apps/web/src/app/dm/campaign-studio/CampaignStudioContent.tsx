@@ -40,6 +40,8 @@ export default function CampaignStudioContent() {
     sendMessage,
     regenerateContent,
     clearConversation,
+    saveContent,
+    generateImage,
   } = useCampaignStudio(campaignId || undefined);
 
   // Wait for hydration before checking auth
@@ -96,9 +98,22 @@ export default function CampaignStudioContent() {
   // Handle manual save
   const handleSave = async () => {
     setSaveStatus('saving');
-    // TODO: Implement actual save to API
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setSaveStatus('saved');
+    try {
+      await saveContent();
+      setSaveStatus('saved');
+    } catch {
+      setSaveStatus('error');
+    }
+  };
+
+  // Handle image generation for NPCs and locations
+  const handleGenerateImage = async (contentId: string) => {
+    await generateImage(contentId);
+  };
+
+  // Handle opening map editor for a location
+  const handleOpenMapEditor = (locationId: string, locationName: string) => {
+    router.push(`/dm/map-editor?locationId=${locationId}&locationName=${encodeURIComponent(locationName)}&campaignId=${campaignId}`);
   };
 
   // Loading state while hydrating
@@ -284,9 +299,13 @@ export default function CampaignStudioContent() {
         <div className="hidden lg:block w-[40%] min-w-[320px] max-w-[480px]">
           <LiveCampaignPreview
             campaignName={campaignName}
+            campaignId={campaignId || undefined}
             content={generatedContent}
             onItemClick={handleItemClick}
             onRegenerate={regenerateContent}
+            onGenerateImage={handleGenerateImage}
+            isGeneratingImage={isGenerating}
+            onOpenMapEditor={handleOpenMapEditor}
           />
         </div>
 
@@ -332,9 +351,13 @@ export default function CampaignStudioContent() {
                 <div className="h-[calc(100%-56px)]">
                   <LiveCampaignPreview
                     campaignName={campaignName}
+                    campaignId={campaignId || undefined}
                     content={generatedContent}
                     onItemClick={handleItemClick}
                     onRegenerate={regenerateContent}
+                    onGenerateImage={handleGenerateImage}
+                    isGeneratingImage={isGenerating}
+                    onOpenMapEditor={handleOpenMapEditor}
                   />
                 </div>
               </motion.div>
