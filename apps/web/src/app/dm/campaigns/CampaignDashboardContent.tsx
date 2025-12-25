@@ -186,7 +186,8 @@ export default function CampaignDashboardContent() {
     setCreating(false);
     if (campaign) {
       setShowCreateModal(false);
-      router.push(`/dm/campaigns/${campaign.id}`);
+      // Navigate to Campaign Studio with the new campaign
+      router.push(`/dm/campaign-studio?id=${campaign.id}`);
     }
   };
 
@@ -324,10 +325,10 @@ export default function CampaignDashboardContent() {
                 </div>
                 <div>
                   <h1 className="dnd-heading-epic text-4xl pb-0" style={{ color: '#A78BFA' }}>
-                    Campaign Builder
+                    My Campaigns
                   </h1>
                   <p className="text-text-secondary dnd-flavor">
-                    Create and manage your D&D campaigns
+                    Manage your D&D campaigns
                   </p>
                 </div>
               </div>

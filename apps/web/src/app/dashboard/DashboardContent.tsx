@@ -853,15 +853,15 @@ export default function DashboardContent() {
                   </div>
                 </div>
                 <p className="text-text-secondary text-sm mb-4">
-                  Create your own adventures as a Dungeon Master with maps, encounters, NPCs, and quests.
+                  Create your own adventures as a Dungeon Master with AI-powered campaign generation.
                 </p>
-                <Link href="/dm/campaigns">
+                <Link href="/dm/campaign-studio">
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     className="btn-magic w-full text-center"
                   >
-                    Campaign Builder
+                    Campaign Studio
                   </motion.button>
                 </Link>
               </EnchantedCard>
