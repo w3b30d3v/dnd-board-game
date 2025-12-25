@@ -66,5 +66,10 @@
   "dependencies": {
     "@prisma/client": "5.22.0",
     "tsx": "^4.7.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "glob": ">=10.5.0"
+    }
   }
 }
