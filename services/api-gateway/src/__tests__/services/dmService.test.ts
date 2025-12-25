@@ -48,8 +48,6 @@ describe('DM Service', () => {
 
   describe('getDashboard', () => {
     it('should return dashboard stats and data', async () => {
-      const userId = 'user-123';
-
       // Mock campaign count
       mockPrisma.campaign.count.mockResolvedValue(3);
 

@@ -1,7 +1,7 @@
 // Personality Content Generator
 // Generates safe, lore-appropriate personality content for D&D characters
 
-import { selectFromTemplates, PERSONALITY_TEMPLATES } from '../data/personalityTemplates.js';
+import { selectFromTemplates } from '../data/personalityTemplates.js';
 
 // Blocked patterns for content safety
 const BLOCKED_PATTERNS = [
@@ -37,10 +37,11 @@ interface GenerationRequest {
   name?: string;
 }
 
-interface GenerationResult {
-  content: string;
-  isSafe: boolean;
-}
+// GenerationResult interface kept for future AI generation implementation
+// interface GenerationResult {
+//   content: string;
+//   isSafe: boolean;
+// }
 
 export async function generatePersonalityContent(request: GenerationRequest): Promise<string> {
   const { field, race, class: charClass, background, name } = request;

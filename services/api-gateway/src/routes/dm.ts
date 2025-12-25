@@ -137,19 +137,9 @@ router.get('/dashboard', async (req: Request, res: Response) => {
 
     // Get user limits - use aiCharactersGenerated which definitely exists
     // maxActiveSessions defaults to 3 if migration hasn't run
-    let maxSessions = 3;
-    try {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: {
-          aiCharactersGenerated: true,
-        },
-      });
-      // maxActiveSessions will be added after migration runs
-      // For now, default to 3
-    } catch {
-      // If query fails, use defaults
-    }
+    const maxSessions = 3;
+    // Note: maxActiveSessions will be added after migration runs
+    // For now, default to 3
 
     // Calculate stats
     const totalPlayers = new Set(

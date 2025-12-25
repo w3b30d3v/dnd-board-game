@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { z, type ZodSchema } from 'zod';
+import type { ZodSchema } from 'zod';
 
 /**
  * Middleware to validate request body against a Zod schema

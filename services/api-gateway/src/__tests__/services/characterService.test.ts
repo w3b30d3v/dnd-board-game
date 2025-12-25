@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 // D&D 5e character creation logic tests
 describe('Character Service Logic', () => {
