@@ -202,7 +202,7 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
 
   // Send a message to Claude
   sendMessage: async (content: string) => {
-    const { id, currentPhase, messages } = get();
+    const { id, messages } = get();
     const token = getAuthToken();
 
     if (!token) {
@@ -745,18 +745,6 @@ What quests should drive your adventure?`,
   };
 
   return messages[phase];
-}
-
-function getContentTypeForPhase(phase: CampaignPhase): ContentBlock['type'] {
-  const mapping: Record<CampaignPhase, ContentBlock['type']> = {
-    setting: 'setting',
-    story: 'setting', // Story updates the setting
-    locations: 'location',
-    npcs: 'npc',
-    encounters: 'encounter',
-    quests: 'quest',
-  };
-  return mapping[phase];
 }
 
 // Export phase order for UI
