@@ -225,7 +225,7 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ message: content }),
       });
 
       if (!response.ok) {
@@ -239,7 +239,7 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
       const assistantMessage: Message = {
         id: `msg_${Date.now()}_response`,
         role: 'assistant',
-        content: data.message,
+        content: data.response,
         timestamp: new Date(),
         generatedContent: data.generatedContent,
       };

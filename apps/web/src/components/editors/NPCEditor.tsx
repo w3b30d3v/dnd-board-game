@@ -69,7 +69,7 @@ const PERSONALITY_TRAITS = [
 
 export function NPCEditor({
   initialData,
-  campaignId,
+  campaignId: _campaignId,
   onSave,
   onCancel,
   onGeneratePortrait,

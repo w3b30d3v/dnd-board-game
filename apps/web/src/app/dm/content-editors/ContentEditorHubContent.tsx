@@ -70,8 +70,8 @@ export default function ContentEditorHubContent() {
       case 'encounters':
         return (
           <EncounterEditor
-            onSave={(encounter) => {
-              console.log('Saved encounter:', encounter);
+            onSave={() => {
+              // TODO: Persist to campaign store
               setActiveEditor('hub');
             }}
           />
@@ -79,8 +79,8 @@ export default function ContentEditorHubContent() {
       case 'npcs':
         return (
           <NPCEditor
-            onSave={(npc) => {
-              console.log('Saved NPC:', npc);
+            onSave={() => {
+              // TODO: Persist to campaign store
               setActiveEditor('hub');
             }}
           />
@@ -88,8 +88,8 @@ export default function ContentEditorHubContent() {
       case 'quests':
         return (
           <QuestEditor
-            onSave={(quest) => {
-              console.log('Saved quest:', quest);
+            onSave={() => {
+              // TODO: Persist to campaign store
               setActiveEditor('hub');
             }}
           />
@@ -97,8 +97,8 @@ export default function ContentEditorHubContent() {
       case 'cutscenes':
         return (
           <CutsceneSequencer
-            onSave={(scenes) => {
-              console.log('Saved cutscene:', scenes);
+            onSave={() => {
+              // TODO: Persist to campaign store
               setActiveEditor('hub');
             }}
           />

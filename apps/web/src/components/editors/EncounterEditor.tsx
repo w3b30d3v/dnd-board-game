@@ -69,7 +69,7 @@ const XP_THRESHOLDS: Record<number, Record<EncounterDifficulty, number>> = {
 
 export function EncounterEditor({
   initialData,
-  campaignId,
+  campaignId: _campaignId,
   onSave,
   onCancel,
   className,

@@ -54,7 +54,7 @@ export interface QuestEditorProps {
 
 export function QuestEditor({
   initialData,
-  campaignId,
+  campaignId: _campaignId,
   availableNPCs = [],
   availableQuests = [],
   onSave,

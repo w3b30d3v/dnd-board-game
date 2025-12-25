@@ -282,7 +282,7 @@ describe('campaignStudioStore', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
-          message: 'AI response',
+          response: 'AI response',
           generatedContent: null,
         }),
       });
