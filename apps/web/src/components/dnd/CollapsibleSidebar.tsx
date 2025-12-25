@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { D20Icon, ScrollIcon } from './DnDIcons';
+import { D20Icon } from './DnDIcons';
 
 // Navigation icons as SVG components
 function HomeIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
