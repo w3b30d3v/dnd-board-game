@@ -92,6 +92,8 @@ const navigationItems: NavItem[] = [
     subItems: [
       { label: 'My Campaigns', href: '/dm/campaigns' },
       { label: 'Campaign Studio', href: '/dm/campaign-studio' },
+      { label: 'Content Editors', href: '/dm/content-editors' },
+      { label: 'Map Editor', href: '/dm/map-editor' },
     ],
   },
   {

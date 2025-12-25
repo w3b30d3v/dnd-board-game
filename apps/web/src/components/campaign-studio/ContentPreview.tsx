@@ -118,6 +118,7 @@ function ContentSection({
     npc: { label: 'NPCs', icon: '👥' },
     encounter: { label: 'Encounters', icon: '⚔️' },
     quest: { label: 'Quests', icon: '🎯' },
+    cutscene: { label: 'Cutscenes', icon: '🎬' },
   };
 
   const info = typeLabels[type];

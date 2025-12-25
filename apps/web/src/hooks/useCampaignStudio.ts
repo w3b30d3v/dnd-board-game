@@ -39,6 +39,7 @@ export function useCampaignStudio(campaignId?: string) {
     saveContent,
     generateImage,
     loadContent,
+    addContent,
   } = useCampaignStudioStore();
 
   // Redirect if not authenticated (only after hydration)
@@ -170,6 +171,7 @@ export function useCampaignStudio(campaignId?: string) {
     goToPhase,
     regenerateContent,
     editContent,
+    addContent,
     clearConversation,
     setError,
     startConversation,

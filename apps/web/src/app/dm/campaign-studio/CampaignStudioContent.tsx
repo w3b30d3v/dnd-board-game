@@ -13,7 +13,7 @@ import {
 } from '@/components/campaign-studio';
 import { VideoGenerator } from '@/components/cutscene';
 import { VoiceGenerator } from '@/components/narration';
-import { ContentBlock } from '@/stores/campaignStudioStore';
+import { ContentBlock, CutsceneData } from '@/stores/campaignStudioStore';
 
 type SaveStatus = 'saved' | 'saving' | 'unsaved' | 'error';
 
@@ -42,6 +42,7 @@ export default function CampaignStudioContent() {
     clearConversation,
     saveContent,
     generateImage,
+    addContent,
   } = useCampaignStudio(campaignId || undefined);
 
   // Wait for hydration before checking auth
@@ -373,7 +374,21 @@ export default function CampaignStudioContent() {
             <VideoGenerator
               campaignId={campaignId || undefined}
               onVideoGenerated={(url) => {
-                console.log('Video generated:', url);
+                // Save video URL to campaign content
+                const cutsceneId = `cutscene_${Date.now()}`;
+                const cutsceneData: CutsceneData = {
+                  id: cutsceneId,
+                  name: 'Generated Cutscene',
+                  videoUrl: url,
+                };
+                addContent({
+                  id: cutsceneId,
+                  type: 'cutscene',
+                  data: cutsceneData,
+                  createdAt: new Date(),
+                });
+                setShowVideoGenerator(false);
+                triggerAutoSave();
               }}
             />
           </ModalWrapper>
@@ -386,8 +401,9 @@ export default function CampaignStudioContent() {
           <ModalWrapper onClose={() => setShowVoiceGenerator(false)}>
             <VoiceGenerator
               contentType="setting"
-              onGenerated={(audio) => {
-                console.log('Voice generated:', audio);
+              onGenerated={() => {
+                // Voice generated - can be used for narration
+                setShowVoiceGenerator(false);
               }}
             />
           </ModalWrapper>

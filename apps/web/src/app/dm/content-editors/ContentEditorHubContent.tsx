@@ -1,19 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { CollapsibleSidebar } from '@/components/dnd/CollapsibleSidebar';
-import { EncounterEditor } from '@/components/editors/EncounterEditor';
-import { NPCEditor } from '@/components/editors/NPCEditor';
-import { QuestEditor } from '@/components/editors/QuestEditor';
-import { CutsceneSequencer } from '@/components/cutscene/CutsceneSequencer';
+import { EncounterEditor, EncounterData } from '@/components/editors/EncounterEditor';
+import { NPCEditor, NPCData } from '@/components/editors/NPCEditor';
+import { QuestEditor, QuestData } from '@/components/editors/QuestEditor';
+import { CutsceneSequencer, CutsceneScene } from '@/components/cutscene/CutsceneSequencer';
+import { useCampaignStudioStore, ContentBlock, CutsceneData } from '@/stores/campaignStudioStore';
+import { useAuthStore } from '@/stores/authStore';
 
 type EditorType = 'hub' | 'encounters' | 'npcs' | 'quests' | 'cutscenes';
 
-const editorCards = [
+interface EditorCard {
+  id: EditorType;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  color: string;
+  contentType: ContentBlock['type'];
+}
+
+const editorCards: EditorCard[] = [
   {
-    id: 'encounters' as const,
+    id: 'encounters',
     title: 'Encounter Editor',
     description: 'Build balanced combat encounters with monster placement and difficulty calculation',
     icon: (
@@ -22,10 +34,10 @@ const editorCards = [
       </svg>
     ),
     color: 'from-red-500 to-orange-500',
-    stats: { label: 'Encounters', count: 0 },
+    contentType: 'encounter',
   },
   {
-    id: 'npcs' as const,
+    id: 'npcs',
     title: 'NPC Editor',
     description: 'Create memorable NPCs with personality traits, dialogue, and voice profiles',
     icon: (
@@ -34,10 +46,10 @@ const editorCards = [
       </svg>
     ),
     color: 'from-blue-500 to-cyan-500',
-    stats: { label: 'NPCs', count: 0 },
+    contentType: 'npc',
   },
   {
-    id: 'quests' as const,
+    id: 'quests',
     title: 'Quest Editor',
     description: 'Design epic quests with objectives, rewards, and branching storylines',
     icon: (
@@ -46,10 +58,10 @@ const editorCards = [
       </svg>
     ),
     color: 'from-green-500 to-emerald-500',
-    stats: { label: 'Quests', count: 0 },
+    contentType: 'quest',
   },
   {
-    id: 'cutscenes' as const,
+    id: 'cutscenes',
     title: 'Cutscene Sequencer',
     description: 'Compose cinematic video sequences with AI-generated scenes',
     icon: (
@@ -58,49 +70,179 @@ const editorCards = [
       </svg>
     ),
     color: 'from-purple-500 to-pink-500',
-    stats: { label: 'Scenes', count: 0 },
+    contentType: 'cutscene',
   },
 ];
 
 export default function ContentEditorHubContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const campaignId = searchParams?.get('campaign') ?? null;
+
   const [activeEditor, setActiveEditor] = useState<EditorType>('hub');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  const { token, _hasHydrated } = useAuthStore();
+  const {
+    generatedContent,
+    saveContent,
+    loadContent,
+    addContent,
+  } = useCampaignStudioStore();
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (_hasHydrated && !token) {
+      router.push('/login?redirect=/dm/content-editors');
+    }
+  }, [_hasHydrated, token, router]);
+
+  // Load content when campaign ID changes
+  useEffect(() => {
+    if (campaignId && token) {
+      loadContent();
+    }
+  }, [campaignId, token, loadContent]);
+
+  // Get content counts for each type
+  const getContentCount = useCallback((type: ContentBlock['type']) => {
+    return generatedContent.filter(c => c.type === type).length;
+  }, [generatedContent]);
+
+  // Handle save for encounters
+  const handleEncounterSave = useCallback(async (data: EncounterData) => {
+    setIsSaving(true);
+    try {
+      addContent({
+        id: data.id,
+        type: 'encounter',
+        data: data as unknown as ContentBlock['data'],
+        createdAt: new Date(),
+      });
+      await saveContent();
+      setSaveMessage('Encounter saved successfully!');
+      setTimeout(() => {
+        setSaveMessage(null);
+        setActiveEditor('hub');
+      }, 1500);
+    } catch {
+      setSaveMessage('Failed to save encounter');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [addContent, saveContent]);
+
+  // Handle save for NPCs
+  const handleNPCSave = useCallback(async (data: NPCData) => {
+    setIsSaving(true);
+    try {
+      addContent({
+        id: data.id,
+        type: 'npc',
+        data: data as unknown as ContentBlock['data'],
+        createdAt: new Date(),
+      });
+      await saveContent();
+      setSaveMessage('NPC saved successfully!');
+      setTimeout(() => {
+        setSaveMessage(null);
+        setActiveEditor('hub');
+      }, 1500);
+    } catch {
+      setSaveMessage('Failed to save NPC');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [addContent, saveContent]);
+
+  // Handle save for quests
+  const handleQuestSave = useCallback(async (data: QuestData) => {
+    setIsSaving(true);
+    try {
+      addContent({
+        id: data.id,
+        type: 'quest',
+        data: data as unknown as ContentBlock['data'],
+        createdAt: new Date(),
+      });
+      await saveContent();
+      setSaveMessage('Quest saved successfully!');
+      setTimeout(() => {
+        setSaveMessage(null);
+        setActiveEditor('hub');
+      }, 1500);
+    } catch {
+      setSaveMessage('Failed to save quest');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [addContent, saveContent]);
+
+  // Handle save for cutscenes
+  const handleCutsceneSave = useCallback(async (scenes: CutsceneScene[]) => {
+    setIsSaving(true);
+    try {
+      // Save each scene as a content block
+      scenes.forEach(scene => {
+        const cutsceneData: CutsceneData = {
+          id: scene.id,
+          name: scene.title,
+          videoUrl: scene.videoUrl,
+          duration: scene.duration,
+          description: scene.description,
+        };
+        addContent({
+          id: scene.id,
+          type: 'cutscene',
+          data: cutsceneData,
+          createdAt: new Date(),
+        });
+      });
+      await saveContent();
+      setSaveMessage('Cutscene saved successfully!');
+      setTimeout(() => {
+        setSaveMessage(null);
+        setActiveEditor('hub');
+      }, 1500);
+    } catch {
+      setSaveMessage('Failed to save cutscene');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [addContent, saveContent]);
 
   const renderEditor = () => {
     switch (activeEditor) {
       case 'encounters':
         return (
           <EncounterEditor
-            onSave={() => {
-              // TODO: Persist to campaign store
-              setActiveEditor('hub');
-            }}
+            campaignId={campaignId || undefined}
+            onSave={handleEncounterSave}
+            onCancel={() => setActiveEditor('hub')}
           />
         );
       case 'npcs':
         return (
           <NPCEditor
-            onSave={() => {
-              // TODO: Persist to campaign store
-              setActiveEditor('hub');
-            }}
+            campaignId={campaignId || undefined}
+            onSave={handleNPCSave}
+            onCancel={() => setActiveEditor('hub')}
           />
         );
       case 'quests':
         return (
           <QuestEditor
-            onSave={() => {
-              // TODO: Persist to campaign store
-              setActiveEditor('hub');
-            }}
+            campaignId={campaignId || undefined}
+            onSave={handleQuestSave}
+            onCancel={() => setActiveEditor('hub')}
           />
         );
       case 'cutscenes':
         return (
           <CutsceneSequencer
-            onSave={() => {
-              // TODO: Persist to campaign store
-              setActiveEditor('hub');
-            }}
+            campaignId={campaignId || undefined}
+            onSave={handleCutsceneSave}
           />
         );
       default:
@@ -108,13 +250,72 @@ export default function ContentEditorHubContent() {
     }
   };
 
+  // Show campaign selector if no campaign selected
+  if (!campaignId) {
+    return (
+      <div className="flex min-h-screen bg-bg-dark">
+        <CollapsibleSidebar />
+        <main className="flex-1 ml-64 transition-all duration-300">
+          <div className="p-6 max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-16"
+            >
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-bg-elevated flex items-center justify-center">
+                <svg className="w-10 h-10 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </div>
+              <h2 className="font-cinzel text-2xl font-bold text-text-primary mb-2">
+                Select a Campaign
+              </h2>
+              <p className="text-text-secondary mb-8 max-w-md mx-auto">
+                Choose a campaign to edit its content. You can create encounters, NPCs, quests, and cutscenes.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link
+                  href="/dm/campaigns"
+                  className="px-6 py-3 bg-primary text-bg-dark rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                >
+                  Browse Campaigns
+                </Link>
+                <Link
+                  href="/dm/campaign-studio"
+                  className="px-6 py-3 bg-bg-elevated text-text-primary rounded-lg font-medium hover:bg-bg-card transition-colors"
+                >
+                  Create New Campaign
+                </Link>
+              </div>
+            </motion.div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen bg-bg-dark">
       <CollapsibleSidebar />
 
       <main className="flex-1 ml-64 transition-all duration-300">
-
         <div className="p-6 max-w-7xl mx-auto">
+          {/* Save Message Toast */}
+          <AnimatePresence>
+            {saveMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg ${
+                  saveMessage.includes('Failed') ? 'bg-red-500/90' : 'bg-green-500/90'
+                } text-white font-medium`}
+              >
+                {saveMessage}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -129,7 +330,8 @@ export default function ContentEditorHubContent() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setActiveEditor('hub')}
-                  className="p-2 rounded-lg bg-bg-elevated hover:bg-bg-card text-text-muted hover:text-text-primary transition-colors"
+                  disabled={isSaving}
+                  className="p-2 rounded-lg bg-bg-elevated hover:bg-bg-card text-text-muted hover:text-text-primary transition-colors disabled:opacity-50"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -152,6 +354,10 @@ export default function ContentEditorHubContent() {
             <div className="flex items-center gap-2 text-sm text-text-muted">
               <Link href="/dm" className="hover:text-primary transition-colors">
                 DM Dashboard
+              </Link>
+              <span>/</span>
+              <Link href="/dm/campaigns" className="hover:text-primary transition-colors">
+                Campaigns
               </Link>
               <span>/</span>
               <span className={activeEditor === 'hub' ? 'text-primary' : ''}>Content Editors</span>
@@ -194,8 +400,10 @@ export default function ContentEditorHubContent() {
                           {card.icon}
                         </div>
                         <div className="text-right">
-                          <p className="text-2xl font-bold text-text-primary">{card.stats.count}</p>
-                          <p className="text-xs text-text-muted">{card.stats.label}</p>
+                          <p className="text-2xl font-bold text-text-primary">
+                            {getContentCount(card.contentType)}
+                          </p>
+                          <p className="text-xs text-text-muted">{card.title.split(' ')[0]}s</p>
                         </div>
                       </div>
 
@@ -256,7 +464,7 @@ export default function ContentEditorHubContent() {
                 </Link>
 
                 <Link
-                  href="/dm/campaign-studio"
+                  href={`/dm/campaign-studio?campaign=${campaignId}`}
                   className="flex items-center gap-3 p-3 rounded-lg bg-bg-elevated hover:bg-bg-dark transition-colors group"
                 >
                   <div className="p-2 rounded-lg bg-purple-500/20 text-purple-400">

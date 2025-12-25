@@ -19,10 +19,20 @@ export interface Message {
   generatedContent?: ContentBlock[];
 }
 
+export interface CutsceneData {
+  id: string;
+  name: string;
+  description?: string;
+  videoUrl?: string;
+  duration?: number;
+  narrationText?: string;
+  voiceProfileId?: string;
+}
+
 export interface ContentBlock {
   id: string;
-  type: 'setting' | 'location' | 'npc' | 'encounter' | 'quest';
-  data: SettingData | LocationData | NPCData | EncounterData | QuestData;
+  type: 'setting' | 'location' | 'npc' | 'encounter' | 'quest' | 'cutscene';
+  data: SettingData | LocationData | NPCData | EncounterData | QuestData | CutsceneData;
   createdAt: Date;
 }
 
@@ -104,6 +114,7 @@ interface CampaignStudioState extends ConversationState {
   setPhase: (phase: CampaignPhase) => void;
   regenerateContent: (contentId: string) => Promise<void>;
   editContent: (contentId: string, updates: Partial<ContentBlock['data']>) => void;
+  addContent: (content: ContentBlock) => void;
   clearConversation: () => void;
   setError: (error: string | null) => void;
   // New actions for persistence and images
@@ -387,6 +398,13 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
           ? { ...c, data: { ...c.data, ...updates } as ContentBlock['data'] }
           : c
       ),
+    }));
+  },
+
+  // Add new content
+  addContent: (content: ContentBlock) => {
+    set((state) => ({
+      generatedContent: [...state.generatedContent, content],
     }));
   },
 

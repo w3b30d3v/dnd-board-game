@@ -51,3 +51,11 @@ export {
   type AmbienceType,
   type SFXType
 } from './AmbienceSFXSystem';
+
+// Unified Immersive Provider
+export {
+  ImmersiveProvider,
+  useImmersive,
+  type GamePhase,
+  type CombatIntensity
+} from './ImmersiveProvider';
