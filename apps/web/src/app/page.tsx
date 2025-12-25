@@ -454,7 +454,7 @@ export default function Home() {
                   <D20Icon size={20} color="#F59E0B" />
                 </motion.div>
                 <p className="text-sm text-primary font-medium">
-                  Phase 6 Complete — AI Campaign Studio & DM Tools
+                  All Phases Complete — Full D&D 5e Digital Experience
                 </p>
                 <motion.span
                   animate={{ opacity: [0.5, 1, 0.5] }}
@@ -493,7 +493,7 @@ export default function Home() {
             className="mt-8 text-center"
           >
             <p className="text-text-muted text-sm">
-              Now Available: Character Builder • AI Portraits • Campaign Studio • DM Dashboard • Voice Narration • Dynamic Scenes
+              Now Available: Character Builder • AI Portraits • Campaign Studio • Video Cutscenes • Voice Narration • VFX Effects • Dynamic Music • Content Editors • Multiplayer
             </p>
           </motion.div>
         </motion.div>
