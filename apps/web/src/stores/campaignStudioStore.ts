@@ -91,6 +91,8 @@ export interface ConversationState {
   messages: Message[];
   generatedContent: ContentBlock[];
   isGenerating: boolean;
+  isSaving: boolean;
+  lastSavedAt: Date | null;
   error: string | null;
 }
 
@@ -104,9 +106,14 @@ interface CampaignStudioState extends ConversationState {
   editContent: (contentId: string, updates: Partial<ContentBlock['data']>) => void;
   clearConversation: () => void;
   setError: (error: string | null) => void;
+  // New actions for persistence and images
+  saveContent: () => Promise<boolean>;
+  generateImage: (contentId: string) => Promise<string | null>;
+  loadContent: () => Promise<void>;
 }
 
 const AI_SERVICE_URL = process.env.NEXT_PUBLIC_AI_SERVICE_URL || 'http://localhost:4003';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 // Helper to get auth token
 const getAuthToken = (): string | null => {
@@ -130,6 +137,8 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
   messages: [],
   generatedContent: [],
   isGenerating: false,
+  isSaving: false,
+  lastSavedAt: null,
   error: null,
 
   // Start a new conversation
@@ -391,6 +400,8 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
       messages: [],
       generatedContent: [],
       isGenerating: false,
+      isSaving: false,
+      lastSavedAt: null,
       error: null,
     });
   },
@@ -398,6 +409,254 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
   // Set error
   setError: (error: string | null) => {
     set({ error });
+  },
+
+  // Save all generated content to database
+  saveContent: async () => {
+    const { campaignId, generatedContent } = get();
+    const token = getAuthToken();
+
+    if (!token) {
+      set({ error: 'Not authenticated' });
+      return false;
+    }
+
+    if (!campaignId) {
+      set({ error: 'No campaign selected' });
+      return false;
+    }
+
+    if (generatedContent.length === 0) {
+      // Nothing to save
+      return true;
+    }
+
+    set({ isSaving: true, error: null });
+
+    try {
+      // Organize content by type
+      const setting = generatedContent.find((c) => c.type === 'setting')?.data as SettingData | undefined;
+      const locations = generatedContent
+        .filter((c) => c.type === 'location')
+        .map((c) => c.data as LocationData);
+      const npcs = generatedContent
+        .filter((c) => c.type === 'npc')
+        .map((c) => c.data as NPCData);
+      const encounters = generatedContent
+        .filter((c) => c.type === 'encounter')
+        .map((c) => c.data as EncounterData);
+      const quests = generatedContent
+        .filter((c) => c.type === 'quest')
+        .map((c) => c.data as QuestData);
+
+      const response = await fetch(`${API_URL}/campaign-studio/${campaignId}/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          setting,
+          locations,
+          npcs,
+          encounters,
+          quests,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save content');
+      }
+
+      set({ isSaving: false, lastSavedAt: new Date() });
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save content';
+      set({ error: message, isSaving: false });
+      return false;
+    }
+  },
+
+  // Generate an image for a specific content item
+  generateImage: async (contentId: string) => {
+    const { campaignId, generatedContent } = get();
+    const token = getAuthToken();
+
+    if (!token || !campaignId) {
+      set({ error: 'Not authenticated or no campaign' });
+      return null;
+    }
+
+    const content = generatedContent.find((c) => c.id === contentId);
+    if (!content) {
+      set({ error: 'Content not found' });
+      return null;
+    }
+
+    try {
+      let requestBody: Record<string, string | undefined>;
+
+      if (content.type === 'npc') {
+        const npcData = content.data as NPCData;
+        requestBody = {
+          type: 'npc',
+          name: npcData.name,
+          description: npcData.description,
+          race: npcData.race,
+          class: npcData.class,
+          role: npcData.role,
+        };
+      } else if (content.type === 'location') {
+        const locationData = content.data as LocationData;
+        requestBody = {
+          type: 'location',
+          name: locationData.name,
+          description: locationData.description,
+          locationType: locationData.type,
+        };
+      } else {
+        set({ error: 'Image generation only supported for NPCs and locations' });
+        return null;
+      }
+
+      const response = await fetch(`${API_URL}/campaign-studio/${campaignId}/generate-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate image');
+      }
+
+      const data = await response.json();
+      const imageUrl = data.imageUrl;
+
+      // Update the content with the new image URL
+      set((state) => ({
+        generatedContent: state.generatedContent.map((c) => {
+          if (c.id !== contentId) return c;
+
+          if (c.type === 'npc') {
+            return {
+              ...c,
+              data: { ...(c.data as NPCData), portraitUrl: imageUrl },
+            };
+          } else if (c.type === 'location') {
+            return {
+              ...c,
+              data: { ...(c.data as LocationData), imageUrl: imageUrl },
+            };
+          }
+          return c;
+        }),
+      }));
+
+      return imageUrl;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to generate image';
+      set({ error: message });
+      return null;
+    }
+  },
+
+  // Load saved content from database
+  loadContent: async () => {
+    const { campaignId } = get();
+    const token = getAuthToken();
+
+    if (!token || !campaignId) {
+      return;
+    }
+
+    set({ isGenerating: true, error: null });
+
+    try {
+      const response = await fetch(`${API_URL}/campaign-studio/${campaignId}/content`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          // No saved content yet, that's OK
+          set({ isGenerating: false });
+          return;
+        }
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to load content');
+      }
+
+      const data = await response.json();
+      const content = data.content;
+
+      // Convert loaded content to ContentBlocks
+      const loadedContent: ContentBlock[] = [];
+
+      // Add setting if present
+      if (content.setting && content.setting.name) {
+        loadedContent.push({
+          id: `setting_${Date.now()}`,
+          type: 'setting',
+          data: content.setting,
+          createdAt: new Date(),
+        });
+      }
+
+      // Add locations
+      for (const location of content.locations || []) {
+        loadedContent.push({
+          id: location.id || `location_${Date.now()}_${Math.random()}`,
+          type: 'location',
+          data: location,
+          createdAt: new Date(),
+        });
+      }
+
+      // Add NPCs
+      for (const npc of content.npcs || []) {
+        loadedContent.push({
+          id: npc.id || `npc_${Date.now()}_${Math.random()}`,
+          type: 'npc',
+          data: npc,
+          createdAt: new Date(),
+        });
+      }
+
+      // Add encounters
+      for (const encounter of content.encounters || []) {
+        loadedContent.push({
+          id: encounter.id || `encounter_${Date.now()}_${Math.random()}`,
+          type: 'encounter',
+          data: encounter,
+          createdAt: new Date(),
+        });
+      }
+
+      // Add quests
+      for (const quest of content.quests || []) {
+        loadedContent.push({
+          id: quest.id || `quest_${Date.now()}_${Math.random()}`,
+          type: 'quest',
+          data: quest,
+          createdAt: new Date(),
+        });
+      }
+
+      set({
+        generatedContent: loadedContent,
+        isGenerating: false,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load content';
+      set({ error: message, isGenerating: false });
+    }
   },
 }));
 

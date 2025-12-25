@@ -10,6 +10,7 @@ import characterRoutes from './routes/characters.js';
 import mediaRoutes from './routes/media.js';
 import campaignRoutes from './routes/campaigns.js';
 import dmRoutes from './routes/dm.js';
+import campaignStudioRoutes from './routes/campaignStudio.js';
 
 // Verify database connection and schema on startup
 async function verifyDatabase() {
@@ -117,6 +118,7 @@ app.use('/characters', characterRoutes);
 app.use('/media', mediaRoutes);
 app.use('/campaigns', campaignRoutes);
 app.use('/dm', dmRoutes);
+app.use('/campaign-studio', campaignStudioRoutes);
 
 // Error handling middleware
 app.use(

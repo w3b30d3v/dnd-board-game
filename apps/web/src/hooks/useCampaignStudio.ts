@@ -25,6 +25,8 @@ export function useCampaignStudio(campaignId?: string) {
     messages,
     generatedContent,
     isGenerating,
+    isSaving,
+    lastSavedAt,
     error,
     startConversation,
     sendMessage,
@@ -34,6 +36,9 @@ export function useCampaignStudio(campaignId?: string) {
     editContent,
     clearConversation,
     setError,
+    saveContent,
+    generateImage,
+    loadContent,
   } = useCampaignStudioStore();
 
   // Redirect if not authenticated (only after hydration)
@@ -148,6 +153,8 @@ export function useCampaignStudio(campaignId?: string) {
     messages,
     generatedContent,
     isGenerating,
+    isSaving,
+    lastSavedAt,
     error,
     isAuthenticated: !!token,
     user,
@@ -166,6 +173,9 @@ export function useCampaignStudio(campaignId?: string) {
     clearConversation,
     setError,
     startConversation,
+    saveContent,
+    generateImage,
+    loadContent,
   };
 }
 
