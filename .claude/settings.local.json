@@ -39,7 +39,15 @@
       "Bash(xargs:*)",
       "Bash(npx tsc:*)",
       "Bash(gh run:*)",
-      "WebFetch(domain:web-production-85b97.up.railway.app)"
+      "WebFetch(domain:web-production-85b97.up.railway.app)",
+      "Bash(echo:*)",
+      "Bash(mkdir:*)",
+      "Bash(git -C \"C:\\\\Chandru\\\\Education\\\\AI\\\\ClaudeCode\\\\dnd-board-game\" log --oneline --all)",
+      "Bash(timeout 300 pnpm test:*)",
+      "WebFetch(domain:api-production-2f00.up.railway.app)",
+      "WebFetch(domain:ai-service-production-6069.up.railway.app)",
+      "WebFetch(domain:ai-production-eb66.up.railway.app)",
+      "Bash(node -e:*)"
     ],
     "deny": [],
     "ask": []

@@ -55,12 +55,38 @@ async function extractTextFromFile(file: Express.Multer.File): Promise<string> {
 
   try {
     if (mimetype === 'application/pdf') {
-      // Dynamic import for pdf-parse (ESM compatibility)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const pdfParseModule = await import('pdf-parse') as any;
-      const pdfParse = pdfParseModule.default || pdfParseModule;
-      const data = await pdfParse(buffer);
-      return `[Content from PDF: ${originalname}]\n${data.text}`;
+      // Use pdfjs-dist for reliable PDF text extraction
+      const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+
+      // Load the PDF document from buffer
+      const loadingTask = pdfjs.getDocument({
+        data: new Uint8Array(buffer),
+        useSystemFonts: true,
+      });
+      const pdf = await loadingTask.promise;
+
+      // Extract text from all pages
+      const textParts: string[] = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item) => ('str' in item ? item.str : ''))
+          .join(' ');
+        if (pageText.trim()) {
+          textParts.push(pageText);
+        }
+      }
+
+      const text = textParts.join('\n\n');
+
+      if (!text || text.trim().length === 0) {
+        logger.warn({ filename: originalname }, 'PDF parsed but no text extracted');
+        return `[PDF uploaded: ${originalname}]\n(Note: The PDF appears to contain no extractable text. It may be an image-based or scanned document.)`;
+      }
+
+      logger.info({ filename: originalname, pages: pdf.numPages, textLength: text.length }, 'PDF text extracted successfully');
+      return `[Content from PDF: ${originalname}]\n${text}`;
     } else if (mimetype === 'text/plain') {
       return `[Content from file: ${originalname}]\n${buffer.toString('utf-8')}`;
     } else if (
@@ -73,8 +99,9 @@ async function extractTextFromFile(file: Express.Multer.File): Promise<string> {
     }
     return `[File uploaded: ${originalname}]`;
   } catch (error) {
-    logger.error({ error, filename: originalname }, 'Failed to extract text from file');
-    return `[Failed to extract content from: ${originalname}]`;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error({ error: errorMessage, filename: originalname, mimetype }, 'Failed to extract text from file');
+    return `[Failed to extract content from: ${originalname}]\nError: ${errorMessage}`;
   }
 }
 
