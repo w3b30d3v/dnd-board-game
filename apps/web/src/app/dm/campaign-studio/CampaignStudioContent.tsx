@@ -291,17 +291,16 @@ export default function CampaignStudioContent() {
       {/* Main content area - Two panel layout */}
       <div className="flex-1 flex overflow-hidden">
         {/* Chat panel (left) - with its own scroll */}
-        <div className="flex-1 flex flex-col min-w-0 lg:max-w-[60%] overflow-hidden">
-          <div className="flex-1 overflow-y-auto">
-            <ChatPanel messages={messages} isGenerating={isGenerating} />
-          </div>
+        <div className="flex-1 flex flex-col min-w-0 lg:max-w-[60%]">
+          {/* Chat messages scroll area */}
+          <ChatPanel messages={messages} isGenerating={isGenerating} />
           <ChatInput onSend={sendMessage} isGenerating={isGenerating} />
         </div>
 
         {/* Live preview panel (right) - Desktop - with its own scroll */}
-        <div className="hidden lg:block w-[40%] min-w-[320px] max-w-[480px] overflow-hidden">
-          <div className="h-full overflow-y-auto">
-              <LiveCampaignPreview
+        <div className="hidden lg:block w-[40%] min-w-[320px] max-w-[480px] h-full">
+          {/* Preview content scroll area */}
+          <LiveCampaignPreview
               campaignName={campaignName}
               campaignId={campaignId || undefined}
               content={generatedContent}
@@ -311,7 +310,6 @@ export default function CampaignStudioContent() {
               isGeneratingImage={isGenerating}
               onOpenMapEditor={handleOpenMapEditor}
             />
-          </div>
         </div>
 
         {/* Live preview - Mobile overlay */}
