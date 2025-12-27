@@ -13,7 +13,14 @@ vi.mock('framer-motion', () => ({
       <div {...props}>{children}</div>
     ),
   },
+  AnimatePresence: ({ children }: React.PropsWithChildren) => children,
 }));
+
+// Helper to get the send button (last button in the input area)
+const getSendButton = () => {
+  const buttons = screen.getAllByRole('button');
+  return buttons[buttons.length - 1]; // Send button is the last one
+};
 
 describe('ChatInput', () => {
   const mockOnSend = vi.fn();
@@ -43,11 +50,25 @@ describe('ChatInput', () => {
       expect(textarea).toBeInTheDocument();
     });
 
-    it('should render send button', () => {
+    it('should render action buttons (file upload, google docs, send)', () => {
       render(<ChatInput onSend={mockOnSend} isGenerating={false} />);
 
-      const button = screen.getByRole('button');
-      expect(button).toBeInTheDocument();
+      const buttons = screen.getAllByRole('button');
+      expect(buttons.length).toBe(3); // file upload, google docs, send
+    });
+
+    it('should render file upload button', () => {
+      render(<ChatInput onSend={mockOnSend} isGenerating={false} />);
+
+      const fileButton = screen.getByTitle('Upload file (PDF, TXT, DOC)');
+      expect(fileButton).toBeInTheDocument();
+    });
+
+    it('should render google docs button', () => {
+      render(<ChatInput onSend={mockOnSend} isGenerating={false} />);
+
+      const googleDocsButton = screen.getByTitle('Import from Google Docs');
+      expect(googleDocsButton).toBeInTheDocument();
     });
 
     it('should render helper text with keyboard shortcuts', () => {
@@ -92,10 +113,10 @@ describe('ChatInput', () => {
       const textarea = screen.getByRole('textbox');
       await user.type(textarea, 'Test message');
 
-      const button = screen.getByRole('button');
-      await user.click(button);
+      const sendButton = getSendButton();
+      await user.click(sendButton);
 
-      expect(mockOnSend).toHaveBeenCalledWith('Test message');
+      expect(mockOnSend).toHaveBeenCalledWith('Test message', undefined, undefined);
     });
 
     it('should clear textarea after sending', async () => {
@@ -105,8 +126,8 @@ describe('ChatInput', () => {
       const textarea = screen.getByRole('textbox');
       await user.type(textarea, 'Test message');
 
-      const button = screen.getByRole('button');
-      await user.click(button);
+      const sendButton = getSendButton();
+      await user.click(sendButton);
 
       expect(textarea).toHaveValue('');
     });
@@ -115,8 +136,8 @@ describe('ChatInput', () => {
       const user = userEvent.setup();
       render(<ChatInput onSend={mockOnSend} isGenerating={false} />);
 
-      const button = screen.getByRole('button');
-      await user.click(button);
+      const sendButton = getSendButton();
+      await user.click(sendButton);
 
       expect(mockOnSend).not.toHaveBeenCalled();
     });
@@ -128,8 +149,8 @@ describe('ChatInput', () => {
       const textarea = screen.getByRole('textbox');
       await user.type(textarea, '   ');
 
-      const button = screen.getByRole('button');
-      await user.click(button);
+      const sendButton = getSendButton();
+      await user.click(sendButton);
 
       expect(mockOnSend).not.toHaveBeenCalled();
     });
@@ -142,7 +163,7 @@ describe('ChatInput', () => {
       await user.type(textarea, 'Test message');
       await user.keyboard('{Enter}');
 
-      expect(mockOnSend).toHaveBeenCalledWith('Test message');
+      expect(mockOnSend).toHaveBeenCalledWith('Test message', undefined, undefined);
     });
 
     it('should not send on Shift+Enter (new line)', async () => {
@@ -165,7 +186,17 @@ describe('ChatInput', () => {
       expect(textarea).toBeDisabled();
     });
 
-    it('should disable send button when isGenerating is true', async () => {
+    it('should disable action buttons when isGenerating is true', () => {
+      render(<ChatInput onSend={mockOnSend} isGenerating={true} />);
+
+      const fileButton = screen.getByTitle('Upload file (PDF, TXT, DOC)');
+      const googleDocsButton = screen.getByTitle('Import from Google Docs');
+
+      expect(fileButton).toBeDisabled();
+      expect(googleDocsButton).toBeDisabled();
+    });
+
+    it('should not call onSend when isGenerating is true', async () => {
       const user = userEvent.setup();
       render(<ChatInput onSend={mockOnSend} isGenerating={true} />);
 
@@ -173,8 +204,8 @@ describe('ChatInput', () => {
       // Can't type when disabled, so set value directly
       fireEvent.change(textarea, { target: { value: 'Test' } });
 
-      const button = screen.getByRole('button');
-      await user.click(button);
+      const sendButton = getSendButton();
+      await user.click(sendButton);
 
       expect(mockOnSend).not.toHaveBeenCalled();
     });
@@ -182,9 +213,9 @@ describe('ChatInput', () => {
     it('should show loading spinner when isGenerating is true', () => {
       render(<ChatInput onSend={mockOnSend} isGenerating={true} />);
 
-      // The button should contain a spinning circle (SVG with circle element)
-      const button = screen.getByRole('button');
-      const circle = button.querySelector('circle');
+      // The send button should contain a spinning circle (SVG with circle element)
+      const sendButton = getSendButton();
+      const circle = sendButton.querySelector('circle');
       expect(circle).toBeInTheDocument();
     });
   });
@@ -197,10 +228,10 @@ describe('ChatInput', () => {
       const textarea = screen.getByRole('textbox');
       await user.type(textarea, '  Test message  ');
 
-      const button = screen.getByRole('button');
-      await user.click(button);
+      const sendButton = getSendButton();
+      await user.click(sendButton);
 
-      expect(mockOnSend).toHaveBeenCalledWith('Test message');
+      expect(mockOnSend).toHaveBeenCalledWith('Test message', undefined, undefined);
     });
   });
 });
