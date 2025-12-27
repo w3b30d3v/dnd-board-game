@@ -114,10 +114,6 @@ const startSchema = z.object({
   title: z.string().min(1).max(200).optional(),
 });
 
-const messageSchema = z.object({
-  message: z.string().min(1).max(10000),
-});
-
 const phaseSchema = z.object({
   phase: z.enum(['setting', 'story', 'locations', 'npcs', 'encounters', 'quests']),
 });
@@ -204,7 +200,7 @@ router.post(
       const { conversationId } = req.params;
 
       // Get message from body (works for both JSON and FormData)
-      let message = req.body.message || '';
+      const message = req.body.message || '';
       const googleDocUrl = req.body.googleDocUrl;
       const files = req.files as Express.Multer.File[] | undefined;
 
