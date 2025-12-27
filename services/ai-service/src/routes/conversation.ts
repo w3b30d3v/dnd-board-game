@@ -4,6 +4,7 @@
 import { Router, Request, Response } from 'express';
 import type { Router as RouterType } from 'express';
 import { z } from 'zod';
+import multer from 'multer';
 import {
   startConversation,
   getConversation,
@@ -25,6 +26,86 @@ import {
 import { logger } from '../lib/logger.js';
 
 const router: RouterType = Router();
+
+// Configure multer for file uploads (memory storage)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB max
+    files: 5, // Max 5 files at once
+  },
+  fileFilter: (_req, file, cb) => {
+    const allowedTypes = [
+      'application/pdf',
+      'text/plain',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Unsupported file type: ${file.mimetype}`));
+    }
+  },
+});
+
+// Helper to extract text from uploaded files
+async function extractTextFromFile(file: Express.Multer.File): Promise<string> {
+  const { mimetype, buffer, originalname } = file;
+
+  try {
+    if (mimetype === 'application/pdf') {
+      // Dynamic import for pdf-parse (ESM compatibility)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const pdfParseModule = await import('pdf-parse') as any;
+      const pdfParse = pdfParseModule.default || pdfParseModule;
+      const data = await pdfParse(buffer);
+      return `[Content from PDF: ${originalname}]\n${data.text}`;
+    } else if (mimetype === 'text/plain') {
+      return `[Content from file: ${originalname}]\n${buffer.toString('utf-8')}`;
+    } else if (
+      mimetype === 'application/msword' ||
+      mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) {
+      // For DOC/DOCX, we'll just note we received it
+      // Full DOCX parsing would require mammoth or similar
+      return `[Document uploaded: ${originalname}]\n(Note: DOC/DOCX content extraction requires additional processing. The file has been received.)`;
+    }
+    return `[File uploaded: ${originalname}]`;
+  } catch (error) {
+    logger.error({ error, filename: originalname }, 'Failed to extract text from file');
+    return `[Failed to extract content from: ${originalname}]`;
+  }
+}
+
+// Helper to fetch Google Doc content
+async function fetchGoogleDocContent(url: string): Promise<string> {
+  try {
+    // Extract document ID from URL
+    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (!match) {
+      return '[Invalid Google Docs URL]';
+    }
+
+    const docId = match[1];
+    // Use the export URL for plain text
+    const exportUrl = `https://docs.google.com/document/d/${docId}/export?format=txt`;
+
+    const response = await fetch(exportUrl);
+    if (!response.ok) {
+      if (response.status === 403 || response.status === 404) {
+        return '[Google Doc not accessible. Make sure the document is shared as "Anyone with the link can view"]';
+      }
+      return `[Failed to fetch Google Doc: ${response.statusText}]`;
+    }
+
+    const text = await response.text();
+    return `[Content from Google Doc]\n${text}`;
+  } catch (error) {
+    logger.error({ error, url }, 'Failed to fetch Google Doc');
+    return '[Failed to fetch Google Doc content]';
+  }
+}
 
 // Validation schemas
 // Accept either a UUID or a temporary campaign ID (temp_timestamp format)
@@ -114,38 +195,99 @@ router.get('/list', async (req: Request, res: Response) => {
   }
 });
 
-// Send a message
-router.post('/:conversationId/message', async (req: Request, res: Response) => {
-  try {
-    const { conversationId } = req.params;
-    const { message } = messageSchema.parse(req.body);
+// Send a message (supports file uploads and Google Docs URLs)
+router.post(
+  '/:conversationId/message',
+  upload.array('files', 5),
+  async (req: Request, res: Response) => {
+    try {
+      const { conversationId } = req.params;
 
-    const conversation = await getConversation(conversationId);
-    if (!conversation) {
-      res.status(404).json({ error: 'Conversation not found' });
-      return;
+      // Get message from body (works for both JSON and FormData)
+      let message = req.body.message || '';
+      const googleDocUrl = req.body.googleDocUrl;
+      const files = req.files as Express.Multer.File[] | undefined;
+
+      // Validate that we have at least some content
+      if (!message && (!files || files.length === 0) && !googleDocUrl) {
+        res.status(400).json({ error: 'Message, files, or Google Doc URL required' });
+        return;
+      }
+
+      const conversation = await getConversation(conversationId);
+      if (!conversation) {
+        res.status(404).json({ error: 'Conversation not found' });
+        return;
+      }
+
+      // Build the full message content including file contents
+      const contentParts: string[] = [];
+
+      // Add user's text message if present
+      if (message.trim()) {
+        contentParts.push(message.trim());
+      }
+
+      // Extract and add file contents
+      if (files && files.length > 0) {
+        logger.info({ fileCount: files.length }, 'Processing uploaded files');
+
+        for (const file of files) {
+          const extractedText = await extractTextFromFile(file);
+          contentParts.push(extractedText);
+        }
+      }
+
+      // Fetch and add Google Doc content
+      if (googleDocUrl) {
+        logger.info({ url: googleDocUrl }, 'Fetching Google Doc content');
+        const docContent = await fetchGoogleDocContent(googleDocUrl);
+        contentParts.push(docContent);
+      }
+
+      // Combine all content
+      const fullMessage = contentParts.join('\n\n---\n\n');
+
+      // If we have document content, add context for the AI
+      let contextualMessage = fullMessage;
+      if ((files && files.length > 0) || googleDocUrl) {
+        contextualMessage = `The user has shared some campaign-related documents. Please analyze the content below and help them develop their D&D campaign based on this material. Extract key information like settings, characters, plot points, locations, and any other relevant campaign details.
+
+${fullMessage}
+
+Please provide your analysis and suggestions for building this into a cohesive D&D campaign.`;
+      }
+
+      const result = await sendMessage(conversationId, contextualMessage);
+      const totalCost = await getTotalCost(conversationId);
+
+      res.json({
+        response: result.response,
+        phase: result.phase,
+        cost: result.cost,
+        totalCost,
+        generatedContent: result.generatedContent,
+        filesProcessed: files?.length || 0,
+        googleDocProcessed: !!googleDocUrl,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: 'Invalid request', details: error.errors });
+        return;
+      }
+      if (error instanceof multer.MulterError) {
+        if (error.code === 'LIMIT_FILE_SIZE') {
+          res.status(400).json({ error: 'File too large. Maximum size is 10MB.' });
+          return;
+        }
+        res.status(400).json({ error: `File upload error: ${error.message}` });
+        return;
+      }
+      logger.error({ error }, 'Failed to process message');
+      res.status(500).json({ error: 'Failed to process message' });
     }
-
-    const result = await sendMessage(conversationId, message);
-    const totalCost = await getTotalCost(conversationId);
-
-    res.json({
-      response: result.response,
-      phase: result.phase,
-      cost: result.cost,
-      totalCost,
-      // Return any generated content blocks from this response
-      generatedContent: result.generatedContent,
-    });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({ error: 'Invalid request', details: error.errors });
-      return;
-    }
-    logger.error({ error }, 'Failed to process message');
-    res.status(500).json({ error: 'Failed to process message' });
   }
-});
+);
 
 // Get conversation history
 router.get('/:conversationId/history', async (req: Request, res: Response) => {

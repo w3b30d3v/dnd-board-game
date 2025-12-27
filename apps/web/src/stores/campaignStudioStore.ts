@@ -109,7 +109,7 @@ export interface ConversationState {
 interface CampaignStudioState extends ConversationState {
   // Actions
   startConversation: (campaignId: string) => Promise<void>;
-  sendMessage: (content: string) => Promise<void>;
+  sendMessage: (content: string, files?: File[], googleDocUrl?: string) => Promise<void>;
   advancePhase: () => Promise<void>;
   setPhase: (phase: CampaignPhase) => void;
   regenerateContent: (contentId: string) => Promise<void>;
@@ -200,8 +200,8 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
     }
   },
 
-  // Send a message to Claude
-  sendMessage: async (content: string) => {
+  // Send a message to Claude (with optional files and Google Docs URL)
+  sendMessage: async (content: string, files?: File[], googleDocUrl?: string) => {
     const { id, messages } = get();
     const token = getAuthToken();
 
@@ -215,11 +215,25 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
       return;
     }
 
+    // Build display message for user
+    let displayContent = content;
+    if (files && files.length > 0) {
+      const fileNames = files.map(f => f.name).join(', ');
+      displayContent = content
+        ? `${content}\n\n📎 Attached: ${fileNames}`
+        : `📎 Attached: ${fileNames}`;
+    }
+    if (googleDocUrl) {
+      displayContent = displayContent
+        ? `${displayContent}\n\n📄 Google Doc: ${googleDocUrl}`
+        : `📄 Google Doc: ${googleDocUrl}`;
+    }
+
     // Add user message immediately
     const userMessage: Message = {
       id: `msg_${Date.now()}`,
       role: 'user',
-      content,
+      content: displayContent,
       timestamp: new Date(),
     };
 
@@ -230,14 +244,37 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
     });
 
     try {
-      const response = await fetch(`${AI_SERVICE_URL}/ai/conversation/${id}/message`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ message: content }),
-      });
+      let response: Response;
+
+      // Use FormData if files are present, otherwise use JSON
+      if (files && files.length > 0) {
+        const formData = new FormData();
+        formData.append('message', content);
+        if (googleDocUrl) {
+          formData.append('googleDocUrl', googleDocUrl);
+        }
+        files.forEach((file) => {
+          formData.append('files', file);
+        });
+
+        response = await fetch(`${AI_SERVICE_URL}/ai/conversation/${id}/message`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            // Don't set Content-Type - browser will set multipart boundary
+          },
+          body: formData,
+        });
+      } else {
+        response = await fetch(`${AI_SERVICE_URL}/ai/conversation/${id}/message`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ message: content, googleDocUrl }),
+        });
+      }
 
       if (!response.ok) {
         const errorData = await response.json();

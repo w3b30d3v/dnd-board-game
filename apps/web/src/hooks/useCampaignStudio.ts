@@ -106,11 +106,12 @@ export function useCampaignStudio(campaignId?: string) {
     ((completedPhases.length + (isPhaseComplete(currentPhase) ? 1 : 0)) / totalPhases) * 100
   );
 
-  // Send message with validation
+  // Send message with validation (supports files and Google Docs URL)
   const handleSendMessage = useCallback(
-    async (content: string) => {
-      if (!content.trim() || isGenerating) return;
-      await sendMessage(content.trim());
+    async (content: string, files?: File[], googleDocUrl?: string) => {
+      const hasContent = content.trim() || (files && files.length > 0) || googleDocUrl;
+      if (!hasContent || isGenerating) return;
+      await sendMessage(content.trim(), files, googleDocUrl);
     },
     [sendMessage, isGenerating]
   );
