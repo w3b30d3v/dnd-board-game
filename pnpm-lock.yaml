@@ -159,7 +159,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
 
   packages/proto:
     dependencies:
@@ -184,7 +184,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
 
   packages/shared:
     dependencies:
@@ -212,7 +212,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
 
   packages/ui:
     dependencies:
@@ -261,7 +261,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
 
   services/ai-service:
     dependencies:
@@ -352,13 +352,10 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
 
   services/api-gateway:
     dependencies:
-      '@dnd/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@prisma/client':
         specifier: ^5.22.0
         version: 5.22.0(prisma@5.22.0)
@@ -431,7 +428,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
 
   services/game-state:
     dependencies:
@@ -459,7 +456,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
 
   services/media-service:
     dependencies:
@@ -493,7 +490,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
 
   services/ws-gateway:
     dependencies:
@@ -539,7 +536,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6))
+        version: 1.6.1(@types/node@20.19.25)(jsdom@27.3.0)
 
 packages:
 
@@ -8895,7 +8892,7 @@ snapshots:
       tsx: 4.21.0
       yaml: 2.8.2
 
-  vitest@1.6.1(@types/node@20.19.25)(jsdom@27.3.0(postcss@8.5.6)):
+  vitest@1.6.1(@types/node@20.19.25)(jsdom@27.3.0):
     dependencies:
       '@vitest/expect': 1.6.1
       '@vitest/runner': 1.6.1
