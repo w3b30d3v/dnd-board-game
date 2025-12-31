@@ -332,16 +332,16 @@ export default function CampaignStudioContent() {
       </AnimatePresence>
 
       {/* Main content area - Two panel layout */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex min-h-0">
         {/* Chat panel (left) - with its own scroll */}
-        <div className="flex-1 flex flex-col min-w-0 lg:max-w-[60%]">
+        <div className="flex-1 flex flex-col min-w-0 lg:max-w-[60%] min-h-0 overflow-hidden">
           {/* Chat messages scroll area */}
           <ChatPanel messages={messages} isGenerating={isGenerating} />
           <ChatInput onSend={sendMessage} isGenerating={isGenerating} />
         </div>
 
         {/* Live preview panel (right) - Desktop - with its own scroll */}
-        <div className="hidden lg:block w-[40%] min-w-[320px] max-w-[480px] h-full">
+        <div className="hidden lg:flex lg:flex-col w-[40%] min-w-[320px] max-w-[480px] min-h-0 overflow-hidden">
           {/* Preview content scroll area */}
           <LiveCampaignPreview
               campaignName={campaignName}

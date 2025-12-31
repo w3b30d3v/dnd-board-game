@@ -536,6 +536,7 @@ function buildLocationPrompt(name: string, locationType: string, description?: s
   ].join(', ');
 
   const typeDescriptions: Record<string, string> = {
+    world: 'epic fantasy world map view, sweeping landscape vista, multiple biomes, mountains rivers forests, god-view perspective, mystical atmosphere',
     tavern: 'cozy medieval tavern interior with warm firelight, wooden beams, tankards on tables',
     dungeon: 'dark underground dungeon corridor with stone walls, flickering torches, mysterious shadows',
     forest: 'ancient enchanted forest with towering trees, magical mist, dappled sunlight',
@@ -546,6 +547,11 @@ function buildLocationPrompt(name: string, locationType: string, description?: s
     market: 'bustling fantasy marketplace with colorful stalls, exotic goods, diverse crowds',
     ship: 'wooden sailing ship on stormy seas, billowing sails, dramatic waves',
     tower: 'tall wizard tower with magical aura, floating books, arcane symbols',
+    island: 'tropical fantasy island with palm trees, sandy beaches, mysterious jungle interior',
+    mountain: 'majestic mountain peak with snow caps, dramatic cliffs, alpine meadows',
+    swamp: 'murky swamp with twisted trees, hanging moss, eerie mist, dark waters',
+    desert: 'vast desert landscape with rolling dunes, ancient ruins, scorching sun',
+    city: 'grand fantasy city with towering spires, busy streets, diverse architecture',
   };
 
   const typeDesc = typeDescriptions[locationType.toLowerCase()] || `${locationType} fantasy location`;

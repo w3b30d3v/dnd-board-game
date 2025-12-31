@@ -48,9 +48,9 @@ export function LiveCampaignPreview({
   const isEmpty = content.length === 0;
 
   return (
-    <div className="h-full flex flex-col bg-bg-card border-l border-border">
+    <div className="h-full flex flex-col bg-bg-card border-l border-border min-h-0">
       {/* Campaign Header */}
-      <div className="px-4 py-4 border-b border-border bg-gradient-to-r from-bg-elevated to-bg-card">
+      <div className="flex-shrink-0 px-4 py-4 border-b border-border bg-gradient-to-r from-bg-elevated to-bg-card">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
             <span className="text-xl">🏰</span>
@@ -81,12 +81,15 @@ export function LiveCampaignPreview({
                 count={1}
               >
                 <SettingCard
+                  contentId={setting.id}
                   data={setting.data as SettingData}
                   isExpanded={expandedId === setting.id}
                   onToggle={() => setExpandedId(expandedId === setting.id ? null : setting.id)}
                   onClick={() => onItemClick?.(setting)}
                   onEdit={() => onEdit?.(setting.id)}
                   onRegenerate={() => onRegenerate?.(setting.id)}
+                  onGenerateImage={() => onGenerateImage?.(setting.id)}
+                  isGeneratingImage={isGeneratingImage}
                 />
               </ContentSection>
             )}
@@ -293,7 +296,11 @@ function SettingCard({
   onClick,
   onEdit,
   onRegenerate,
+  onGenerateImage,
+  isGeneratingImage,
 }: BaseCardProps & { data: SettingData }) {
+  const hasImage = !!data.imageUrl;
+
   return (
     <motion.div
       layout
@@ -304,6 +311,13 @@ function SettingCard({
         className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-bg-card/50 transition-colors"
       >
         <div className="flex items-center gap-2 min-w-0">
+          {hasImage && (
+            <img
+              src={data.imageUrl}
+              alt={data.name}
+              className="w-8 h-8 rounded object-cover"
+            />
+          )}
           <span className="text-sm font-medium text-text-primary truncate">
             {data.name}
           </span>
@@ -319,6 +333,13 @@ function SettingCard({
       <AnimatePresence>
         {isExpanded && (
           <ExpandedContent>
+            {hasImage && (
+              <img
+                src={data.imageUrl}
+                alt={data.name}
+                className="w-full h-32 rounded-lg object-cover mb-2"
+              />
+            )}
             <p className="text-xs text-text-secondary line-clamp-3 mb-2">
               {data.description}
             </p>
@@ -334,7 +355,14 @@ function SettingCard({
                 ))}
               </div>
             )}
-            <CardActions onClick={onClick} onEdit={onEdit} onRegenerate={onRegenerate} />
+            <CardActions
+              onClick={onClick}
+              onEdit={onEdit}
+              onRegenerate={onRegenerate}
+              onGenerateImage={onGenerateImage}
+              isGeneratingImage={isGeneratingImage}
+              hasImage={hasImage}
+            />
           </ExpandedContent>
         )}
       </AnimatePresence>

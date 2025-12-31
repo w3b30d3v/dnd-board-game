@@ -329,8 +329,12 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
         isGenerating: false,
       }));
 
-      // Auto-generate images for NPCs and locations that don't have images
+      // Auto-generate images for settings, NPCs and locations that don't have images
       const contentNeedingImages = newContent.filter((c) => {
+        if (c.type === 'setting') {
+          const settingData = c.data as SettingData;
+          return !settingData.imageUrl;
+        }
         if (c.type === 'npc') {
           const npcData = c.data as NPCData;
           return !npcData.portraitUrl;
@@ -616,7 +620,15 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
     try {
       let requestBody: Record<string, string | undefined>;
 
-      if (content.type === 'npc') {
+      if (content.type === 'setting') {
+        const settingData = content.data as SettingData;
+        requestBody = {
+          type: 'location', // Use location type for API, but build a setting-appropriate prompt
+          name: settingData.name,
+          description: settingData.description,
+          locationType: 'world', // Special type for campaign settings
+        };
+      } else if (content.type === 'npc') {
         const npcData = content.data as NPCData;
         requestBody = {
           type: 'npc',
@@ -635,7 +647,7 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
           locationType: locationData.type,
         };
       } else {
-        set({ error: 'Image generation only supported for NPCs and locations' });
+        set({ error: 'Image generation only supported for settings, NPCs and locations' });
         return null;
       }
 
@@ -685,7 +697,12 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
         generatedContent: state.generatedContent.map((c) => {
           if (c.id !== contentId) return c;
 
-          if (c.type === 'npc') {
+          if (c.type === 'setting') {
+            return {
+              ...c,
+              data: { ...(c.data as SettingData), imageUrl: imageUrl },
+            };
+          } else if (c.type === 'npc') {
             return {
               ...c,
               data: { ...(c.data as NPCData), portraitUrl: imageUrl },
