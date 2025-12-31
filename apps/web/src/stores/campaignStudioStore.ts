@@ -106,6 +106,25 @@ export interface ConversationState {
   error: string | null;
 }
 
+// Import data structure
+export interface CampaignExportData {
+  name: string;
+  exportedAt: string;
+  version: string;
+  content: Array<{
+    id: string;
+    type: string;
+    data: Record<string, unknown>;
+    createdAt: string;
+  }>;
+  chatHistory: Array<{
+    id: string;
+    role: string;
+    content: string;
+    timestamp: string;
+  }>;
+}
+
 interface CampaignStudioState extends ConversationState {
   // Actions
   startConversation: (campaignId: string) => Promise<void>;
@@ -121,6 +140,8 @@ interface CampaignStudioState extends ConversationState {
   saveContent: () => Promise<boolean>;
   generateImage: (contentId: string) => Promise<string | null>;
   loadContent: () => Promise<void>;
+  // Import functionality
+  importFromJson: (data: CampaignExportData, campaignId: string) => void;
 }
 
 const AI_SERVICE_URL = process.env.NEXT_PUBLIC_AI_SERVICE_URL || 'http://localhost:4003';
@@ -506,7 +527,10 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
         .filter((c) => c.type === 'quest')
         .map((c) => c.data as QuestData);
 
-      const response = await fetch(`${API_URL}/campaign-studio/${campaignId}/save`, {
+      const url = `${API_URL}/campaign-studio/${campaignId}/save`;
+      console.log('[CampaignStudio] Saving to:', url);
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -521,6 +545,17 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
         }),
       });
 
+      // Check content type before parsing
+      const contentType = response.headers.get('content-type');
+      if (!contentType?.includes('application/json')) {
+        const text = await response.text();
+        console.error('[CampaignStudio] Non-JSON response:', text.substring(0, 200));
+        throw new Error(
+          `API returned non-JSON response (${response.status}). ` +
+          `Make sure the API server is running at ${API_URL}`
+        );
+      }
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to save content');
@@ -530,6 +565,7 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
       return true;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to save content';
+      console.error('[CampaignStudio] Save error:', message);
       set({ error: message, isSaving: false });
       return false;
     }
@@ -577,7 +613,10 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
         return null;
       }
 
-      const response = await fetch(`${API_URL}/campaign-studio/${campaignId}/generate-image`, {
+      const url = `${API_URL}/campaign-studio/${campaignId}/generate-image`;
+      console.log('[CampaignStudio] Generating image at:', url);
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -586,13 +625,34 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
         body: JSON.stringify(requestBody),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate image');
+      // Check content type before parsing
+      const contentType = response.headers.get('content-type');
+      if (!contentType?.includes('application/json')) {
+        const text = await response.text();
+        console.error('[CampaignStudio] Non-JSON response from generate-image:', text.substring(0, 200));
+        throw new Error(
+          `Cannot connect to API server. Please ensure NEXT_PUBLIC_API_URL is configured correctly. ` +
+          `Current URL: ${API_URL}`
+        );
       }
 
-      const data = await response.json();
+      // Safely parse JSON response
+      let data: { imageUrl?: string; error?: string };
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('[CampaignStudio] Failed to parse JSON response:', parseError);
+        throw new Error('Invalid response from server. The API may be unavailable.');
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate image');
+      }
+
       const imageUrl = data.imageUrl;
+      if (!imageUrl) {
+        throw new Error('No image URL returned from server');
+      }
 
       // Update the content with the new image URL
       set((state) => ({
@@ -634,11 +694,19 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
     set({ isGenerating: true, error: null });
 
     try {
-      const response = await fetch(`${API_URL}/campaign-studio/${campaignId}/content`, {
+      const url = `${API_URL}/campaign-studio/${campaignId}/content`;
+      const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
+
+      // Check content type before parsing
+      const contentType = response.headers.get('content-type');
+      if (!contentType?.includes('application/json')) {
+        console.error('[CampaignStudio] Non-JSON response from load content');
+        throw new Error(`API server not responding correctly at ${API_URL}`);
+      }
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -713,6 +781,110 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load content';
       set({ error: message, isGenerating: false });
+    }
+  },
+
+  // Import from exported JSON file
+  importFromJson: (data: CampaignExportData, campaignId: string) => {
+    try {
+      // Validate the import data structure
+      if (!data.content || !Array.isArray(data.content)) {
+        throw new Error('Invalid import data: missing content array');
+      }
+
+      // Convert imported content to ContentBlocks
+      const importedContent: ContentBlock[] = data.content.map((item) => ({
+        id: item.id || `imported_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        type: item.type as ContentBlock['type'],
+        data: item.data as unknown as ContentBlock['data'],
+        createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
+      }));
+
+      // Convert imported chat history to Messages
+      const importedMessages: Message[] = (data.chatHistory || []).map((msg) => ({
+        id: msg.id || `imported_msg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+        timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+      }));
+
+      // Determine the current phase based on content
+      let currentPhase: CampaignPhase = 'setting';
+      const completedPhases: CampaignPhase[] = [];
+
+      // Check which phases have content
+      const hasSettings = importedContent.some((c) => c.type === 'setting');
+      const hasLocations = importedContent.some((c) => c.type === 'location');
+      const hasNpcs = importedContent.some((c) => c.type === 'npc');
+      const hasEncounters = importedContent.some((c) => c.type === 'encounter');
+      const hasQuests = importedContent.some((c) => c.type === 'quest');
+
+      if (hasSettings) {
+        completedPhases.push('setting');
+        currentPhase = 'story';
+      }
+      if (hasLocations) {
+        completedPhases.push('story', 'locations');
+        currentPhase = 'npcs';
+      }
+      if (hasNpcs) {
+        if (!completedPhases.includes('npcs')) completedPhases.push('npcs');
+        currentPhase = 'encounters';
+      }
+      if (hasEncounters) {
+        if (!completedPhases.includes('encounters')) completedPhases.push('encounters');
+        currentPhase = 'quests';
+      }
+      if (hasQuests) {
+        if (!completedPhases.includes('quests')) completedPhases.push('quests');
+      }
+
+      // Generate a conversation ID for the imported session
+      const conversationId = `imported_${Date.now()}`;
+
+      // Add a system message indicating import
+      const importMessage: Message = {
+        id: `msg_import_${Date.now()}`,
+        role: 'assistant',
+        content: `📦 **Campaign Imported Successfully!**
+
+I've restored your campaign "${data.name}" from the exported file (exported on ${new Date(data.exportedAt).toLocaleDateString()}).
+
+**Restored:**
+- ${importedContent.length} content items
+- ${importedMessages.length} chat messages
+
+You can continue building your campaign from where you left off. All your previous work has been preserved!`,
+        timestamp: new Date(),
+      };
+
+      // Combine imported messages with the import notification
+      const allMessages = [...importedMessages, importMessage];
+
+      set({
+        id: conversationId,
+        campaignId,
+        currentPhase,
+        completedPhases: [...new Set(completedPhases)], // Remove duplicates
+        messages: allMessages,
+        generatedContent: importedContent,
+        isGenerating: false,
+        isSaving: false,
+        lastSavedAt: null,
+        error: null,
+      });
+
+      console.log('[CampaignStudio] Imported campaign:', {
+        name: data.name,
+        contentCount: importedContent.length,
+        messageCount: importedMessages.length,
+        currentPhase,
+        completedPhases,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to import campaign';
+      console.error('[CampaignStudio] Import error:', message);
+      set({ error: message });
     }
   },
 }));

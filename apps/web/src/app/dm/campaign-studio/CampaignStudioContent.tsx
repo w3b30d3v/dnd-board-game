@@ -13,7 +13,7 @@ import {
 } from '@/components/campaign-studio';
 import { VideoGenerator } from '@/components/cutscene';
 import { VoiceGenerator } from '@/components/narration';
-import { ContentBlock, CutsceneData } from '@/stores/campaignStudioStore';
+import { ContentBlock, CutsceneData, CampaignExportData, useCampaignStudioStore } from '@/stores/campaignStudioStore';
 
 type SaveStatus = 'saved' | 'saving' | 'unsaved' | 'error';
 
@@ -27,8 +27,12 @@ export default function CampaignStudioContent() {
   const [showVideoGenerator, setShowVideoGenerator] = useState(false);
   const [showVoiceGenerator, setShowVoiceGenerator] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
   const [campaignName, setCampaignName] = useState('New Campaign');
+
+  // Get the import function from the store
+  const importFromJson = useCampaignStudioStore((state) => state.importFromJson);
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -117,6 +121,18 @@ export default function CampaignStudioContent() {
     router.push(`/dm/map-editor?locationId=${locationId}&locationName=${encodeURIComponent(locationName)}&campaignId=${campaignId}`);
   };
 
+  // Handle import from JSON file
+  const handleImport = (data: CampaignExportData) => {
+    // Create a new campaign ID for the imported campaign
+    const newCampaignId = campaignId || `imported_${Date.now()}`;
+    importFromJson(data, newCampaignId);
+    // Navigate to the imported campaign
+    if (!campaignId) {
+      router.push(`/dm/campaign-studio?campaign=${newCampaignId}`);
+    }
+    setShowImportModal(false);
+  };
+
   // Loading state while hydrating
   if (!_hasHydrated) {
     return (
@@ -128,7 +144,20 @@ export default function CampaignStudioContent() {
 
   // No campaign selected - show welcome screen
   if (!campaignId) {
-    return <WelcomeScreen onStartNew={handleStartNew} />;
+    return (
+      <>
+        <WelcomeScreen onStartNew={handleStartNew} onImport={() => setShowImportModal(true)} />
+        {/* Import Modal - accessible from welcome screen */}
+        <AnimatePresence>
+          {showImportModal && (
+            <ImportModal
+              onImport={handleImport}
+              onClose={() => setShowImportModal(false)}
+            />
+          )}
+        </AnimatePresence>
+      </>
+    );
   }
 
   return (
@@ -256,6 +285,20 @@ export default function CampaignStudioContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
               </svg>
               Save
+            </motion.button>
+
+            {/* Import button */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setShowImportModal(true)}
+              className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg bg-bg-elevated hover:bg-border text-text-primary text-sm transition-colors"
+              title="Import Campaign"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Import
             </motion.button>
 
             {/* Export button */}
@@ -420,6 +463,16 @@ export default function CampaignStudioContent() {
             content={generatedContent}
             messages={messages}
             onClose={() => setShowExportModal(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Import Modal */}
+      <AnimatePresence>
+        {showImportModal && (
+          <ImportModal
+            onImport={handleImport}
+            onClose={() => setShowImportModal(false)}
           />
         )}
       </AnimatePresence>
@@ -754,8 +807,229 @@ in the Campaign Studio.
   );
 }
 
+// Import Modal
+function ImportModal({
+  onImport,
+  onClose,
+}: {
+  onImport: (data: CampaignExportData) => void;
+  onClose: () => void;
+}) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewData, setPreviewData] = useState<CampaignExportData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const validateImportData = (data: unknown): data is CampaignExportData => {
+    if (!data || typeof data !== 'object') return false;
+    const d = data as Record<string, unknown>;
+    return (
+      typeof d.name === 'string' &&
+      typeof d.exportedAt === 'string' &&
+      typeof d.version === 'string' &&
+      Array.isArray(d.content) &&
+      Array.isArray(d.chatHistory)
+    );
+  };
+
+  const handleFile = async (file: File) => {
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      // Check file type
+      if (!file.name.endsWith('.json')) {
+        throw new Error('Please select a JSON file exported from Campaign Studio');
+      }
+
+      // Read and parse file
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      // Validate structure
+      if (!validateImportData(data)) {
+        throw new Error('Invalid campaign file format. Please select a valid export file.');
+      }
+
+      setSelectedFile(file);
+      setPreviewData(data);
+    } catch (err) {
+      if (err instanceof SyntaxError) {
+        setError('Invalid JSON file. Please select a valid campaign export.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to read file');
+      }
+      setSelectedFile(null);
+      setPreviewData(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      await handleFile(file);
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await handleFile(file);
+    }
+  };
+
+  const handleImport = () => {
+    if (previewData) {
+      onImport(previewData);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="bg-bg-card rounded-xl border border-border p-6 w-full max-w-md"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-xl font-cinzel font-bold text-text-primary mb-2">
+          Import Campaign
+        </h2>
+        <p className="text-sm text-text-muted mb-6">
+          Restore a previously exported campaign with all content and chat history
+        </p>
+
+        {/* Drop zone */}
+        <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+            isDragging
+              ? 'border-primary bg-primary/10'
+              : selectedFile
+              ? 'border-green-500 bg-green-500/10'
+              : 'border-border hover:border-primary/50'
+          }`}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+
+          {isLoading ? (
+            <div className="py-4">
+              <div className="w-8 h-8 spinner border-2 mx-auto mb-2" />
+              <p className="text-sm text-text-muted">Reading file...</p>
+            </div>
+          ) : selectedFile && previewData ? (
+            <div className="py-2">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-green-500/20 flex items-center justify-center">
+                <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p className="font-medium text-text-primary mb-1">{previewData.name}</p>
+              <p className="text-xs text-text-muted">
+                {previewData.content.length} items • {previewData.chatHistory.length} messages
+              </p>
+              <p className="text-xs text-text-muted mt-1">
+                Exported: {new Date(previewData.exportedAt).toLocaleDateString()}
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-bg-elevated flex items-center justify-center">
+                <svg className="w-6 h-6 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+              </div>
+              <p className="text-sm text-text-primary mb-1">
+                Drop your campaign file here
+              </p>
+              <p className="text-xs text-text-muted">
+                or click to browse • .json files only
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+            <p className="text-sm text-red-400">{error}</p>
+          </div>
+        )}
+
+        {/* Preview info */}
+        {previewData && (
+          <div className="mt-4 p-3 rounded-lg bg-bg-elevated">
+            <h3 className="text-xs font-medium text-text-primary mb-2">Content Preview</h3>
+            <div className="grid grid-cols-2 gap-2 text-xs text-text-muted">
+              <div>Settings: {previewData.content.filter(c => c.type === 'setting').length}</div>
+              <div>Locations: {previewData.content.filter(c => c.type === 'location').length}</div>
+              <div>NPCs: {previewData.content.filter(c => c.type === 'npc').length}</div>
+              <div>Encounters: {previewData.content.filter(c => c.type === 'encounter').length}</div>
+              <div>Quests: {previewData.content.filter(c => c.type === 'quest').length}</div>
+              <div>Messages: {previewData.chatHistory.length}</div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-3 mt-6">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onClose}
+            className="flex-1 px-4 py-2 rounded-lg bg-bg-elevated text-text-primary hover:bg-border transition-colors"
+          >
+            Cancel
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleImport}
+            disabled={!previewData}
+            className="flex-1 px-4 py-2 rounded-lg bg-primary text-bg-dark font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Import
+          </motion.button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // Welcome screen component
-function WelcomeScreen({ onStartNew }: { onStartNew: () => void }) {
+function WelcomeScreen({ onStartNew, onImport }: { onStartNew: () => void; onImport?: () => void }) {
   return (
     <div className="min-h-screen bg-bg-dark flex items-center justify-center p-4">
       <motion.div
@@ -822,6 +1096,20 @@ function WelcomeScreen({ onStartNew }: { onStartNew: () => void }) {
           >
             Start New Campaign
           </motion.button>
+
+          {onImport && (
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={onImport}
+              className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-500 transition-colors flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Import Existing Campaign
+            </motion.button>
+          )}
 
           <Link href="/dm/campaigns">
             <motion.button
