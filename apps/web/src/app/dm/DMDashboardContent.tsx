@@ -341,13 +341,13 @@ export default function DMDashboardContent() {
                     </div>
 
                     <div className="flex gap-2 mt-4 pt-3 border-t border-border">
-                      <Link href={`/multiplayer/test?session=${session.inviteCode}`} className="flex-1">
+                      <Link href={`/game/${session.id}`} className="flex-1">
                         <motion.button
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           className="w-full px-3 py-2 bg-primary text-bg-dark rounded text-sm font-medium"
                         >
-                          Resume
+                          Play
                         </motion.button>
                       </Link>
                       {session.status === 'active' && (

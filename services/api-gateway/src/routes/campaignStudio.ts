@@ -31,30 +31,30 @@ const pendingImageTasks = new Map<
 
 const settingDataSchema = z.object({
   name: z.string().min(1),
-  description: z.string(),
+  description: z.string().optional().default(''),
   themes: z.array(z.string()).optional().default([]),
   tone: z.string().optional().default(''),
   era: z.string().optional().default(''),
-  imageUrl: z.string().url().optional(),
+  imageUrl: z.string().url().optional().nullable(),
 });
 
 const locationDataSchema = z.object({
   id: z.string(),
   name: z.string().min(1),
-  description: z.string(),
-  type: z.string(),
+  description: z.string().optional().default(''),
+  type: z.string().optional().default('location'),
   features: z.array(z.string()).optional().default([]),
   connections: z.array(z.string()).optional().default([]),
-  imageUrl: z.string().url().optional(),
+  imageUrl: z.string().url().optional().nullable(),
 });
 
 const npcDataSchema = z.object({
   id: z.string(),
   name: z.string().min(1),
-  race: z.string().optional(),
+  race: z.string().optional().default(''),
   class: z.string().optional(),
-  role: z.string().optional(),
-  description: z.string().optional(),
+  role: z.string().optional().default(''),
+  description: z.string().optional().default(''),
   personality: z.object({
     traits: z.array(z.string()).optional().default([]),
     ideal: z.string().optional().default(''),
@@ -62,28 +62,28 @@ const npcDataSchema = z.object({
     flaw: z.string().optional().default(''),
   }).optional(),
   voiceProfile: z.string().optional(),
-  portraitUrl: z.string().url().optional(),
+  portraitUrl: z.string().url().optional().nullable(),
 });
 
 const encounterDataSchema = z.object({
   id: z.string(),
   name: z.string().min(1),
-  type: z.enum(['combat', 'social', 'exploration', 'puzzle']).optional().default('combat'),
-  difficulty: z.enum(['easy', 'medium', 'hard', 'deadly']).optional().default('medium'),
-  description: z.string().optional(),
+  type: z.string().optional().default('combat'), // Allow any string, default to 'combat'
+  difficulty: z.string().optional().default('medium'), // Allow any string, default to 'medium'
+  description: z.string().optional().default(''),
   monsters: z.array(z.string()).optional().default([]),
   rewards: z.array(z.string()).optional().default([]),
-  locationId: z.string().optional(),
+  locationId: z.string().optional().nullable(),
 });
 
 const questDataSchema = z.object({
   id: z.string(),
   name: z.string().min(1),
-  type: z.enum(['main', 'side', 'personal']).optional().default('main'),
-  description: z.string().optional(),
+  type: z.string().optional().default('main'), // Allow any string, default to 'main'
+  description: z.string().optional().default(''),
   objectives: z.array(z.string()).optional().default([]),
   rewards: z.array(z.string()).optional().default([]),
-  giverNpcId: z.string().optional(),
+  giverNpcId: z.string().optional().nullable(),
 });
 
 const saveContentSchema = z.object({
@@ -283,6 +283,7 @@ router.post(
 );
 
 // POST /campaign-studio/:campaignId/generate-image - Generate image for NPC or location
+// Note: campaignId can be 'temp_xxx' for unsaved campaigns - we allow image generation without a real campaign
 router.post(
   '/:campaignId/generate-image',
   auth,
@@ -293,15 +294,10 @@ router.post(
       const userId = req.user!.id;
       const { type, name, description, race, class: charClass, role, locationType } = req.body;
 
-      // Verify campaign ownership
-      const campaign = await prisma.campaign.findFirst({
-        where: { id: campaignId, ownerId: userId },
-        select: { id: true },
-      });
-
-      if (!campaign) {
-        return res.status(404).json({ error: 'Campaign not found' });
-      }
+      // For image generation, we don't require the campaign to exist in the database
+      // This allows generating images for imported/unsaved campaigns
+      // We only verify the user is authenticated (done by auth middleware)
+      logger.info({ campaignId, userId, type, name }, 'Generating image for campaign content');
 
       // Check if NanoBanana is configured
       if (!NANOBANANA_API_KEY || !CALLBACK_BASE_URL) {
