@@ -328,6 +328,32 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
         generatedContent: [...state.generatedContent, ...newContent],
         isGenerating: false,
       }));
+
+      // Auto-generate images for NPCs and locations that don't have images
+      const contentNeedingImages = newContent.filter((c) => {
+        if (c.type === 'npc') {
+          const npcData = c.data as NPCData;
+          return !npcData.portraitUrl;
+        }
+        if (c.type === 'location') {
+          const locData = c.data as LocationData & { imageUrl?: string };
+          return !locData.imageUrl;
+        }
+        return false;
+      });
+
+      // Generate images in the background (don't await - let them complete async)
+      if (contentNeedingImages.length > 0) {
+        // Small delay to let the UI update first
+        setTimeout(() => {
+          contentNeedingImages.forEach((content) => {
+            get().generateImage(content.id).catch((err) => {
+              // Log error but don't fail the whole operation
+              console.warn(`[CampaignStudio] Auto-image generation failed for ${content.id}:`, err);
+            });
+          });
+        }, 500);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to send message';
       set({ error: message, isGenerating: false });
