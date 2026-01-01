@@ -1,0 +1,23 @@
+[build]
+builder = "nixpacks"
+
+[build.nixpacks]
+# Use Node.js 20 and pnpm for building
+nixPkgs = ["nodejs_20", "pnpm"]
+
+# Install dependencies from the monorepo root to get prisma schema
+installCmd = "cd ../.. && pnpm install --frozen-lockfile && cd services/api-gateway"
+
+# Build command: generate prisma client and compile TypeScript
+buildCmd = "pnpm run build"
+
+[deploy]
+# Start command with prisma migration
+startCommand = "npm run start"
+
+# Health check for the API
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+
+[deploy.env]
+NODE_ENV = "production"
