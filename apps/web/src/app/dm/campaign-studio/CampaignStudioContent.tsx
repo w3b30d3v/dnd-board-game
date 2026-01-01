@@ -340,8 +340,8 @@ export default function CampaignStudioContent() {
           <ChatInput onSend={sendMessage} isGenerating={isGenerating} />
         </div>
 
-        {/* Live preview panel (right) - Desktop - with its own scroll */}
-        <div className="hidden lg:flex lg:flex-col w-[40%] min-w-[320px] max-w-[480px] min-h-0 h-full">
+        {/* Live preview panel (right) - Desktop - with its own scroll, extends to right edge */}
+        <div className="hidden lg:flex lg:flex-col w-[40%] min-w-[320px] min-h-0 h-full">
           {/* Preview content scroll area - takes full width */}
           <LiveCampaignPreview
               campaignName={campaignName}

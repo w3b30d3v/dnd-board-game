@@ -644,15 +644,22 @@ function generateFallbackImage(type: string, name: string, race?: string): strin
 async function generateWithNanoBanana(prompt: string, aspectRatio: string): Promise<string> {
   const fetch = (await import('node-fetch')).default;
 
+  // Check callback URL is configured
+  if (!CALLBACK_BASE_URL) {
+    throw new Error('CALLBACK_BASE_URL not configured - required for NanoBanana webhook');
+  }
+
+  const callbackUrl = `${CALLBACK_BASE_URL}/campaign-studio/webhook/nanobanana`;
+
   const requestBody = {
     prompt,
     type: 'TEXTTOIAMGE',
-    callBackUrl: `${CALLBACK_BASE_URL}/campaign-studio/webhook/nanobanana`,
+    callBackUrl: callbackUrl,
     numImages: 1,
     image_size: aspectRatio,
   };
 
-  logger.info({ prompt: prompt.substring(0, 100) }, 'Calling NanoBanana API');
+  logger.info({ prompt: prompt.substring(0, 100), callbackUrl }, 'Calling NanoBanana API');
 
   const response = await fetch(`${NANOBANANA_API_URL}/generate`, {
     method: 'POST',
