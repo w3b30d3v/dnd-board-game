@@ -542,20 +542,75 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
     set({ isSaving: true, error: null });
 
     try {
-      // Organize content by type
+      // Organize content by type, ensuring id is included and data types are correct
       const setting = generatedContent.find((c) => c.type === 'setting')?.data as SettingData | undefined;
+
+      // Locations: ensure id is included
       const locations = generatedContent
         .filter((c) => c.type === 'location')
-        .map((c) => c.data as LocationData);
+        .map((c) => {
+          const data = c.data as LocationData;
+          return {
+            ...data,
+            id: data.id || c.id, // Use data.id or fall back to ContentBlock id
+          };
+        });
+
+      // NPCs: ensure id is included and personality is an object
       const npcs = generatedContent
         .filter((c) => c.type === 'npc')
-        .map((c) => c.data as NPCData);
+        .map((c) => {
+          const data = c.data as NPCData;
+          // Handle personality being a string (from old exports)
+          let personality = data.personality;
+          if (typeof personality === 'string') {
+            personality = {
+              traits: personality ? [personality] : [],
+              ideal: '',
+              bond: '',
+              flaw: '',
+            };
+          }
+          return {
+            ...data,
+            id: data.id || c.id,
+            personality,
+          };
+        });
+
+      // Encounters: ensure id is included and rewards is an array
       const encounters = generatedContent
         .filter((c) => c.type === 'encounter')
-        .map((c) => c.data as EncounterData);
+        .map((c) => {
+          const data = c.data as EncounterData;
+          // Handle rewards being an object (from old exports)
+          let rewards = data.rewards;
+          if (rewards && !Array.isArray(rewards)) {
+            rewards = Object.values(rewards as Record<string, string>);
+          }
+          return {
+            ...data,
+            id: data.id || c.id,
+            rewards: rewards || [],
+          };
+        });
+
+      // Quests: ensure id is included and rewards is an array
       const quests = generatedContent
         .filter((c) => c.type === 'quest')
-        .map((c) => c.data as QuestData);
+        .map((c) => {
+          const data = c.data as QuestData;
+          // Handle rewards being an object (from old exports)
+          let rewards = data.rewards;
+          if (rewards && !Array.isArray(rewards)) {
+            rewards = Object.values(rewards as Record<string, string>);
+          }
+          return {
+            ...data,
+            id: data.id || c.id,
+            rewards: rewards || [],
+          };
+        });
 
       const url = `${API_URL}/campaign-studio/${campaignId}/save`;
       console.log('[CampaignStudio] Saving to:', url);

@@ -300,13 +300,19 @@ router.post(
       logger.info({ campaignId, userId, type, name }, 'Generating image for campaign content');
 
       // Check if NanoBanana is configured
-      if (!NANOBANANA_API_KEY || !CALLBACK_BASE_URL) {
+      const hasApiKey = !!NANOBANANA_API_KEY;
+      const hasCallback = !!CALLBACK_BASE_URL;
+      logger.info({ hasApiKey, hasCallback, callbackUrl: CALLBACK_BASE_URL }, 'NanoBanana config check');
+
+      if (!hasApiKey || !hasCallback) {
+        logger.warn({ hasApiKey, hasCallback }, 'NanoBanana not configured, using fallback');
         // Return a DiceBear fallback
         const fallbackUrl = generateFallbackImage(type, name, race);
         return res.json({
           success: true,
           imageUrl: fallbackUrl,
           source: 'fallback',
+          reason: 'not_configured',
         });
       }
 
@@ -323,19 +329,24 @@ router.post(
       }
 
       try {
+        logger.info({ prompt: prompt.substring(0, 100), aspectRatio }, 'Calling NanoBanana');
         const imageUrl = await generateWithNanoBanana(prompt, aspectRatio);
+        logger.info({ imageUrl }, 'NanoBanana generation succeeded');
         return res.json({
           success: true,
           imageUrl,
           source: 'nanobanana',
         });
       } catch (genError) {
-        logger.warn({ error: genError }, 'NanoBanana generation failed, using fallback');
+        const errorMsg = genError instanceof Error ? genError.message : String(genError);
+        logger.warn({ error: errorMsg }, 'NanoBanana generation failed, using fallback');
         const fallbackUrl = generateFallbackImage(type, name, race);
         return res.json({
           success: true,
           imageUrl: fallbackUrl,
           source: 'fallback',
+          reason: 'generation_failed',
+          error: errorMsg,
         });
       }
     } catch (error) {
