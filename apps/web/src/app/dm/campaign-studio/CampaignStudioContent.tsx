@@ -661,7 +661,7 @@ function ExportModal({
           const jsonContent = JSON.stringify(item.data, null, 2);
 
           switch (item.type) {
-            case 'setting':
+            case 'setting': {
               settingsFolder?.file(filename, jsonContent);
               // Download setting image if exists
               const settingImageUrl = (item.data as { imageUrl?: string }).imageUrl;
@@ -676,7 +676,8 @@ function ExportModal({
                 );
               }
               break;
-            case 'location':
+            }
+            case 'location': {
               locationsFolder?.file(filename, jsonContent);
               // Download location image if exists
               const locationImageUrl = (item.data as { imageUrl?: string }).imageUrl;
@@ -691,7 +692,8 @@ function ExportModal({
                 );
               }
               break;
-            case 'npc':
+            }
+            case 'npc': {
               npcsFolder?.file(filename, jsonContent);
               // Download NPC portrait if exists
               const npcPortraitUrl = (item.data as { portraitUrl?: string }).portraitUrl;
@@ -706,6 +708,7 @@ function ExportModal({
                 );
               }
               break;
+            }
             case 'encounter':
               encountersFolder?.file(filename, jsonContent);
               break;
