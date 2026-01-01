@@ -630,9 +630,9 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
         }),
       });
 
-      // Check content type before parsing
-      const contentType = response.headers.get('content-type');
-      if (!contentType?.includes('application/json')) {
+      // Check content type before parsing (with safe header access)
+      const contentType = response.headers?.get?.('content-type');
+      if (contentType && !contentType.includes('application/json')) {
         const text = await response.text();
         console.error('[CampaignStudio] Non-JSON response:', text.substring(0, 200));
         throw new Error(
@@ -725,9 +725,9 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
         body: JSON.stringify(requestBody),
       });
 
-      // Check content type before parsing
-      const contentType = response.headers.get('content-type');
-      if (!contentType?.includes('application/json')) {
+      // Check content type before parsing (with safe header access)
+      const contentType = response.headers?.get?.('content-type');
+      if (contentType && !contentType.includes('application/json')) {
         const text = await response.text();
         console.error('[CampaignStudio] Non-JSON response from generate-image:', text.substring(0, 200));
         throw new Error(
@@ -806,9 +806,9 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
         },
       });
 
-      // Check content type before parsing
-      const contentType = response.headers.get('content-type');
-      if (!contentType?.includes('application/json')) {
+      // Check content type before parsing (with safe header access)
+      const contentType = response.headers?.get?.('content-type');
+      if (contentType && !contentType.includes('application/json')) {
         console.error('[CampaignStudio] Non-JSON response from load content');
         throw new Error(`API server not responding correctly at ${API_URL}`);
       }
