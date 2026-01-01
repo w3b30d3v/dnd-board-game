@@ -56,6 +56,15 @@ export function useCampaignStudio(campaignId?: string) {
     }
   }, [_hasHydrated, campaignId, token, conversationId, startConversation]);
 
+  // Load saved content from database when campaign ID is present
+  // This handles page refresh - content is saved in DB but needs to be loaded into state
+  useEffect(() => {
+    if (_hasHydrated && campaignId && token && generatedContent.length === 0 && !isGenerating) {
+      // Only load if we don't already have content and aren't currently generating
+      loadContent(campaignId);
+    }
+  }, [_hasHydrated, campaignId, token, generatedContent.length, isGenerating, loadContent]);
+
   // Check if phase is complete (has generated content)
   const isPhaseComplete = useCallback(
     (phase: CampaignPhase): boolean => {
