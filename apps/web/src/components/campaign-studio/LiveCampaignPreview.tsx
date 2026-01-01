@@ -66,9 +66,9 @@ export function LiveCampaignPreview({
         </div>
       </div>
 
-      {/* Content list - scrollbar at right edge */}
+      {/* Content list - scrollbar at right edge, extra right padding for text */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="px-4 py-4 space-y-4">
+        <div className="pl-4 pr-6 py-4 space-y-4">
         {isEmpty ? (
           <EmptyState />
         ) : (

@@ -844,8 +844,13 @@ function ImportModal({
         throw new Error('Please select a JSON file exported from Campaign Studio');
       }
 
-      // Read and parse file
-      const text = await file.text();
+      // Read file using FileReader for better browser compatibility
+      const text = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('Failed to read file. Please try again.'));
+        reader.readAsText(file);
+      });
       const data = JSON.parse(text);
 
       // Validate structure
