@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { config } from './config.js';
 import { logger } from './lib/logger.js';
+
+// Build version: 2026-01-01-v2 - Force Railway rebuild
 import { basicAuth } from './middleware/basicAuth.js';
 import { prisma } from './lib/prisma.js';
 import authRoutes from './routes/auth.js';
