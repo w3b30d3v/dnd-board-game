@@ -521,7 +521,7 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
 
   // Save all generated content to database
   saveContent: async () => {
-    const { campaignId, generatedContent } = get();
+    const { campaignId, generatedContent, messages, currentPhase, completedPhases } = get();
     const token = getAuthToken();
 
     if (!token) {
@@ -627,6 +627,14 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
           npcs,
           encounters,
           quests,
+          chatHistory: messages.map((m) => ({
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            timestamp: m.timestamp,
+          })),
+          currentPhase,
+          completedPhases,
         }),
       });
 
@@ -879,8 +887,24 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
         });
       }
 
+      // Load chat history if present
+      const chatHistory = content.chatHistory || [];
+      const loadedMessages: Message[] = chatHistory.map((msg: { id: string; role: string; content: string; timestamp: string }) => ({
+        id: msg.id,
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+        timestamp: new Date(msg.timestamp),
+      }));
+
+      // Load phase info
+      const loadedPhase = (content.currentPhase || 'setting') as CampaignPhase;
+      const loadedCompletedPhases = (content.completedPhases || []) as CampaignPhase[];
+
       set({
         generatedContent: loadedContent,
+        messages: loadedMessages.length > 0 ? loadedMessages : get().messages,
+        currentPhase: loadedPhase,
+        completedPhases: loadedCompletedPhases,
         isGenerating: false,
       });
     } catch (error) {

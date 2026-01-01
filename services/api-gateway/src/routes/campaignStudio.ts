@@ -86,12 +86,22 @@ const questDataSchema = z.object({
   giverNpcId: z.string().optional().nullable(),
 }).passthrough(); // Allow extra fields
 
+const chatMessageSchema = z.object({
+  id: z.string(),
+  role: z.enum(['user', 'assistant']),
+  content: z.string(),
+  timestamp: z.string().or(z.date()),
+});
+
 const saveContentSchema = z.object({
   setting: settingDataSchema.optional(),
   locations: z.array(locationDataSchema).optional().default([]),
   npcs: z.array(npcDataSchema).optional().default([]),
   encounters: z.array(encounterDataSchema).optional().default([]),
   quests: z.array(questDataSchema).optional().default([]),
+  chatHistory: z.array(chatMessageSchema).optional().default([]),
+  currentPhase: z.string().optional(),
+  completedPhases: z.array(z.string()).optional().default([]),
 });
 
 const generateImageSchema = z.object({
@@ -119,9 +129,9 @@ router.post(
     try {
       const { campaignId } = req.params;
       const userId = req.user!.id;
-      const { setting, locations, npcs, encounters, quests } = req.body;
+      const { setting, locations, npcs, encounters, quests, chatHistory, currentPhase, completedPhases } = req.body;
 
-      logger.info({ campaignId, userId }, 'Saving campaign studio content');
+      logger.info({ campaignId, userId, chatHistoryCount: chatHistory?.length || 0 }, 'Saving campaign studio content');
 
       // Try to find existing campaign
       let campaign = await prisma.campaign.findFirst({
@@ -147,6 +157,9 @@ router.post(
               tone: setting?.tone || '',
               era: setting?.era || '',
               imageUrl: setting?.imageUrl,
+              chatHistory: chatHistory || [],
+              currentPhase: currentPhase || 'setting',
+              completedPhases: completedPhases || [],
             },
           },
           select: { id: true, name: true },
@@ -155,22 +168,23 @@ router.post(
 
       // Use a transaction to save all content atomically
       const result = await prisma.$transaction(async (tx) => {
-        // 1. Update campaign settings if provided
-        if (setting) {
-          await tx.campaign.update({
-            where: { id: campaignId },
-            data: {
-              name: setting.name || campaign.name,
-              description: setting.description,
-              settings: {
-                themes: setting.themes,
-                tone: setting.tone,
-                era: setting.era,
-                imageUrl: setting.imageUrl,
-              },
+        // 1. Update campaign settings (always update to save chat history)
+        await tx.campaign.update({
+          where: { id: campaignId },
+          data: {
+            name: setting?.name || campaign.name,
+            description: setting?.description,
+            settings: {
+              themes: setting?.themes || [],
+              tone: setting?.tone || '',
+              era: setting?.era || '',
+              imageUrl: setting?.imageUrl,
+              chatHistory: chatHistory || [],
+              currentPhase: currentPhase || 'setting',
+              completedPhases: completedPhases || [],
             },
-          });
-        }
+          },
+        });
 
         // 2. Upsert locations (as Maps with basic tiles)
         const savedMaps = [];
@@ -494,6 +508,10 @@ router.get('/:campaignId/content', auth, async (req: Request<{ campaignId: strin
         rewards: (quest.rewards as Array<{ description: string }>)?.map((r) => r.description) || [],
         giverNpcId: quest.questGiverId,
       })),
+      // Include chat history and phase info from settings
+      chatHistory: (campaign.settings as Record<string, unknown>)?.chatHistory || [],
+      currentPhase: (campaign.settings as Record<string, unknown>)?.currentPhase || 'setting',
+      completedPhases: (campaign.settings as Record<string, unknown>)?.completedPhases || [],
     };
 
     return res.json({ success: true, content });
