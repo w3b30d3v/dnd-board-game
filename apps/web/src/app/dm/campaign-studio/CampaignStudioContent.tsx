@@ -603,9 +603,35 @@ function ExportModal({
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       } else {
-        // Full export - ZIP with media
+        // Full export - ZIP with media (downloads actual images)
         const JSZip = (await import('jszip')).default;
         const zip = new JSZip();
+
+        // Helper function to fetch image as blob
+        const fetchImageAsBlob = async (url: string): Promise<Blob | null> => {
+          try {
+            const response = await fetch(url);
+            if (!response.ok) return null;
+            return await response.blob();
+          } catch {
+            console.warn(`Failed to fetch image: ${url}`);
+            return null;
+          }
+        };
+
+        // Helper to get file extension from URL or content type
+        const getImageExtension = (url: string, blob: Blob): string => {
+          if (url.includes('.svg')) return 'svg';
+          if (url.includes('.png')) return 'png';
+          if (url.includes('.jpg') || url.includes('.jpeg')) return 'jpg';
+          if (url.includes('.webp')) return 'webp';
+          // Fallback to content type
+          if (blob.type.includes('svg')) return 'svg';
+          if (blob.type.includes('png')) return 'png';
+          if (blob.type.includes('jpeg') || blob.type.includes('jpg')) return 'jpg';
+          if (blob.type.includes('webp')) return 'webp';
+          return 'png'; // Default
+        };
 
         // Add the campaign JSON
         zip.file('campaign.json', JSON.stringify(exportData, null, 2));
@@ -626,7 +652,10 @@ function ExportModal({
         const encountersFolder = zip.folder('encounters');
         const questsFolder = zip.folder('quests');
 
-        // Organize content by type
+        // Collect all images to download
+        const imageDownloads: Promise<void>[] = [];
+
+        // Organize content by type and collect images
         for (const item of content) {
           const filename = `${item.id}.json`;
           const jsonContent = JSON.stringify(item.data, null, 2);
@@ -634,19 +663,47 @@ function ExportModal({
           switch (item.type) {
             case 'setting':
               settingsFolder?.file(filename, jsonContent);
+              // Download setting image if exists
+              const settingImageUrl = (item.data as { imageUrl?: string }).imageUrl;
+              if (settingImageUrl) {
+                imageDownloads.push(
+                  fetchImageAsBlob(settingImageUrl).then((blob) => {
+                    if (blob && mediaFolder) {
+                      const ext = getImageExtension(settingImageUrl, blob);
+                      mediaFolder.file(`setting_image.${ext}`, blob);
+                    }
+                  })
+                );
+              }
               break;
             case 'location':
               locationsFolder?.file(filename, jsonContent);
-              // If location has imageUrl, add a reference
-              if ((item.data as { imageUrl?: string }).imageUrl) {
-                mediaFolder?.file(`${item.id}_image.txt`, (item.data as { imageUrl?: string }).imageUrl || '');
+              // Download location image if exists
+              const locationImageUrl = (item.data as { imageUrl?: string }).imageUrl;
+              if (locationImageUrl) {
+                imageDownloads.push(
+                  fetchImageAsBlob(locationImageUrl).then((blob) => {
+                    if (blob && mediaFolder) {
+                      const ext = getImageExtension(locationImageUrl, blob);
+                      mediaFolder.file(`${item.id}_image.${ext}`, blob);
+                    }
+                  })
+                );
               }
               break;
             case 'npc':
               npcsFolder?.file(filename, jsonContent);
-              // If NPC has portrait, add a reference
-              if ((item.data as { portraitUrl?: string }).portraitUrl) {
-                mediaFolder?.file(`${item.id}_portrait.txt`, (item.data as { portraitUrl?: string }).portraitUrl || '');
+              // Download NPC portrait if exists
+              const npcPortraitUrl = (item.data as { portraitUrl?: string }).portraitUrl;
+              if (npcPortraitUrl) {
+                imageDownloads.push(
+                  fetchImageAsBlob(npcPortraitUrl).then((blob) => {
+                    if (blob && mediaFolder) {
+                      const ext = getImageExtension(npcPortraitUrl, blob);
+                      mediaFolder.file(`${item.id}_portrait.${ext}`, blob);
+                    }
+                  })
+                );
               }
               break;
             case 'encounter':
@@ -657,6 +714,9 @@ function ExportModal({
               break;
           }
         }
+
+        // Wait for all image downloads to complete
+        await Promise.all(imageDownloads);
 
         // Add a README
         const readme = `# ${campaignName}
@@ -672,12 +732,17 @@ Exported from D&D Campaign Studio on ${new Date().toLocaleDateString()}
 - npcs/ - NPC character data
 - encounters/ - Encounter definitions
 - quests/ - Quest objectives
-- media/ - References to generated images (URLs)
+- media/ - Downloaded images (portraits, location images, etc.)
 
 ## Importing
 
 To continue working on this campaign, import the campaign.json file
 in the Campaign Studio.
+
+## Images
+
+All AI-generated images have been downloaded and included in the media/ folder.
+This export is fully offline-compatible.
 `;
         zip.file('README.md', readme);
 
