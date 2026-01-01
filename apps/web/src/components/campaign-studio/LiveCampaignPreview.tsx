@@ -66,9 +66,9 @@ export function LiveCampaignPreview({
         </div>
       </div>
 
-      {/* Content list - padding on inner content, not scroll container */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-        <div className="p-4 space-y-4">
+      {/* Content list - scrollbar at right edge, padding only on left */}
+      <div className="flex-1 overflow-y-auto pr-1">
+        <div className="pl-4 py-4 space-y-4">
         {isEmpty ? (
           <EmptyState />
         ) : (
