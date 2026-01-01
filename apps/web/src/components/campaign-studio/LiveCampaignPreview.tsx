@@ -48,7 +48,7 @@ export function LiveCampaignPreview({
   const isEmpty = content.length === 0;
 
   return (
-    <div className="h-full flex flex-col bg-bg-card border-l border-border min-h-0">
+    <div className="h-full w-full flex flex-col bg-bg-card border-l border-border min-h-0">
       {/* Campaign Header */}
       <div className="flex-shrink-0 px-4 py-4 border-b border-border bg-gradient-to-r from-bg-elevated to-bg-card">
         <div className="flex items-center gap-3">
@@ -66,9 +66,9 @@ export function LiveCampaignPreview({
         </div>
       </div>
 
-      {/* Content list - scrollbar at right edge, padding only on left */}
-      <div className="flex-1 overflow-y-auto pr-1">
-        <div className="pl-4 py-4 space-y-4">
+      {/* Content list - scrollbar flush with right edge */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="px-4 py-4 pr-2 space-y-4">
         {isEmpty ? (
           <EmptyState />
         ) : (
@@ -744,7 +744,7 @@ function CardActions({
           }}
           disabled={isGeneratingImage}
           className="px-2 py-1.5 text-xs bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title={hasImage ? 'Regenerate Image' : 'Generate AI Image'}
+          title={hasImage ? 'Regenerate Image (NanoBanana AI)' : 'Generate Image (NanoBanana AI)'}
         >
           {isGeneratingImage ? '⏳' : hasImage ? '🖼️' : '✨'}
         </motion.button>
@@ -772,7 +772,7 @@ function CardActions({
             onRegenerate();
           }}
           className="px-2 py-1.5 text-xs bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded transition-colors"
-          title="Regenerate with AI"
+          title="Regenerate Content (re-generate text description)"
         >
           🔄
         </motion.button>
