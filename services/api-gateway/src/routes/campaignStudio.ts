@@ -319,20 +319,19 @@ router.post(
       // We only verify the user is authenticated (done by auth middleware)
       logger.info({ campaignId, userId, type, name }, 'Generating image for campaign content');
 
-      // Check if NanoBanana is configured
+      // Check if NanoBanana is configured (only check API key - matches character generation)
       const hasApiKey = !!NANOBANANA_API_KEY;
-      const hasCallback = !!CALLBACK_BASE_URL;
-      logger.info({ hasApiKey, hasCallback, callbackUrl: CALLBACK_BASE_URL }, 'NanoBanana config check');
+      logger.info({ hasApiKey, callbackUrl: CALLBACK_BASE_URL }, 'NanoBanana config check');
 
-      if (!hasApiKey || !hasCallback) {
-        logger.warn({ hasApiKey, hasCallback }, 'NanoBanana not configured, using fallback');
+      if (!hasApiKey) {
+        logger.warn('NanoBanana API key not configured, using fallback');
         // Return a DiceBear fallback
         const fallbackUrl = generateFallbackImage(type, name, race);
         return res.json({
           success: true,
           imageUrl: fallbackUrl,
           source: 'fallback',
-          reason: 'not_configured',
+          reason: 'api_key_not_configured',
         });
       }
 
