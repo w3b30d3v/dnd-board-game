@@ -66,8 +66,9 @@ export function LiveCampaignPreview({
         </div>
       </div>
 
-      {/* Content list */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+      {/* Content list - padding on inner content, not scroll container */}
+      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+        <div className="p-4 space-y-4">
         {isEmpty ? (
           <EmptyState />
         ) : (
@@ -201,6 +202,7 @@ export function LiveCampaignPreview({
             {quests.length === 0 && <EmptySection icon="📜" title="Quests" hint="Plan adventures" />}
           </AnimatePresence>
         )}
+        </div>
       </div>
     </div>
   );

@@ -123,14 +123,34 @@ router.post(
 
       logger.info({ campaignId, userId }, 'Saving campaign studio content');
 
-      // Verify campaign ownership
-      const campaign = await prisma.campaign.findFirst({
+      // Try to find existing campaign
+      let campaign = await prisma.campaign.findFirst({
         where: { id: campaignId, ownerId: userId },
         select: { id: true, name: true },
       });
 
+      // If campaign doesn't exist (e.g., imported campaign), create it
       if (!campaign) {
-        return res.status(404).json({ error: 'Campaign not found or you do not have permission' });
+        // For imported/temporary campaigns, create a new one
+        const campaignName = setting?.name || 'Imported Campaign';
+        logger.info({ campaignId, campaignName }, 'Creating new campaign for imported content');
+
+        campaign = await prisma.campaign.create({
+          data: {
+            id: campaignId,
+            name: campaignName,
+            description: setting?.description || '',
+            ownerId: userId,
+            status: 'draft',
+            settings: {
+              themes: setting?.themes || [],
+              tone: setting?.tone || '',
+              era: setting?.era || '',
+              imageUrl: setting?.imageUrl,
+            },
+          },
+          select: { id: true, name: true },
+        });
       }
 
       // Use a transaction to save all content atomically
