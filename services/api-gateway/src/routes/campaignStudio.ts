@@ -31,60 +31,60 @@ const pendingImageTasks = new Map<
 
 const settingDataSchema = z.object({
   name: z.string().min(1),
-  description: z.string().optional().default(''),
-  themes: z.array(z.string()).optional().default([]),
-  tone: z.string().optional().default(''),
-  era: z.string().optional().default(''),
-  imageUrl: z.string().url().optional().nullable(),
-});
+  description: z.string().optional().nullable().default(''),
+  themes: z.array(z.string()).optional().nullable().default([]),
+  tone: z.string().optional().nullable().default(''),
+  era: z.string().optional().nullable().default(''),
+  imageUrl: z.string().optional().nullable(),
+}).passthrough(); // Allow extra fields
 
 const locationDataSchema = z.object({
   id: z.string(),
   name: z.string().min(1),
-  description: z.string().optional().default(''),
-  type: z.string().optional().default('location'),
-  features: z.array(z.string()).optional().default([]),
-  connections: z.array(z.string()).optional().default([]),
-  imageUrl: z.string().url().optional().nullable(),
-});
+  description: z.string().optional().nullable().default(''),
+  type: z.string().optional().nullable().default('location'),
+  features: z.array(z.string()).optional().nullable().default([]),
+  connections: z.array(z.string()).optional().nullable().default([]),
+  imageUrl: z.string().optional().nullable(),
+}).passthrough(); // Allow extra fields
 
 const npcDataSchema = z.object({
   id: z.string(),
   name: z.string().min(1),
-  race: z.string().optional().default(''),
-  class: z.string().optional(),
-  role: z.string().optional().default(''),
-  description: z.string().optional().default(''),
+  race: z.string().optional().nullable().default(''),
+  class: z.string().optional().nullable(),
+  role: z.string().optional().nullable().default(''),
+  description: z.string().optional().nullable().default(''),
   personality: z.object({
-    traits: z.array(z.string()).optional().default([]),
-    ideal: z.string().optional().default(''),
-    bond: z.string().optional().default(''),
-    flaw: z.string().optional().default(''),
-  }).optional(),
-  voiceProfile: z.string().optional(),
-  portraitUrl: z.string().url().optional().nullable(),
-});
+    traits: z.array(z.string()).optional().nullable().default([]),
+    ideal: z.string().optional().nullable().default(''),
+    bond: z.string().optional().nullable().default(''),
+    flaw: z.string().optional().nullable().default(''),
+  }).optional().nullable(),
+  voiceProfile: z.string().optional().nullable(),
+  portraitUrl: z.string().optional().nullable(),
+}).passthrough(); // Allow extra fields
 
 const encounterDataSchema = z.object({
   id: z.string(),
   name: z.string().min(1),
-  type: z.string().optional().default('combat'), // Allow any string, default to 'combat'
-  difficulty: z.string().optional().default('medium'), // Allow any string, default to 'medium'
-  description: z.string().optional().default(''),
-  monsters: z.array(z.string()).optional().default([]),
-  rewards: z.array(z.string()).optional().default([]),
+  type: z.string().optional().nullable().default('combat'),
+  difficulty: z.string().optional().nullable().default('medium'),
+  description: z.string().optional().nullable().default(''),
+  monsters: z.array(z.string()).optional().nullable().default([]),
+  rewards: z.array(z.string()).optional().nullable().default([]),
   locationId: z.string().optional().nullable(),
-});
+}).passthrough(); // Allow extra fields
 
 const questDataSchema = z.object({
   id: z.string(),
   name: z.string().min(1),
-  type: z.string().optional().default('main'), // Allow any string, default to 'main'
-  description: z.string().optional().default(''),
-  objectives: z.array(z.string()).optional().default([]),
-  rewards: z.array(z.string()).optional().default([]),
+  type: z.string().optional().nullable().default('main'),
+  description: z.string().optional().nullable().default(''),
+  objectives: z.array(z.string()).optional().nullable().default([]),
+  rewards: z.array(z.string()).optional().nullable().default([]),
   giverNpcId: z.string().optional().nullable(),
-});
+}).passthrough(); // Allow extra fields
 
 const saveContentSchema = z.object({
   setting: settingDataSchema.optional(),

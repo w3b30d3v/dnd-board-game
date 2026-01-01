@@ -161,9 +161,9 @@ export default function CampaignStudioContent() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-dark flex flex-col">
+    <div className="h-screen bg-bg-dark flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="bg-bg-card border-b border-border">
+      <header className="flex-shrink-0 bg-bg-card border-b border-border">
         <div className="flex items-center justify-between px-4 py-3">
           {/* Left: Back + Title */}
           <div className="flex items-center gap-3">

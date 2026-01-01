@@ -588,7 +588,14 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save content');
+        // Log detailed validation errors
+        if (errorData.details) {
+          console.error('[CampaignStudio] Validation errors:', errorData.details);
+        }
+        const detailMessage = errorData.details
+          ? `: ${errorData.details.map((d: { field: string; message: string }) => `${d.field}: ${d.message}`).join(', ')}`
+          : '';
+        throw new Error((errorData.error || 'Failed to save content') + detailMessage);
       }
 
       set({ isSaving: false, lastSavedAt: new Date() });
