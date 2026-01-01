@@ -247,7 +247,21 @@ jobs:
           echo "- Integration Tests: ✓"
           echo "- Security Audit: ✓"
 
-      - name: Deploy to Railway
-        run: echo "Railway automatically deploys from GitHub - no action needed"
-        # Railway handles deployment automatically via GitHub integration
-        # This step is a placeholder to document the deployment flow
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy API to Railway
+        if: env.RAILWAY_TOKEN != ''
+        run: |
+          cd services/api-gateway
+          railway up --service api
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Deploy Web to Railway
+        if: env.RAILWAY_TOKEN != ''
+        run: |
+          cd apps/web
+          railway up --service web
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
