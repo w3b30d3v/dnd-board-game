@@ -12,7 +12,9 @@ export function basicAuth(req: Request, res: Response, next: NextFunction) {
   }
 
   // Skip auth for webhook endpoints (NanoBanana needs to call these)
-  if (req.path.startsWith('/api/media/webhook') || req.path.startsWith('/media/webhook')) {
+  if (req.path.startsWith('/api/media/webhook') ||
+      req.path.startsWith('/media/webhook') ||
+      req.path.startsWith('/campaign-studio/webhook')) {
     return next();
   }
 
