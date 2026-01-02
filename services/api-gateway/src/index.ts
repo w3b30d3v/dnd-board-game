@@ -14,6 +14,9 @@ import campaignRoutes from './routes/campaigns.js';
 import dmRoutes from './routes/dm.js';
 import campaignStudioRoutes from './routes/campaignStudio.js';
 import gameRoutes from './routes/game.js';
+import profileRoutes from './routes/profile.js';
+import adminRoutes from './routes/admin.js';
+import { checkStorageHealth } from './services/storageService.js';
 
 // Verify database connection and schema on startup
 async function verifyDatabase() {
@@ -106,6 +109,55 @@ app.get('/health/db', async (_req, res) => {
   }
 });
 
+// Storage health check (S3/R2)
+app.get('/health/storage', async (_req, res) => {
+  const storageConfigured = !!process.env.S3_ACCESS_KEY;
+
+  if (!storageConfigured) {
+    res.status(503).json({
+      status: 'not_configured',
+      storage: 'disabled',
+      message: 'S3/R2 storage not configured - AI images use temporary URLs',
+      hint: 'Set S3_ACCESS_KEY, S3_SECRET_KEY, S3_ENDPOINT, S3_PUBLIC_URL environment variables',
+      timestamp: new Date().toISOString()
+    });
+    return;
+  }
+
+  try {
+    const health = await checkStorageHealth();
+    if (health.healthy) {
+      res.json({
+        status: 'ok',
+        storage: 'connected',
+        endpoint: health.endpoint,
+        bucket: health.bucket,
+        publicUrl: process.env.S3_PUBLIC_URL || 'not set',
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(503).json({
+        status: 'error',
+        storage: 'disconnected',
+        endpoint: health.endpoint,
+        bucket: health.bucket,
+        error: health.error,
+        hint: 'Check S3 credentials and endpoint configuration',
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error({ err: error }, 'Storage health check failed');
+    res.status(503).json({
+      status: 'error',
+      storage: 'error',
+      error: message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // API info
 app.get('/api', (_req, res) => {
   res.json({
@@ -123,6 +175,8 @@ app.use('/campaigns', campaignRoutes);
 app.use('/dm', dmRoutes);
 app.use('/campaign-studio', campaignStudioRoutes);
 app.use('/game', gameRoutes);
+app.use('/profile', profileRoutes);
+app.use('/admin', adminRoutes);
 
 // Error handling middleware
 app.use(

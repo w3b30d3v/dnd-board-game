@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
@@ -14,19 +14,81 @@ interface UserStats {
   totalPlayTime: string;
 }
 
+interface UserProfile {
+  bio?: string;
+  gender?: string;
+  avatarUrl?: string;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, isLoading } = useAuthStore();
+  const { user, isLoading, token, updateUser } = useAuthStore();
   const isAuthenticated = !!user;
-  const [stats] = useState<UserStats>({
+  const [stats, setStats] = useState<UserStats>({
     charactersCreated: 0,
     campaignsPlayed: 0,
     sessionsCompleted: 0,
     totalPlayTime: '0h',
   });
+  const [statsLoading, setStatsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
+  const [gender, setGender] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [generatingAvatar, setGeneratingAvatar] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>();
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+  // Fetch profile data
+  const fetchProfile = useCallback(async () => {
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${API_URL}/profile`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.user) {
+          setBio(data.user.bio || '');
+          setGender(data.user.gender || '');
+          setAvatarUrl(data.user.avatarUrl);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+    }
+  }, [API_URL, token]);
+
+  // Fetch stats
+  const fetchStats = useCallback(async () => {
+    if (!token) return;
+
+    try {
+      setStatsLoading(true);
+      const response = await fetch(`${API_URL}/profile/stats`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.stats) {
+          setStats(data.stats);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [API_URL, token]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -37,12 +99,87 @@ export default function ProfilePage() {
   useEffect(() => {
     if (user) {
       setDisplayName(user.displayName || user.username || '');
+      setAvatarUrl(user.avatarUrl || undefined);
     }
   }, [user]);
 
+  useEffect(() => {
+    if (token) {
+      fetchProfile();
+      fetchStats();
+    }
+  }, [token, fetchProfile, fetchStats]);
+
   const handleSave = async () => {
-    // Save profile changes
-    setIsEditing(false);
+    if (!token) return;
+
+    setSaving(true);
+    try {
+      const response = await fetch(`${API_URL}/profile`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          displayName,
+          bio,
+          gender: gender || null,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.user) {
+          // Update the auth store with new user data
+          updateUser({
+            displayName: data.user.displayName,
+            avatarUrl: data.user.avatarUrl,
+          });
+        }
+        setIsEditing(false);
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to save profile');
+      }
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+      alert('Failed to save profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleGenerateAvatar = async () => {
+    if (!token) return;
+
+    setGeneratingAvatar(true);
+    try {
+      const response = await fetch(`${API_URL}/profile/generate-avatar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.avatarUrl) {
+          setAvatarUrl(data.avatarUrl);
+          // Update the auth store
+          updateUser({ avatarUrl: data.avatarUrl });
+        }
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to generate avatar');
+      }
+    } catch (error) {
+      console.error('Failed to generate avatar:', error);
+      alert('Failed to generate avatar');
+    } finally {
+      setGeneratingAvatar(false);
+    }
   };
 
   if (isLoading) {
@@ -85,9 +222,10 @@ export default function ProfilePage() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleSave}
-                className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors"
+                disabled={saving}
+                className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors disabled:opacity-50"
               >
-                Save
+                {saving ? 'Saving...' : 'Save'}
               </motion.button>
             ) : (
               <motion.button
@@ -114,9 +252,9 @@ export default function ProfilePage() {
             {/* Avatar */}
             <div className="relative">
               <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 border-2 border-primary/50 overflow-hidden">
-                {user.avatarUrl ? (
+                {avatarUrl || user.avatarUrl ? (
                   <Image
-                    src={user.avatarUrl}
+                    src={avatarUrl || user.avatarUrl || ''}
                     alt={user.displayName || user.username}
                     width={128}
                     height={128}
@@ -129,12 +267,25 @@ export default function ProfilePage() {
                 )}
               </div>
               {isEditing && (
-                <button className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white hover:bg-primary-dark transition-colors">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleGenerateAvatar}
+                  disabled={generatingAvatar}
+                  className="absolute bottom-0 right-0 w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white hover:bg-primary-dark transition-colors disabled:opacity-50"
+                  title="Generate AI Avatar"
+                >
+                  {generatingAvatar ? (
+                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                </motion.button>
               )}
             </div>
 
@@ -157,16 +308,36 @@ export default function ProfilePage() {
               <p className="text-text-muted text-sm mt-1">{user.email}</p>
 
               {isEditing ? (
-                <textarea
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  placeholder="Tell us about yourself..."
-                  className="mt-4 w-full bg-background border border-white/10 rounded-lg p-3 text-white placeholder-text-muted resize-none h-24"
-                />
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <label className="block text-sm text-text-muted mb-1">Gender (optional)</label>
+                    <select
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value)}
+                      className="w-full md:w-48 bg-background border border-white/10 rounded-lg p-2 text-white"
+                    >
+                      <option value="">Prefer not to say</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="non-binary">Non-binary</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-text-muted mb-1">Bio</label>
+                    <textarea
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      placeholder="Tell us about yourself... (used for AI avatar generation)"
+                      className="w-full bg-background border border-white/10 rounded-lg p-3 text-white placeholder-text-muted resize-none h-24"
+                      maxLength={500}
+                    />
+                    <p className="text-xs text-text-muted mt-1">{bio.length}/500 characters</p>
+                  </div>
+                </div>
               ) : bio ? (
                 <p className="mt-4 text-text-secondary">{bio}</p>
               ) : (
-                <p className="mt-4 text-text-muted italic">No bio yet</p>
+                <p className="mt-4 text-text-muted italic">No bio yet - add one to generate a personalized AI avatar!</p>
               )}
 
               <p className="mt-4 text-text-muted text-sm">
@@ -194,6 +365,7 @@ export default function ProfilePage() {
             }
             label="Characters"
             value={stats.charactersCreated}
+            loading={statsLoading}
           />
           <StatCard
             icon={
@@ -203,6 +375,7 @@ export default function ProfilePage() {
             }
             label="Campaigns"
             value={stats.campaignsPlayed}
+            loading={statsLoading}
           />
           <StatCard
             icon={
@@ -212,6 +385,7 @@ export default function ProfilePage() {
             }
             label="Sessions"
             value={stats.sessionsCompleted}
+            loading={statsLoading}
           />
           <StatCard
             icon={
@@ -221,6 +395,7 @@ export default function ProfilePage() {
             }
             label="Play Time"
             value={stats.totalPlayTime}
+            loading={statsLoading}
             isString
           />
         </motion.section>
@@ -286,18 +461,26 @@ function StatCard({
   icon,
   label,
   value,
-  isString = false
+  isString = false,
+  loading = false
 }: {
   icon: React.ReactNode;
   label: string;
   value: number | string;
   isString?: boolean;
+  loading?: boolean;
 }) {
   return (
     <div className="bg-surface rounded-xl border border-white/10 p-4 text-center">
       <div className="text-primary mb-2 flex justify-center">{icon}</div>
       <div className="text-2xl font-bold text-white">
-        {isString ? value : value.toLocaleString()}
+        {loading ? (
+          <div className="w-8 h-6 bg-white/10 animate-pulse rounded mx-auto" />
+        ) : isString ? (
+          value
+        ) : (
+          (value as number).toLocaleString()
+        )}
       </div>
       <div className="text-text-muted text-sm">{label}</div>
     </div>

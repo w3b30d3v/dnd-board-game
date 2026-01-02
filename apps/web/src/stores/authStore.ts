@@ -44,6 +44,7 @@ interface AuthState {
   clearError: () => void;
   initialize: () => void;
   setHasHydrated: (state: boolean) => void;
+  updateUser: (updates: Partial<User>) => void;
 }
 
 type AuthPersist = (
@@ -171,6 +172,13 @@ export const useAuthStore = create<AuthState>()(
           api.setRefreshToken(refreshToken);
         }
         set({ isInitialized: true });
+      },
+
+      updateUser: (updates: Partial<User>) => {
+        const { user } = get();
+        if (user) {
+          set({ user: { ...user, ...updates } });
+        }
       },
     }),
     {

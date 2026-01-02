@@ -473,7 +473,7 @@ export default function ContentEditorHubContent() {
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-text-primary group-hover:text-primary transition-colors">AI Campaign Studio</p>
+                    <p className="text-sm font-medium text-text-primary group-hover:text-primary transition-colors">Campaign Studio</p>
                     <p className="text-xs text-text-muted">AI-powered creation</p>
                   </div>
                 </Link>

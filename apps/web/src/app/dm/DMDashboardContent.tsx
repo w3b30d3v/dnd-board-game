@@ -399,7 +399,7 @@ export default function DMDashboardContent() {
                   whileTap={{ scale: 0.98 }}
                   className="px-4 py-2 bg-gradient-to-r from-purple-600 to-primary text-white rounded-lg font-medium shadow-lg shadow-purple-500/20"
                 >
-                  ✨ AI Campaign Studio
+                  ✨ Campaign Studio
                 </motion.button>
               </Link>
             </div>
@@ -718,7 +718,7 @@ export default function DMDashboardContent() {
                 className="p-4 bg-gradient-to-br from-purple-900/30 to-bg-elevated rounded-lg text-center cursor-pointer hover:from-purple-900/50 transition-all border border-purple-500/20"
               >
                 <span className="text-2xl block mb-2">✨</span>
-                <span className="text-sm text-purple-400 font-medium">AI Studio</span>
+                <span className="text-sm text-purple-400 font-medium">Campaign Studio</span>
               </motion.div>
             </Link>
             <Link href="/dm/campaigns">

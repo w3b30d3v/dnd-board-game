@@ -1047,7 +1047,7 @@ export default function DashboardContent() {
                     className="p-3 rounded-lg text-center cursor-pointer border border-border/50 hover:border-secondary/50 transition-colors"
                   >
                     <span className="text-xl block mb-1">✨</span>
-                    <span className="text-xs text-text-secondary">AI Campaign</span>
+                    <span className="text-xs text-text-secondary">Campaign Studio</span>
                   </motion.div>
                 </Link>
                 <Link href="/dm">
