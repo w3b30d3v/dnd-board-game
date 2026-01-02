@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { D20Icon } from './DnDIcons';
 import { useAuthStore } from '@/stores/authStore';
+import { DiceRollerProvider } from '@/hooks/useDiceRoller';
 
 // Navigation icons
 function HomeIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
@@ -313,11 +314,12 @@ export function AppShell({ children, showSidebar = true }: AppShellProps) {
   const shouldShowSidebar = showSidebar && pathname !== null && !hideSidebarPaths.includes(pathname);
 
   if (!shouldShowSidebar) {
-    return <>{children}</>;
+    return <DiceRollerProvider>{children}</DiceRollerProvider>;
   }
 
   return (
     <SidebarContext.Provider value={{ isExpanded, setIsExpanded, toggleSidebar }}>
+      <DiceRollerProvider>
       <div className="flex min-h-screen">
         {/* Mobile overlay */}
         <AnimatePresence>
@@ -651,6 +653,7 @@ export function AppShell({ children, showSidebar = true }: AppShellProps) {
           {children}
         </motion.main>
       </div>
+      </DiceRollerProvider>
     </SidebarContext.Provider>
   );
 }

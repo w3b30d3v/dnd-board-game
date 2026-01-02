@@ -1,32 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
+import {
+  usePreferencesStore,
+  type UserPreferences,
+  type DiceAnimationFrequency,
+} from '@/stores/preferencesStore';
 import Link from 'next/link';
-
-interface UserPreferences {
-  theme: 'dark' | 'light' | 'system';
-  soundEnabled: boolean;
-  musicEnabled: boolean;
-  notificationsEnabled: boolean;
-  animationsReduced: boolean;
-}
 
 export default function SettingsPage() {
   const router = useRouter();
   const { user, isLoading } = useAuthStore();
   const isAuthenticated = !!user;
-  const [preferences, setPreferences] = useState<UserPreferences>({
-    theme: 'dark',
-    soundEnabled: true,
-    musicEnabled: true,
-    notificationsEnabled: true,
-    animationsReduced: false,
-  });
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const { preferences, setPreference, _hasHydrated } = usePreferencesStore();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -34,38 +23,18 @@ export default function SettingsPage() {
     }
   }, [isLoading, isAuthenticated, router]);
 
-  useEffect(() => {
-    // Load preferences from localStorage
-    const stored = localStorage.getItem('userPreferences');
-    if (stored) {
-      try {
-        setPreferences(JSON.parse(stored));
-      } catch {
-        // Use defaults
-      }
-    }
-  }, []);
-
   const handleSave = async () => {
-    setSaving(true);
-    // Save to localStorage
-    localStorage.setItem('userPreferences', JSON.stringify(preferences));
-
-    // Simulate API save
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    // Preferences are auto-saved via zustand persist
+    // Show save confirmation to user
   };
 
   const togglePreference = (key: keyof UserPreferences) => {
     if (typeof preferences[key] === 'boolean') {
-      setPreferences(prev => ({ ...prev, [key]: !prev[key] }));
+      setPreference(key, !preferences[key]);
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !_hasHydrated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-12 h-12 spinner" />
@@ -90,15 +59,7 @@ export default function SettingsPage() {
             </Link>
             <h1 className="text-2xl font-cinzel font-bold text-white">Settings</h1>
           </div>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleSave}
-            disabled={saving}
-            className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors disabled:opacity-50"
-          >
-            {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
-          </motion.button>
+          <span className="text-sm text-text-muted">Changes are saved automatically</span>
         </div>
       </header>
 
@@ -151,7 +112,7 @@ export default function SettingsPage() {
               </div>
               <select
                 value={preferences.theme}
-                onChange={(e) => setPreferences(prev => ({ ...prev, theme: e.target.value as UserPreferences['theme'] }))}
+                onChange={(e) => setPreference('theme', e.target.value as UserPreferences['theme'])}
                 className="bg-white border border-white/10 rounded-lg px-3 py-2 text-gray-900"
               >
                 <option value="dark" className="text-gray-900 bg-white">Dark</option>
@@ -167,6 +128,59 @@ export default function SettingsPage() {
               <ToggleSwitch
                 enabled={preferences.animationsReduced}
                 onToggle={() => togglePreference('animationsReduced')}
+              />
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Dice Animation Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-surface rounded-xl border border-white/10 p-6"
+        >
+          <h2 className="text-xl font-cinzel font-bold text-white mb-4">Dice Animations</h2>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between py-3">
+              <div>
+                <p className="text-white font-medium">Animation Frequency</p>
+                <p className="text-text-muted text-sm">When to show 3D dice roll animations</p>
+              </div>
+              <select
+                value={preferences.diceAnimationFrequency}
+                onChange={(e) => setPreference('diceAnimationFrequency', e.target.value as DiceAnimationFrequency)}
+                className="bg-white border border-white/10 rounded-lg px-3 py-2 text-gray-900"
+              >
+                <option value="always" className="text-gray-900 bg-white">Always</option>
+                <option value="combat-only" className="text-gray-900 bg-white">Combat Only</option>
+                <option value="important-only" className="text-gray-900 bg-white">Important Rolls Only</option>
+                <option value="never" className="text-gray-900 bg-white">Never (Instant Results)</option>
+              </select>
+            </div>
+            <div className="flex items-center justify-between py-3">
+              <div>
+                <p className="text-white font-medium">Animation Speed</p>
+                <p className="text-text-muted text-sm">How fast dice animations play</p>
+              </div>
+              <select
+                value={preferences.diceAnimationSpeed}
+                onChange={(e) => setPreference('diceAnimationSpeed', e.target.value as 'slow' | 'normal' | 'fast')}
+                className="bg-white border border-white/10 rounded-lg px-3 py-2 text-gray-900"
+              >
+                <option value="slow" className="text-gray-900 bg-white">Slow (Dramatic)</option>
+                <option value="normal" className="text-gray-900 bg-white">Normal</option>
+                <option value="fast" className="text-gray-900 bg-white">Fast</option>
+              </select>
+            </div>
+            <div className="flex items-center justify-between py-3">
+              <div>
+                <p className="text-white font-medium">Critical Celebrations</p>
+                <p className="text-text-muted text-sm">Show particle effects on critical hits and fumbles</p>
+              </div>
+              <ToggleSwitch
+                enabled={preferences.diceCelebrationEnabled}
+                onToggle={() => setPreference('diceCelebrationEnabled', !preferences.diceCelebrationEnabled)}
               />
             </div>
           </div>
@@ -191,6 +205,22 @@ export default function SettingsPage() {
                 onToggle={() => togglePreference('soundEnabled')}
               />
             </div>
+            {preferences.soundEnabled && (
+              <div className="flex items-center justify-between py-3">
+                <div>
+                  <p className="text-white font-medium">Sound Volume</p>
+                  <p className="text-text-muted text-sm">Adjust sound effect volume</p>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={preferences.soundVolume}
+                  onChange={(e) => setPreference('soundVolume', parseInt(e.target.value))}
+                  className="w-32 accent-primary"
+                />
+              </div>
+            )}
             <div className="flex items-center justify-between py-3">
               <div>
                 <p className="text-white font-medium">Background Music</p>
@@ -201,6 +231,22 @@ export default function SettingsPage() {
                 onToggle={() => togglePreference('musicEnabled')}
               />
             </div>
+            {preferences.musicEnabled && (
+              <div className="flex items-center justify-between py-3">
+                <div>
+                  <p className="text-white font-medium">Music Volume</p>
+                  <p className="text-text-muted text-sm">Adjust background music volume</p>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={preferences.musicVolume}
+                  onChange={(e) => setPreference('musicVolume', parseInt(e.target.value))}
+                  className="w-32 accent-primary"
+                />
+              </div>
+            )}
           </div>
         </motion.section>
 
@@ -208,7 +254,7 @@ export default function SettingsPage() {
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.25 }}
           className="bg-surface rounded-xl border border-white/10 p-6"
         >
           <h2 className="text-xl font-cinzel font-bold text-white mb-4">Notifications</h2>
@@ -230,7 +276,7 @@ export default function SettingsPage() {
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.3 }}
           className="bg-surface rounded-xl border border-danger/30 p-6"
         >
           <h2 className="text-xl font-cinzel font-bold text-danger mb-4">Danger Zone</h2>

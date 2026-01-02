@@ -30,6 +30,7 @@ interface PortraitRequest {
     class: string;
     background?: string;
     name?: string;
+    gender?: string; // Character's own gender if specified
     appearance?: {
       hairColor?: string;
       hairStyle?: string;
@@ -95,11 +96,24 @@ router.post('/generate/character-images', auth, async (req: Request, res: Respon
       });
     }
 
-    // Check user's generation limit
+    // Check user's generation limit AND get user's gender preference from profile
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { aiCharactersGenerated: true },
+      select: { aiCharactersGenerated: true, preferences: true },
     });
+
+    // Get gender: use character's gender if specified, otherwise fall back to user's profile gender
+    let characterGender = character.gender;
+    if (!characterGender && user?.preferences) {
+      const preferences = user.preferences as Record<string, unknown>;
+      characterGender = preferences.gender as string | undefined;
+    }
+
+    // Add gender to character data for prompt generation
+    const characterWithGender = {
+      ...character,
+      gender: characterGender,
+    };
 
     const currentCount = user?.aiCharactersGenerated || 0;
     const totalImagesPerCharacter = 1 + MAX_FULLBODY_IMAGES_PER_CHARACTER; // 1 portrait + N full body
@@ -116,7 +130,7 @@ router.post('/generate/character-images', auth, async (req: Request, res: Respon
 
     // If NanoBanana API is not configured, return fallback immediately
     if (!NANOBANANA_API_KEY) {
-      const fallbackUrl = generateDiceBearFallback(character);
+      const fallbackUrl = generateDiceBearFallback(characterWithGender);
       const fallbackImages: Record<string, string> = { portrait: fallbackUrl };
       for (let i = 1; i <= MAX_FULLBODY_IMAGES_PER_CHARACTER; i++) {
         fallbackImages[`fullBody${i}`] = fallbackUrl;
@@ -133,8 +147,10 @@ router.post('/generate/character-images', auth, async (req: Request, res: Respon
 
     // Generate a unique character identity hash for consistency across all images
     // This helps the AI understand these images are of the SAME character
-    const characterIdentity = generateCharacterIdentity(character);
+    // Now includes gender for consistent image generation
+    const characterIdentity = generateCharacterIdentity(characterWithGender);
     console.log('Character identity for consistency:', characterIdentity.substring(0, 100) + '...');
+    console.log('Character gender:', characterGender || 'not specified');
 
     // Generate images: 1 portrait + N full-body images
     const images: Record<string, string> = {};
@@ -142,13 +158,13 @@ router.post('/generate/character-images', auth, async (req: Request, res: Respon
 
     // 1. Generate portrait (head/shoulders) - always first
     try {
-      const portraitPrompt = buildCharacterPrompt(character, 'portrait', characterIdentity);
+      const portraitPrompt = buildCharacterPrompt(characterWithGender, 'portrait', characterIdentity);
       images.portrait = await generateWithNanoBanana(portraitPrompt, quality, 'portrait');
       successCount++;
       console.log('Portrait generated successfully');
     } catch (error) {
       console.warn('Portrait generation failed:', error);
-      images.portrait = generateDiceBearFallback(character);
+      images.portrait = generateDiceBearFallback(characterWithGender);
     }
 
     // 2. Generate full-body images based on config
@@ -156,13 +172,13 @@ router.post('/generate/character-images', auth, async (req: Request, res: Respon
     for (let i = 1; i <= MAX_FULLBODY_IMAGES_PER_CHARACTER; i++) {
       const style = fullBodyStyles[(i - 1) % fullBodyStyles.length] || 'full_body';
       try {
-        const prompt = buildCharacterPrompt(character, style, characterIdentity);
+        const prompt = buildCharacterPrompt(characterWithGender, style, characterIdentity);
         images[`fullBody${i}`] = await generateWithNanoBanana(prompt, quality, style);
         successCount++;
         console.log(`Full body ${i} generated successfully`);
       } catch (error) {
         console.warn(`Full body ${i} generation failed:`, error);
-        images[`fullBody${i}`] = generateDiceBearFallback(character);
+        images[`fullBody${i}`] = generateDiceBearFallback(characterWithGender);
       }
     }
 
@@ -465,7 +481,7 @@ router.post('/webhook/nanobanana', async (req: Request, res: Response) => {
 
 // Generate a consistent character identity string that anchors all images to the same character
 function generateCharacterIdentity(character: PortraitRequest['character']): string {
-  const { race, class: charClass, appearance, name } = character;
+  const { race, class: charClass, appearance, name, gender } = character;
 
   // Build very specific physical characteristics that MUST be consistent across all images
   const identityParts = [
@@ -473,20 +489,77 @@ function generateCharacterIdentity(character: PortraitRequest['character']): str
     `EXACT SAME CHARACTER in every image - identical appearance`,
   ];
 
-  // Race-specific fixed features
-  const raceIdentity: Record<string, string> = {
-    human: 'human with weathered tanned skin, brown eyes, strong jaw, short brown hair',
-    elf: 'high elf with pale golden skin, bright amber eyes, long silver-white hair, pointed ears',
-    dwarf: 'dwarf with ruddy complexion, deep brown eyes, thick braided auburn beard, bald head',
-    halfling: 'halfling with rosy cheeks, bright green eyes, curly chestnut hair, bare hairy feet',
-    dragonborn: 'dragonborn with brass metallic scales, yellow reptilian eyes, no hair, small back-swept horns',
-    tiefling: 'tiefling with deep crimson skin, solid gold eyes without pupils, curved ram horns, long black hair',
-    gnome: 'gnome with tan skin, huge curious blue eyes, wild white hair sticking up, long pointed nose',
-    'half-elf': 'half-elf with fair skin, violet eyes, long auburn hair, subtle pointed ears',
-    'half-orc': 'half-orc with gray-green skin, amber eyes, black hair in topknot, prominent lower tusks',
+  // Add gender explicitly at the start for prominence
+  if (gender) {
+    const genderTerm = gender.toLowerCase() === 'male' ? 'male' :
+                       gender.toLowerCase() === 'female' ? 'female' :
+                       gender.toLowerCase() === 'non-binary' ? 'non-binary androgynous' :
+                       gender; // Use as-is for other values
+    identityParts.push(`GENDER: ${genderTerm} character`);
+  }
+
+  // Race-specific fixed features - now with gender awareness
+  const getGenderedRaceIdentity = (raceLower: string, genderVal?: string): string => {
+    const isFemale = genderVal?.toLowerCase() === 'female';
+    const isMale = genderVal?.toLowerCase() === 'male';
+
+    const raceIdentities: Record<string, { male: string; female: string; neutral: string }> = {
+      human: {
+        male: 'human man with weathered tanned skin, brown eyes, strong jaw, short brown hair, masculine features',
+        female: 'human woman with warm skin, brown eyes, defined cheekbones, flowing brown hair, feminine features',
+        neutral: 'human with weathered tanned skin, brown eyes, strong jaw, short brown hair',
+      },
+      elf: {
+        male: 'high elf man with pale golden skin, bright amber eyes, long silver-white hair, pointed ears, elegant masculine features',
+        female: 'high elf woman with pale golden skin, bright amber eyes, long silver-white hair flowing gracefully, pointed ears, ethereal feminine beauty',
+        neutral: 'high elf with pale golden skin, bright amber eyes, long silver-white hair, pointed ears',
+      },
+      dwarf: {
+        male: 'dwarf man with ruddy complexion, deep brown eyes, magnificent thick braided auburn beard, bald head, stocky masculine build',
+        female: 'dwarf woman with ruddy complexion, deep brown eyes, auburn hair in elaborate braids, strong feminine features, stocky build',
+        neutral: 'dwarf with ruddy complexion, deep brown eyes, thick braided auburn beard, bald head',
+      },
+      halfling: {
+        male: 'halfling man with rosy cheeks, bright green eyes, curly chestnut hair, bare hairy feet, cheerful masculine face',
+        female: 'halfling woman with rosy cheeks, bright green eyes, curly chestnut hair, bare feet, cheerful feminine face',
+        neutral: 'halfling with rosy cheeks, bright green eyes, curly chestnut hair, bare hairy feet',
+      },
+      dragonborn: {
+        male: 'dragonborn male with brass metallic scales, yellow reptilian eyes, no hair, small back-swept horns, powerful masculine build',
+        female: 'dragonborn female with brass metallic scales, yellow reptilian eyes, no hair, elegant back-swept horns, strong feminine build',
+        neutral: 'dragonborn with brass metallic scales, yellow reptilian eyes, no hair, small back-swept horns',
+      },
+      tiefling: {
+        male: 'tiefling man with deep crimson skin, solid gold eyes without pupils, curved ram horns, long black hair, devilishly handsome',
+        female: 'tiefling woman with deep crimson skin, solid gold eyes without pupils, elegant curved horns, long black hair, strikingly beautiful',
+        neutral: 'tiefling with deep crimson skin, solid gold eyes without pupils, curved ram horns, long black hair',
+      },
+      gnome: {
+        male: 'gnome man with tan skin, huge curious blue eyes, wild white hair sticking up, long pointed nose, energetic masculine features',
+        female: 'gnome woman with tan skin, huge curious blue eyes, wild white hair, delicate pointed nose, lively feminine features',
+        neutral: 'gnome with tan skin, huge curious blue eyes, wild white hair sticking up, long pointed nose',
+      },
+      'half-elf': {
+        male: 'half-elf man with fair skin, violet eyes, long auburn hair, subtle pointed ears, handsome blended features',
+        female: 'half-elf woman with fair skin, violet eyes, long flowing auburn hair, subtle pointed ears, beautiful blended features',
+        neutral: 'half-elf with fair skin, violet eyes, long auburn hair, subtle pointed ears',
+      },
+      'half-orc': {
+        male: 'half-orc man with gray-green skin, amber eyes, black hair in warrior topknot, prominent lower tusks, powerful masculine build',
+        female: 'half-orc woman with gray-green skin, amber eyes, black hair, subtle lower tusks, strong athletic feminine build',
+        neutral: 'half-orc with gray-green skin, amber eyes, black hair in topknot, prominent lower tusks',
+      },
+    };
+
+    const raceData = raceIdentities[raceLower];
+    if (!raceData) return `${raceLower} adventurer with distinctive features`;
+
+    if (isFemale) return raceData.female;
+    if (isMale) return raceData.male;
+    return raceData.neutral;
   };
 
-  identityParts.push(raceIdentity[race.toLowerCase()] || `${race} adventurer with distinctive features`);
+  identityParts.push(getGenderedRaceIdentity(race.toLowerCase(), gender));
 
   // Add appearance details if provided (these override defaults)
   if (appearance) {
@@ -509,10 +582,10 @@ function buildCharacterPrompt(
   style: string,
   characterIdentity?: string
 ): { prompt: string; negativePrompt: string } {
-  const { race, class: charClass, appearance } = character;
+  const { race, class: charClass, appearance, gender } = character;
 
   // Build a comprehensive full-body D&D character prompt
-  const raceDetails = getFullRaceDescription(race);
+  const raceDetails = getFullRaceDescription(race, gender);
   const classDetails = getFullClassDescription(charClass);
 
   // Core art style - reference specific D&D artists and styles
@@ -670,101 +743,107 @@ function buildCharacterPrompt(
   return { prompt, negativePrompt };
 }
 
-function getFullRaceDescription(race: string): string {
-  const descriptions: Record<string, string> = {
-    human: `human warrior,
-      strong defined jawline with slight stubble,
-      weathered tanned skin showing years of adventure,
-      determined fierce eyes with crow's feet from squinting in sun,
-      battle scars across cheek and brow,
-      athletic muscular build,
-      approximately 6 feet tall,
-      shoulder-length brown hair tied back practically,
-      noble bearing despite rugged appearance`,
+function getFullRaceDescription(race: string, gender?: string): string {
+  const isFemale = gender?.toLowerCase() === 'female';
+  const isMale = gender?.toLowerCase() === 'male';
 
-    elf: `high elf,
-      tall slender elegant build approximately 6 feet,
+  // Gender-specific descriptors
+  const genderDescriptors = {
+    male: { build: 'masculine', features: 'handsome rugged', form: 'man' },
+    female: { build: 'feminine', features: 'beautiful', form: 'woman' },
+    neutral: { build: '', features: '', form: '' },
+  };
+
+  const gd = isFemale ? genderDescriptors.female : isMale ? genderDescriptors.male : genderDescriptors.neutral;
+
+  const descriptions: Record<string, string> = {
+    human: `human ${gd.form || 'warrior'}${isFemale ? ', athletic build, defined cheekbones, determined expression, long brown hair' : ', strong defined jawline with slight stubble, weathered tanned skin showing years of adventure, determined fierce eyes with crow\'s feet from squinting in sun, battle scars across cheek and brow, athletic muscular build'},
+      approximately ${isFemale ? '5.5' : '6'} feet tall,
+      ${isFemale ? 'practical armor-ready hair' : 'shoulder-length brown hair tied back practically'},
+      noble bearing${isFemale ? '' : ' despite rugged appearance'}`,
+
+    elf: `high elf ${gd.form || ''}${isFemale ? ' with' : ','} tall slender elegant build approximately ${isFemale ? '5.5' : '6'} feet,
       impossibly graceful posture and movement,
       elongated pointed ears extending 4 inches,
-      angular high cheekbones and narrow chin,
+      angular high cheekbones and ${isFemale ? 'delicate' : 'narrow'} chin,
       large almond-shaped eyes with slight luminescence,
       flawless ageless pale skin with slight golden undertone,
       long flowing silver or golden hair past shoulders,
-      ethereal otherworldly beauty,
+      ethereal otherworldly ${isFemale ? 'feminine ' : ''}beauty,
       ancient wisdom visible in expression`,
 
-    dwarf: `mountain dwarf,
+    dwarf: `mountain dwarf ${gd.form || ''},
       short stocky powerful build approximately 4.5 feet tall,
-      extremely broad shoulders and barrel chest,
-      thick muscular arms like tree trunks,
-      magnificent long braided beard reaching belt with metal clan clasps,
+      extremely broad shoulders ${isFemale ? 'and strong frame' : 'and barrel chest'},
+      thick muscular arms,
+      ${isFemale ? 'elaborate braided auburn hair with metal clan clasps, proud strong features' : 'magnificent long braided beard reaching belt with metal clan clasps'},
       weathered ruddy complexion from forge work,
-      deep-set fierce proud eyes under heavy brow,
-      prominent broad nose,
-      intricate braided hair with metal rings,
+      deep-set fierce proud eyes under ${isFemale ? 'determined' : 'heavy'} brow,
+      ${isFemale ? 'strong nose' : 'prominent broad nose'},
+      ${isFemale ? 'intricate hair braids' : 'intricate braided hair'} with metal rings,
       visible clan tattoos on arms`,
 
-    halfling: `lightfoot halfling,
+    halfling: `lightfoot halfling ${gd.form || ''},
       small cheerful build approximately 3 feet tall,
       round friendly youthful face with rosy cheeks,
       large expressive bright eyes full of curiosity,
       curly brown or auburn hair slightly wild,
-      pointed slightly furry ears,
-      large hairy bare feet with tough soles,
+      pointed slightly ${isFemale ? '' : 'furry '}ears,
+      ${isFemale ? 'bare feet with tough soles' : 'large hairy bare feet with tough soles'},
       nimble quick appearance,
       mischievous knowing smile`,
 
-    dragonborn: `dragonborn warrior,
+    dragonborn: `dragonborn ${isFemale ? 'female warrior' : 'male warrior'},
       tall imposing reptilian humanoid approximately 6.5 feet,
-      powerful muscular scaled body,
+      powerful ${isFemale ? 'athletic' : 'muscular'} scaled body,
       draconic head with elongated snout and sharp teeth,
       scales colored metallic brass or chromatic red,
       no tail but vestigial wing nubs on back,
       yellow reptilian eyes with vertical slit pupils,
-      small horns sweeping back from skull,
+      ${isFemale ? 'elegant' : 'small'} horns sweeping back from skull,
       proud noble bearing of dragon ancestry`,
 
-    tiefling: `tiefling,
+    tiefling: `tiefling ${gd.form || ''},
       humanoid with obvious infernal heritage,
-      large curved ram-like horns sweeping back from forehead,
+      ${isFemale ? 'elegant' : 'large'} curved ${isFemale ? 'horns' : 'ram-like horns'} sweeping back from forehead,
       solid colored eyes without visible pupils glowing faintly,
       skin tinted deep crimson or purple,
       long pointed prehensile tail,
       sharp pointed teeth and slightly pointed ears,
       supernaturally attractive yet unsettling features,
-      otherworldly dangerous allure`,
+      otherworldly ${isFemale ? 'beautiful' : 'dangerous'} allure`,
 
-    gnome: `rock gnome,
+    gnome: `rock gnome ${gd.form || ''},
       very small build approximately 3 feet tall,
-      disproportionately large head with huge curious eyes,
-      long prominent pointed nose,
-      wild unkempt colorful hair sticking in all directions,
-      weathered tan skin from outdoor tinkering,
+      ${isFemale ? 'proportionate' : 'disproportionately large'} head with huge curious eyes,
+      ${isFemale ? 'cute' : 'long'} prominent pointed nose,
+      wild unkempt colorful hair ${isFemale ? 'in playful style' : 'sticking in all directions'},
+      ${isFemale ? 'fair' : 'weathered tan'} skin${isFemale ? '' : ' from outdoor tinkering'},
       animated excited expression,
       various tools and gadgets hanging from belt,
       nimble clever fingers`,
 
-    'half-elf': `half-elf,
+    'half-elf': `half-elf ${gd.form || ''},
       blend of human and elven features,
       approximately 5.5 feet tall with athletic build,
       subtle pointed ears not as pronounced as full elf,
-      slightly angular facial features softened by human heritage,
+      ${isFemale ? 'elegant' : 'slightly angular'} facial features ${isFemale ? 'with elven grace' : 'softened by human heritage'},
       bright intelligent eyes showing dual nature,
       can pass for either race from distance,
       natural grace combined with human adaptability`,
 
-    'half-orc': `half-orc,
-      large powerfully muscular build approximately 6.5 feet,
-      grayish-green skin tone with rough texture,
-      prominent lower tusks jutting from jaw,
-      heavy brow ridge over deep-set fierce eyes,
-      broad flat nose with flared nostrils,
-      coarse black hair often in warrior topknot,
-      ritual tribal scars on face and arms,
-      intimidating savage appearance`,
+    'half-orc': `half-orc ${gd.form || ''},
+      large powerfully ${isFemale ? 'athletic' : 'muscular'} build approximately ${isFemale ? '6' : '6.5'} feet,
+      grayish-green skin tone with ${isFemale ? 'smooth' : 'rough'} texture,
+      ${isFemale ? 'subtle' : 'prominent'} lower tusks ${isFemale ? '' : 'jutting from jaw'},
+      ${isFemale ? 'strong brow' : 'heavy brow ridge'} over deep-set fierce eyes,
+      broad ${isFemale ? '' : 'flat '}nose${isFemale ? '' : ' with flared nostrils'},
+      coarse black hair ${isFemale ? 'in practical style' : 'often in warrior topknot'},
+      ${isFemale ? 'tribal markings on face' : 'ritual tribal scars on face and arms'},
+      ${isFemale ? 'imposing powerful' : 'intimidating savage'} appearance`,
   };
 
-  return descriptions[race.toLowerCase()] || 'fantasy humanoid adventurer with distinctive features';
+  return descriptions[race.toLowerCase()] || `fantasy humanoid adventurer ${gender ? `(${gender})` : ''} with distinctive features`;
 }
 
 function getFullClassDescription(charClass: string): string {
