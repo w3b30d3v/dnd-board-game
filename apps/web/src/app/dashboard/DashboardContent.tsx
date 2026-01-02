@@ -114,19 +114,46 @@ interface CharacterCardModalProps {
 
 function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [failedUrls, setFailedUrls] = useState<Set<string>>(new Set());
+
+  // Generate DiceBear fallback URL for character
+  const generateFallback = (char: Character, variant: string = '') => {
+    const seed = `${char.race}-${char.class}-${char.name || 'hero'}${variant}`;
+    const styleMap: Record<string, string> = {
+      human: 'adventurer',
+      elf: 'lorelei',
+      dwarf: 'avataaars',
+      halfling: 'adventurer',
+      dragonborn: 'bottts',
+      tiefling: 'bottts',
+      gnome: 'micah',
+      'half-elf': 'lorelei',
+      'half-orc': 'avataaars',
+    };
+    const style = styleMap[char.race.toLowerCase()] || 'adventurer';
+    return `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=1e1b26&size=512`;
+  };
 
   if (!isOpen || !character) return null;
 
-  // Build array of available images
-  const imageList: { url: string; label: string }[] = [];
+  // Build array of available images with fallbacks for failed URLs
+  const imageList: { url: string; label: string; fallbackUrl: string }[] = [];
   if (character.portraitUrl) {
-    imageList.push({ url: character.portraitUrl, label: 'Portrait' });
+    imageList.push({
+      url: character.portraitUrl,
+      label: 'Portrait',
+      fallbackUrl: generateFallback(character, '-portrait')
+    });
   }
   if (character.fullBodyUrls && character.fullBodyUrls.length > 0) {
     character.fullBodyUrls.forEach((url, index) => {
       if (url) {
         const labels = ['Heroic Pose', 'Action Pose'];
-        imageList.push({ url, label: labels[index] || `Full Body ${index + 1}` });
+        imageList.push({
+          url,
+          label: labels[index] || `Full Body ${index + 1}`,
+          fallbackUrl: generateFallback(character, `-fullbody-${index}`)
+        });
       }
     });
   }
@@ -134,6 +161,20 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
   const hasImages = imageList.length > 0;
   const currentImage = hasImages ? (imageList[currentImageIndex] || imageList[0]) : null;
   const hasMultipleImages = imageList.length > 1;
+
+  // Get the actual URL to display (fallback if original failed)
+  const getDisplayUrl = (img: { url: string; fallbackUrl: string } | null) => {
+    if (!img) return '';
+    return failedUrls.has(img.url) ? img.fallbackUrl : img.url;
+  };
+
+  // Handle image load error
+  const handleImageError = () => {
+    if (currentImage && !failedUrls.has(currentImage.url)) {
+      console.warn(`Image failed to load: ${currentImage.url}, using fallback`);
+      setFailedUrls(prev => new Set(prev).add(currentImage.url));
+    }
+  };
   const isGenerating = character.status === 'generating';
 
   // Use flat ability scores from API
@@ -325,9 +366,10 @@ function CharacterCardModal({ isOpen, onClose, character }: CharacterCardModalPr
                 {hasImages && currentImage ? (
                   <>
                     <img
-                      src={currentImage.url}
+                      src={getDisplayUrl(currentImage)}
                       alt={character.name}
                       className="w-full h-full object-contain"
+                      onError={handleImageError}
                     />
                     {/* Navigation Arrows - only show if multiple images */}
                     {hasMultipleImages && (

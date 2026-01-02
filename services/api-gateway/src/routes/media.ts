@@ -7,6 +7,10 @@ import { auth } from '../middleware/auth.js';
 import { generatePersonalityContent, generateAllPersonalityContent } from '../services/personalityGenerator.js';
 import { config } from '../config.js';
 import { pendingImageTasks as sharedPendingTasks } from '../services/imageGenerationService.js';
+import { uploadImageFromUrl } from '../services/storageService.js';
+
+// Storage configuration
+const ENABLE_PERMANENT_STORAGE = process.env.S3_ACCESS_KEY ? true : false;
 
 const router: Router = Router();
 const prisma = new PrismaClient();
@@ -431,7 +435,20 @@ router.post('/webhook/nanobanana', async (req: Request, res: Response) => {
       // Extract image URL from nested structure
       console.log(`Extracted image URL: ${resultImageUrl}`);
       if (resultImageUrl) {
-        pending.resolve(resultImageUrl);
+        // Upload to permanent storage if enabled
+        if (ENABLE_PERMANENT_STORAGE) {
+          try {
+            console.log('Uploading webhook image to permanent storage...');
+            const permanentUrl = await uploadImageFromUrl(resultImageUrl, 'characters', 'webhook');
+            console.log(`Image stored permanently: ${permanentUrl}`);
+            pending.resolve(permanentUrl);
+          } catch (storageError) {
+            console.error('Storage upload failed, using temporary URL:', storageError);
+            pending.resolve(resultImageUrl);
+          }
+        } else {
+          pending.resolve(resultImageUrl);
+        }
       } else {
         pending.reject(new Error('No image URL in webhook response'));
       }
@@ -1002,9 +1019,25 @@ async function generateWithNanoBanana(
 
   // If image URL is returned immediately (unlikely but possible)
   if (data.data?.imageUrl) {
+    // Upload to permanent storage if enabled
+    if (ENABLE_PERMANENT_STORAGE) {
+      try {
+        return await uploadImageFromUrl(data.data.imageUrl, 'characters', style);
+      } catch {
+        return data.data.imageUrl;
+      }
+    }
     return data.data.imageUrl;
   }
   if (data.data?.imageUrls && data.data.imageUrls.length > 0 && data.data.imageUrls[0]) {
+    // Upload to permanent storage if enabled
+    if (ENABLE_PERMANENT_STORAGE) {
+      try {
+        return await uploadImageFromUrl(data.data.imageUrls[0], 'characters', style);
+      } catch {
+        return data.data.imageUrls[0];
+      }
+    }
     return data.data.imageUrls[0];
   }
 
@@ -1099,9 +1132,25 @@ async function generateCustomImage(
 
   // Immediate result
   if (data.data?.imageUrl) {
+    // Upload to permanent storage if enabled
+    if (ENABLE_PERMANENT_STORAGE) {
+      try {
+        return await uploadImageFromUrl(data.data.imageUrl, 'custom');
+      } catch {
+        return data.data.imageUrl;
+      }
+    }
     return data.data.imageUrl;
   }
   if (data.data?.imageUrls && data.data.imageUrls.length > 0 && data.data.imageUrls[0]) {
+    // Upload to permanent storage if enabled
+    if (ENABLE_PERMANENT_STORAGE) {
+      try {
+        return await uploadImageFromUrl(data.data.imageUrls[0], 'custom');
+      } catch {
+        return data.data.imageUrls[0];
+      }
+    }
     return data.data.imageUrls[0];
   }
 
@@ -1146,6 +1195,140 @@ function generateDiceBearFallback(character: PortraitRequest['character']): stri
 
   return `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=1e1b26&size=512`;
 }
+
+// ============================================
+// Regenerate Images for Existing Character
+// ============================================
+
+/**
+ * Regenerate images for an existing character
+ * Does NOT count against user limit (they already paid for this character)
+ * POST /media/regenerate/:characterId
+ */
+router.post('/regenerate/:characterId', auth, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const { characterId } = req.params;
+    const { quality = 'standard' } = req.body;
+
+    // Find the character and verify ownership
+    const character = await prisma.character.findUnique({
+      where: { id: characterId },
+      select: {
+        id: true,
+        userId: true,
+        name: true,
+        race: true,
+        class: true,
+        background: true,
+        appearance: true,
+      },
+    });
+
+    if (!character) {
+      return res.status(404).json({ success: false, error: 'Character not found' });
+    }
+
+    if (character.userId !== userId) {
+      return res.status(403).json({ success: false, error: 'You do not own this character' });
+    }
+
+    // Check if NanoBanana is configured
+    if (!NANOBANANA_API_KEY || !CALLBACK_BASE_URL) {
+      return res.status(500).json({
+        success: false,
+        error: 'Image generation service not configured',
+      });
+    }
+
+    console.log(`=== Regenerating images for character ${characterId} ===`);
+
+    // Build character data for prompt generation
+    const characterData = {
+      race: character.race,
+      class: character.class,
+      background: character.background,
+      name: character.name,
+      appearance: character.appearance as Record<string, string> | undefined,
+    };
+
+    // Generate character identity for consistency
+    const characterIdentity = generateCharacterIdentity(characterData);
+
+    // Generate images
+    const images: Record<string, string> = {};
+    let successCount = 0;
+    const errors: string[] = [];
+
+    // 1. Generate portrait
+    try {
+      const portraitPrompt = buildCharacterPrompt(characterData, 'portrait', characterIdentity);
+      images.portrait = await generateWithNanoBanana(portraitPrompt, quality, 'portrait');
+      successCount++;
+      console.log('Portrait regenerated successfully');
+    } catch (error: any) {
+      console.warn('Portrait regeneration failed:', error);
+      errors.push(`Portrait: ${error.message}`);
+      images.portrait = generateDiceBearFallback(characterData);
+    }
+
+    // 2. Generate full-body images
+    const fullBodyStyles = ['full_body', 'action_pose'];
+    const fullBodyUrls: string[] = [];
+
+    for (let i = 1; i <= MAX_FULLBODY_IMAGES_PER_CHARACTER; i++) {
+      const style = fullBodyStyles[(i - 1) % fullBodyStyles.length] || 'full_body';
+      try {
+        const prompt = buildCharacterPrompt(characterData, style, characterIdentity);
+        const url = await generateWithNanoBanana(prompt, quality, style);
+        fullBodyUrls.push(url);
+        images[`fullBody${i}`] = url;
+        successCount++;
+        console.log(`Full body ${i} regenerated successfully`);
+      } catch (error: any) {
+        console.warn(`Full body ${i} regeneration failed:`, error);
+        errors.push(`FullBody${i}: ${error.message}`);
+        const fallback = generateDiceBearFallback(characterData);
+        fullBodyUrls.push(fallback);
+        images[`fullBody${i}`] = fallback;
+      }
+    }
+
+    // Update character in database with new images
+    await prisma.character.update({
+      where: { id: characterId },
+      data: {
+        portraitUrl: images.portrait,
+        fullBodyUrls: fullBodyUrls,
+        imageSource: successCount > 0 ? 'nanobanana' : 'dicebear',
+      },
+    });
+
+    console.log(`Character ${characterId} images updated in database`);
+
+    return res.json({
+      success: true,
+      images,
+      source: successCount > 0 ? 'nanobanana' : 'fallback',
+      imagesGenerated: successCount,
+      totalImages: 1 + MAX_FULLBODY_IMAGES_PER_CHARACTER,
+      errors: errors.length > 0 ? errors : undefined,
+      message: successCount > 0
+        ? `Successfully regenerated ${successCount} image(s)`
+        : 'All image generations failed, using fallbacks',
+    });
+  } catch (error: any) {
+    console.error('Image regeneration failed:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Image regeneration failed',
+    });
+  }
+});
 
 // ============================================
 // Image Proxy Endpoint - Bypasses CORS issues

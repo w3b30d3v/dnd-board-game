@@ -3,8 +3,13 @@
 
 import { PrismaClient } from '@prisma/client';
 import { config } from '../config.js';
+import { uploadImageFromUrl } from './storageService.js';
 
 const prisma = new PrismaClient();
+
+// Storage configuration - enable permanent storage by default if S3 is configured
+const ENABLE_PERMANENT_STORAGE = process.env.S3_ACCESS_KEY ? true : false;
+console.log('Permanent storage enabled:', ENABLE_PERMANENT_STORAGE);
 
 // Get limits from config
 const MAX_AI_CHARACTERS_PER_USER = config.characterGeneration.maxCharactersPerUser;
@@ -141,7 +146,7 @@ export class ImageGenerationService {
   }
 
   // Handle webhook callback from NanoBanana
-  handleWebhook(taskId: string, imageUrl: string | null, error: string | null): void {
+  async handleWebhook(taskId: string, imageUrl: string | null, error: string | null): Promise<void> {
     const pending = pendingImageTasks.get(taskId);
     if (!pending) {
       console.warn(`No pending task found for taskId: ${taskId}`);
@@ -154,7 +159,15 @@ export class ImageGenerationService {
     if (error || !imageUrl) {
       pending.reject(new Error(error || 'No image URL in webhook response'));
     } else {
-      pending.resolve(imageUrl);
+      try {
+        // Upload to permanent storage before resolving
+        const permanentUrl = await this.storeImagePermanently(imageUrl, 'webhook');
+        pending.resolve(permanentUrl);
+      } catch (storageError) {
+        console.error('Storage upload failed in webhook, using temporary URL:', storageError);
+        // Fallback to temporary URL if storage fails
+        pending.resolve(imageUrl);
+      }
     }
   }
 
@@ -257,6 +270,28 @@ export class ImageGenerationService {
     return descriptions[charClass.toLowerCase()] || 'seasoned adventurer with appropriate gear';
   }
 
+  /**
+   * Store an image permanently in S3/MinIO
+   * Downloads from temporary URL and re-uploads to permanent storage
+   */
+  private async storeImagePermanently(temporaryUrl: string, style: string): Promise<string> {
+    if (!ENABLE_PERMANENT_STORAGE) {
+      console.log('Permanent storage disabled, using temporary URL');
+      return temporaryUrl;
+    }
+
+    try {
+      console.log(`Uploading ${style} image to permanent storage...`);
+      const permanentUrl = await uploadImageFromUrl(temporaryUrl, 'characters', style);
+      console.log(`Image stored permanently: ${permanentUrl}`);
+      return permanentUrl;
+    } catch (error) {
+      console.error('Failed to store image permanently, using temporary URL:', error);
+      // Fallback to temporary URL if storage fails
+      return temporaryUrl;
+    }
+  }
+
   private async generateWithNanoBanana(
     promptConfig: { prompt: string; negativePrompt: string },
     quality: string,
@@ -325,11 +360,11 @@ export class ImageGenerationService {
     // If image URL is returned immediately
     if (data.data?.imageUrl) {
       console.log('Got immediate image URL:', data.data.imageUrl);
-      return data.data.imageUrl;
+      return await this.storeImagePermanently(data.data.imageUrl, style);
     }
     if (data.data?.imageUrls && data.data.imageUrls.length > 0 && data.data.imageUrls[0]) {
       console.log('Got immediate image URLs:', data.data.imageUrls);
-      return data.data.imageUrls[0];
+      return await this.storeImagePermanently(data.data.imageUrls[0], style);
     }
 
     // Wait for webhook callback

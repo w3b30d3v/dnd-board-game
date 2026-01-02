@@ -4,6 +4,27 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 
 const AI_SERVICE_URL = process.env.NEXT_PUBLIC_AI_SERVICE_URL || 'http://localhost:4003';
+const DEFAULT_TIMEOUT = 60000; // 60 seconds for voice generation
+
+// Helper to create fetch with timeout
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeout: number = DEFAULT_TIMEOUT
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 // Voice profile info
 export interface VoiceProfile {
@@ -150,18 +171,21 @@ export function useVoiceNarration() {
       setIsGenerating(true);
       setError(null);
 
-      const response = await fetch(`${AI_SERVICE_URL}/ai/voice/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          text: item.text,
-          voiceProfile: item.voiceProfile,
-          emotion: item.emotion,
-        }),
-      });
+      const response = await fetchWithTimeout(
+        `${AI_SERVICE_URL}/ai/voice/generate`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            text: item.text,
+            voiceProfile: item.voiceProfile,
+            emotion: item.emotion,
+          }),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -194,7 +218,12 @@ export function useVoiceNarration() {
 
       await audioElement.play();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate speech');
+      // Check if it's a timeout error (AbortError)
+      if (err instanceof Error && err.name === 'AbortError') {
+        setError('Voice generation timed out. Please try again.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to generate speech');
+      }
       currentItemRef.current = null;
     } finally {
       setIsGenerating(false);
@@ -255,18 +284,21 @@ export function useVoiceNarration() {
       setError(null);
 
       try {
-        const response = await fetch(`${AI_SERVICE_URL}/ai/voice/narrate`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            content,
-            contentType,
-            ...options,
-          }),
-        });
+        const response = await fetchWithTimeout(
+          `${AI_SERVICE_URL}/ai/voice/narrate`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              content,
+              contentType,
+              ...options,
+            }),
+          }
+        );
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -277,9 +309,15 @@ export function useVoiceNarration() {
         setCurrentAudio(audio);
         return audio;
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to generate narration';
+        // Check if it's a timeout error (AbortError)
+        let message: string;
+        if (err instanceof Error && err.name === 'AbortError') {
+          message = 'Narration generation timed out. Please try again.';
+        } else {
+          message = err instanceof Error ? err.message : 'Failed to generate narration';
+        }
         setError(message);
-        throw err;
+        throw new Error(message);
       } finally {
         setIsGenerating(false);
       }

@@ -3,6 +3,27 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 
 const AI_SERVICE_URL = process.env.NEXT_PUBLIC_AI_SERVICE_URL || 'http://localhost:4003';
+const DEFAULT_TIMEOUT = 120000; // 2 minutes for video generation start
+
+// Helper to create fetch with timeout
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeout: number = DEFAULT_TIMEOUT
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 export type VideoStatus = 'PENDING' | 'THROTTLED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
 
@@ -126,14 +147,17 @@ export function useVideoGeneration() {
     setError(null);
 
     try {
-      const response = await fetch(`${AI_SERVICE_URL}/ai/video/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(options),
-      });
+      const response = await fetchWithTimeout(
+        `${AI_SERVICE_URL}/ai/video/generate`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(options),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -151,7 +175,12 @@ export function useVideoGeneration() {
 
       return newTask;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
+      let message: string;
+      if (err instanceof Error && err.name === 'AbortError') {
+        message = 'Video generation request timed out. Please try again.';
+      } else {
+        message = err instanceof Error ? err.message : 'Unknown error';
+      }
       setError(message);
       setIsGenerating(false);
       return null;
@@ -170,14 +199,17 @@ export function useVideoGeneration() {
     setError(null);
 
     try {
-      const response = await fetch(`${AI_SERVICE_URL}/ai/video/generate-from-image`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(options),
-      });
+      const response = await fetchWithTimeout(
+        `${AI_SERVICE_URL}/ai/video/generate-from-image`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(options),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -195,7 +227,12 @@ export function useVideoGeneration() {
 
       return newTask;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
+      let message: string;
+      if (err instanceof Error && err.name === 'AbortError') {
+        message = 'Video generation request timed out. Please try again.';
+      } else {
+        message = err instanceof Error ? err.message : 'Unknown error';
+      }
       setError(message);
       setIsGenerating(false);
       return null;
@@ -214,14 +251,17 @@ export function useVideoGeneration() {
     setError(null);
 
     try {
-      const response = await fetch(`${AI_SERVICE_URL}/ai/video/generate-preset`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(options),
-      });
+      const response = await fetchWithTimeout(
+        `${AI_SERVICE_URL}/ai/video/generate-preset`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(options),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -239,7 +279,12 @@ export function useVideoGeneration() {
 
       return newTask;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
+      let message: string;
+      if (err instanceof Error && err.name === 'AbortError') {
+        message = 'Video generation request timed out. Please try again.';
+      } else {
+        message = err instanceof Error ? err.message : 'Unknown error';
+      }
       setError(message);
       setIsGenerating(false);
       return null;

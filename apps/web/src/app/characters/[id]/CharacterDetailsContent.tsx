@@ -465,8 +465,32 @@ function toTitleCase(str: string): string {
 }
 
 // Image Carousel Component - Larger version
-function ImageCarousel({ images, characterName }: { images: { url: string; label: string }[]; characterName: string }) {
+function ImageCarousel({ images, characterName, characterRace, characterClass }: {
+  images: { url: string; label: string }[];
+  characterName: string;
+  characterRace?: string;
+  characterClass?: string;
+}) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [failedUrls, setFailedUrls] = useState<Set<string>>(new Set());
+
+  // Generate DiceBear fallback URL
+  const generateFallback = (variant: string = '') => {
+    const seed = `${characterRace || 'human'}-${characterClass || 'fighter'}-${characterName || 'hero'}${variant}`;
+    const styleMap: Record<string, string> = {
+      human: 'adventurer',
+      elf: 'lorelei',
+      dwarf: 'avataaars',
+      halfling: 'adventurer',
+      dragonborn: 'bottts',
+      tiefling: 'bottts',
+      gnome: 'micah',
+      'half-elf': 'lorelei',
+      'half-orc': 'avataaars',
+    };
+    const style = styleMap[(characterRace || 'human').toLowerCase()] || 'adventurer';
+    return `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=1e1b26&size=512`;
+  };
 
   if (images.length === 0) {
     return (
@@ -484,6 +508,18 @@ function ImageCarousel({ images, characterName }: { images: { url: string; label
     setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
+  const handleImageError = () => {
+    const url = images[currentIndex].url;
+    if (!failedUrls.has(url)) {
+      console.warn(`Image failed to load: ${url}, using fallback`);
+      setFailedUrls(prev => new Set(prev).add(url));
+    }
+  };
+
+  const getDisplayUrl = (url: string, index: number) => {
+    return failedUrls.has(url) ? generateFallback(`-img-${index}`) : url;
+  };
+
   return (
     <div className="relative h-full flex flex-col">
       {/* Main Image - Fixed aspect ratio container for consistent arrow positioning */}
@@ -498,9 +534,10 @@ function ImageCarousel({ images, characterName }: { images: { url: string; label
             transition={{ duration: 0.3 }}
           >
             <img
-              src={images[currentIndex].url}
+              src={getDisplayUrl(images[currentIndex].url, currentIndex)}
               alt={`${characterName} - ${images[currentIndex].label}`}
               className="max-w-full max-h-full object-contain"
+              onError={handleImageError}
             />
           </motion.div>
         </AnimatePresence>
@@ -1322,7 +1359,7 @@ export default function CharacterDetailsContent() {
 
                   {/* Image Carousel */}
                   <div className="flex-1 min-h-0">
-                    <ImageCarousel images={imageList} characterName={character.name} />
+                    <ImageCarousel images={imageList} characterName={character.name} characterRace={character.race} characterClass={character.class} />
                   </div>
 
                   {/* Created Date */}

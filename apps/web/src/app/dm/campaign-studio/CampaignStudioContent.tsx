@@ -915,10 +915,30 @@ function ImportModal({
       // Read file using FileReader for better browser compatibility
       const text = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(new Error('Failed to read file. Please try again.'));
+        reader.onload = () => {
+          const result = reader.result;
+          if (typeof result === 'string') {
+            resolve(result);
+          } else if (result === null) {
+            reject(new Error('File appears to be empty. Please select a valid campaign export.'));
+          } else {
+            // ArrayBuffer - convert to string
+            const decoder = new TextDecoder('utf-8');
+            resolve(decoder.decode(result));
+          }
+        };
+        reader.onerror = () => {
+          const errorMsg = reader.error?.message || 'Unknown error';
+          reject(new Error(`Failed to read file: ${errorMsg}`));
+        };
+        reader.onabort = () => reject(new Error('File reading was cancelled.'));
         reader.readAsText(file);
       });
+
+      if (!text || text.trim().length === 0) {
+        throw new Error('File is empty. Please select a valid campaign export.');
+      }
+
       const data = JSON.parse(text);
 
       // Validate structure

@@ -29,4 +29,16 @@ export const config = {
     // Max images per character: 1 portrait + this many full body action images
     maxFullBodyImagesPerCharacter: parseInt(process.env.MAX_FULLBODY_IMAGES_PER_CHARACTER || '2', 10),
   },
+
+  // S3/MinIO storage for permanent file storage
+  storage: {
+    endpoint: process.env.S3_ENDPOINT || 'http://localhost:9000',
+    accessKey: process.env.S3_ACCESS_KEY || 'minioadmin',
+    secretKey: process.env.S3_SECRET_KEY || 'minioadmin',
+    bucketAssets: process.env.S3_BUCKET_ASSETS || 'dnd-assets',
+    bucketMedia: process.env.S3_BUCKET_MEDIA || 'dnd-media',
+    region: process.env.S3_REGION || 'us-east-1',
+    // Public URL for accessing stored files (CDN or direct S3 URL)
+    publicUrl: process.env.S3_PUBLIC_URL || process.env.S3_ENDPOINT || 'http://localhost:9000',
+  },
 } as const;

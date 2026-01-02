@@ -173,7 +173,7 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
   lastSavedAt: null,
   error: null,
 
-  // Start a new conversation
+  // Start or resume a conversation
   startConversation: async (campaignId: string) => {
     const token = getAuthToken();
     if (!token) {
@@ -184,7 +184,8 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
     set({ isGenerating: true, error: null });
 
     try {
-      const response = await fetch(`${AI_SERVICE_URL}/ai/conversation/start`, {
+      // Use /resume endpoint which checks for existing conversation first
+      const response = await fetch(`${AI_SERVICE_URL}/ai/conversation/resume`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -200,21 +201,40 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
 
       const data = await response.json();
 
-      // Add initial assistant message
-      const initialMessage: Message = {
-        id: `msg_${Date.now()}`,
-        role: 'assistant',
-        content: data.message || getPhaseWelcomeMessage('setting'),
-        timestamp: new Date(),
-      };
+      // If resumed, use existing messages; otherwise create initial message
+      if (data.resumed && data.messages && data.messages.length > 0) {
+        // Resume existing conversation with chat history
+        const loadedMessages: Message[] = data.messages.map((msg: { id: string; role: string; content: string; timestamp?: string }) => ({
+          id: msg.id || `msg_${Date.now()}_${Math.random()}`,
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+          timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+        }));
 
-      set({
-        id: data.conversationId,
-        campaignId,
-        currentPhase: data.phase || 'setting',
-        messages: [initialMessage],
-        isGenerating: false,
-      });
+        set({
+          id: data.conversationId,
+          campaignId,
+          currentPhase: data.phase || 'setting',
+          messages: loadedMessages,
+          isGenerating: false,
+        });
+      } else {
+        // New conversation - add initial assistant message
+        const initialMessage: Message = {
+          id: `msg_${Date.now()}`,
+          role: 'assistant',
+          content: data.message || getPhaseWelcomeMessage('setting'),
+          timestamp: new Date(),
+        };
+
+        set({
+          id: data.conversationId,
+          campaignId,
+          currentPhase: data.phase || 'setting',
+          messages: [initialMessage],
+          isGenerating: false,
+        });
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to start conversation';
       set({ error: message, isGenerating: false });
