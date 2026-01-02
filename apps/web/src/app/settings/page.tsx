@@ -152,11 +152,11 @@ export default function SettingsPage() {
               <select
                 value={preferences.theme}
                 onChange={(e) => setPreferences(prev => ({ ...prev, theme: e.target.value as UserPreferences['theme'] }))}
-                className="bg-background border border-white/10 rounded-lg px-3 py-2 text-white"
+                className="bg-white border border-white/10 rounded-lg px-3 py-2 text-gray-900"
               >
-                <option value="dark">Dark</option>
-                <option value="light">Light</option>
-                <option value="system">System</option>
+                <option value="dark" className="text-gray-900 bg-white">Dark</option>
+                <option value="light" className="text-gray-900 bg-white">Light</option>
+                <option value="system" className="text-gray-900 bg-white">System</option>
               </select>
             </div>
             <div className="flex items-center justify-between py-3">

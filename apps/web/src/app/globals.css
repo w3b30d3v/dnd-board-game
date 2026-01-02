@@ -205,6 +205,17 @@
     color: #71717A !important;
   }
 
+  /* Force all select dropdowns to have white bg and black text */
+  select {
+    background-color: #FFFFFF !important;
+    color: #18181B !important;
+  }
+
+  select option {
+    background-color: #FFFFFF !important;
+    color: #18181B !important;
+  }
+
   /* Label */
   .label {
     @apply block text-sm font-medium text-text-secondary mb-2;
