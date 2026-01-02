@@ -70,6 +70,10 @@ export default function CampaignDashboardContent() {
   } = useCampaignStore();
 
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [activatingCampaign, setActivatingCampaign] = useState<string | null>(null);
+  const [creatingSession, setCreatingSession] = useState<string | null>(null);
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
   // Fetch campaigns on mount
   useEffect(() => {
@@ -83,6 +87,59 @@ export default function CampaignDashboardContent() {
     const success = await deleteCampaign(id, token);
     if (success) {
       setDeleteConfirm(null);
+    }
+  };
+
+  const handleActivateCampaign = async (campaign: Campaign) => {
+    if (!token) return;
+    setActivatingCampaign(campaign.id);
+    try {
+      const res = await fetch(`${API_URL}/dm/campaigns/${campaign.id}/activate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ force: false }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to activate campaign');
+      }
+      // Refresh campaigns
+      fetchCampaigns(token);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to activate campaign');
+    } finally {
+      setActivatingCampaign(null);
+    }
+  };
+
+  const handleStartSession = async (campaign: Campaign) => {
+    if (!token) return;
+    setCreatingSession(campaign.id);
+    try {
+      const res = await fetch(`${API_URL}/dm/sessions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          campaignId: campaign.id,
+          name: `${campaign.name} - Session`,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to create session');
+      }
+      // Navigate to the game session
+      router.push(`/game/${data.session.id}`);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to create session');
+    } finally {
+      setCreatingSession(null);
     }
   };
 
@@ -336,45 +393,78 @@ export default function CampaignDashboardContent() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-2">
-                      <Link href={`/dm/campaign-studio?id=${campaign.id}`} className="flex-1">
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          className="btn-magic w-full text-sm"
-                        >
-                          Edit
-                        </motion.button>
-                      </Link>
-                      {deleteConfirm === campaign.id ? (
-                        <>
+                    <div className="flex flex-col gap-2">
+                      {/* Primary actions row */}
+                      <div className="flex gap-2">
+                        <Link href={`/dm/campaign-studio?id=${campaign.id}`} className="flex-1">
                           <motion.button
-                            onClick={() => handleDeleteCampaign(campaign.id)}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            className="btn-stone text-sm px-3 text-danger"
+                            className="btn-stone w-full text-sm"
                           >
-                            Confirm
+                            Edit
                           </motion.button>
+                        </Link>
+                        {campaign.status === 'draft' && (
                           <motion.button
-                            onClick={() => setDeleteConfirm(null)}
+                            onClick={() => handleActivateCampaign(campaign)}
+                            disabled={activatingCampaign === campaign.id}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            className="btn-stone text-sm px-3"
+                            className="px-3 py-2 bg-green-500/20 text-green-400 rounded text-sm font-medium disabled:opacity-50 border border-green-500/30"
                           >
-                            Cancel
+                            {activatingCampaign === campaign.id ? 'Activating...' : 'Activate'}
                           </motion.button>
-                        </>
-                      ) : (
+                        )}
+                      </div>
+                      {/* Session action row */}
+                      {(campaign.status === 'active' || campaign.status === 'draft') && (
                         <motion.button
-                          onClick={() => setDeleteConfirm(campaign.id)}
+                          onClick={() => handleStartSession(campaign)}
+                          disabled={creatingSession === campaign.id}
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
-                          className="btn-stone text-sm px-3"
+                          className={`w-full px-3 py-2 rounded text-sm font-medium disabled:opacity-50 ${
+                            campaign.status === 'draft'
+                              ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                              : 'bg-primary text-bg-dark'
+                          }`}
                         >
-                          Delete
+                          {creatingSession === campaign.id ? 'Creating...' : 'Start Session'}
                         </motion.button>
                       )}
+                      {/* Delete action row */}
+                      <div className="flex gap-2 pt-2 border-t border-border/30">
+                        {deleteConfirm === campaign.id ? (
+                          <>
+                            <motion.button
+                              onClick={() => handleDeleteCampaign(campaign.id)}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              className="flex-1 btn-stone text-sm px-3 text-danger"
+                            >
+                              Confirm Delete
+                            </motion.button>
+                            <motion.button
+                              onClick={() => setDeleteConfirm(null)}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              className="btn-stone text-sm px-3"
+                            >
+                              Cancel
+                            </motion.button>
+                          </>
+                        ) : (
+                          <motion.button
+                            onClick={() => setDeleteConfirm(campaign.id)}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="flex-1 btn-stone text-sm px-3 text-text-muted hover:text-danger"
+                          >
+                            Delete Campaign
+                          </motion.button>
+                        )}
+                      </div>
                     </div>
                   </EnchantedCard>
                 </motion.div>
