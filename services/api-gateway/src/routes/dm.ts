@@ -738,6 +738,154 @@ router.post('/sessions/:id/load', async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /dm/campaigns/:id/validate
+ * Validate campaign content readiness for gameplay
+ */
+router.get('/campaigns/:id/validate', async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { id } = req.params;
+
+    const campaign = await prisma.campaign.findFirst({
+      where: { id, ownerId: userId },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        _count: {
+          select: {
+            maps: true,
+            encounters: true,
+            npcs: true,
+            quests: true,
+          },
+        },
+        npcs: {
+          select: { id: true, portraitUrl: true },
+          take: 1, // Just check if any have portraits
+        },
+      },
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found' });
+    }
+
+    // Validation rules
+    const validation = {
+      hasMap: campaign._count.maps >= 1,
+      hasEncounterOrQuest: campaign._count.encounters >= 1 || campaign._count.quests >= 1,
+      hasNpc: campaign._count.npcs >= 1,
+      hasNpcWithPortrait: campaign.npcs.some(npc => npc.portraitUrl),
+    };
+
+    const isReadyToPublish = validation.hasMap && validation.hasEncounterOrQuest && validation.hasNpc;
+    const canStartSession = true; // DMs can always start sessions, but with warnings
+
+    const warnings: string[] = [];
+    const errors: string[] = [];
+
+    if (!validation.hasMap) {
+      warnings.push('No maps created. Consider adding at least one map for gameplay.');
+    }
+    if (!validation.hasEncounterOrQuest) {
+      warnings.push('No encounters or quests. Add content to give players objectives.');
+    }
+    if (!validation.hasNpc) {
+      warnings.push('No NPCs created. NPCs bring your world to life.');
+    }
+    if (validation.hasNpc && !validation.hasNpcWithPortrait) {
+      warnings.push('NPCs lack portraits. Generate AI portraits for immersion.');
+    }
+
+    return res.json({
+      campaignId: campaign.id,
+      campaignName: campaign.name,
+      status: campaign.status,
+      counts: campaign._count,
+      validation,
+      isReadyToPublish,
+      canStartSession,
+      warnings,
+      errors,
+    });
+  } catch (error) {
+    console.error('Error validating campaign:', error);
+    return res.status(500).json({ error: 'Failed to validate campaign' });
+  }
+});
+
+/**
+ * POST /dm/campaigns/:id/activate
+ * Activate a draft campaign (publish it)
+ */
+router.post('/campaigns/:id/activate', async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { id } = req.params;
+    const { force } = req.body; // Allow activation even with warnings
+
+    const campaign = await prisma.campaign.findFirst({
+      where: { id, ownerId: userId },
+      select: {
+        id: true,
+        status: true,
+        _count: {
+          select: {
+            maps: true,
+            encounters: true,
+            npcs: true,
+            quests: true,
+          },
+        },
+      },
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found' });
+    }
+
+    if (campaign.status === 'active') {
+      return res.status(400).json({ error: 'Campaign is already active' });
+    }
+
+    if (campaign.status === 'completed' || campaign.status === 'archived') {
+      return res.status(400).json({ error: 'Cannot activate completed or archived campaigns' });
+    }
+
+    // Check minimum requirements unless force is set
+    const hasMinimumContent = campaign._count.maps >= 1 &&
+      (campaign._count.encounters >= 1 || campaign._count.quests >= 1);
+
+    if (!hasMinimumContent && !force) {
+      return res.status(400).json({
+        error: 'Campaign does not meet minimum requirements',
+        details: 'Need at least 1 map AND (1 encounter OR 1 quest). Set force=true to override.',
+        counts: campaign._count,
+      });
+    }
+
+    const updated = await prisma.campaign.update({
+      where: { id },
+      data: { status: 'active' },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+      },
+    });
+
+    return res.json({
+      campaign: updated,
+      message: 'Campaign activated successfully! You can now start game sessions.',
+    });
+  } catch (error) {
+    console.error('Error activating campaign:', error);
+    return res.status(500).json({ error: 'Failed to activate campaign' });
+  }
+});
+
+/**
  * GET /dm/campaigns/:id/saved-state
  * Get saved game state info for a campaign
  */

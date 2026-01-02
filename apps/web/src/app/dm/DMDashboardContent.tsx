@@ -76,6 +76,20 @@ interface DashboardData {
   activeSessions: GameSession[];
 }
 
+interface ValidationResult {
+  campaignId: string;
+  status: string;
+  counts: { maps: number; encounters: number; npcs: number; quests: number };
+  validation: {
+    hasMap: boolean;
+    hasEncounterOrQuest: boolean;
+    hasNpc: boolean;
+    hasNpcWithPortrait: boolean;
+  };
+  isReadyToPublish: boolean;
+  warnings: string[];
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export default function DMDashboardContent() {
@@ -85,6 +99,12 @@ export default function DMDashboardContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creatingSession, setCreatingSession] = useState<string | null>(null);
+  const [activatingCampaign, setActivatingCampaign] = useState<string | null>(null);
+  const [validationModal, setValidationModal] = useState<{
+    campaign: Campaign;
+    validation: ValidationResult | null;
+    action: 'start' | 'activate';
+  } | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -111,6 +131,69 @@ export default function DMDashboardContent() {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const validateCampaign = async (campaignId: string): Promise<ValidationResult | null> => {
+    try {
+      const res = await fetch(`${API_URL}/dm/campaigns/${campaignId}/validate`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  };
+
+  const handleStartSession = async (campaign: Campaign) => {
+    // For draft campaigns, show validation modal first
+    if (campaign.status === 'draft') {
+      const validation = await validateCampaign(campaign.id);
+      setValidationModal({ campaign, validation, action: 'start' });
+    } else {
+      // Active campaigns - proceed directly
+      await createSession(campaign.id, campaign.name);
+    }
+  };
+
+  const handleActivateCampaign = async (campaign: Campaign) => {
+    const validation = await validateCampaign(campaign.id);
+    setValidationModal({ campaign, validation, action: 'activate' });
+  };
+
+  const confirmStartSession = async (force: boolean = false) => {
+    if (!validationModal) return;
+    setValidationModal(null);
+    await createSession(validationModal.campaign.id, validationModal.campaign.name);
+  };
+
+  const confirmActivateCampaign = async (force: boolean = false) => {
+    if (!validationModal) return;
+    const campaignId = validationModal.campaign.id;
+    setValidationModal(null);
+
+    try {
+      setActivatingCampaign(campaignId);
+      const res = await fetch(`${API_URL}/dm/campaigns/${campaignId}/activate`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ force }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to activate campaign');
+      }
+
+      await fetchDashboard();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to activate campaign');
+    } finally {
+      setActivatingCampaign(null);
     }
   };
 
@@ -529,13 +612,28 @@ export default function DMDashboardContent() {
                             Edit
                           </motion.button>
                         </Link>
-                        {campaign.status === 'active' && (
+                        {campaign.status === 'draft' && (
                           <motion.button
-                            onClick={() => createSession(campaign.id, campaign.name)}
+                            onClick={() => handleActivateCampaign(campaign)}
+                            disabled={activatingCampaign === campaign.id}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="px-3 py-2 bg-green-500/20 text-green-400 rounded text-sm font-medium disabled:opacity-50 border border-green-500/30"
+                          >
+                            {activatingCampaign === campaign.id ? 'Activating...' : 'Activate'}
+                          </motion.button>
+                        )}
+                        {(campaign.status === 'active' || campaign.status === 'draft') && (
+                          <motion.button
+                            onClick={() => handleStartSession(campaign)}
                             disabled={creatingSession === campaign.id || stats.activeSessions >= stats.maxSessions}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            className="flex-1 px-3 py-2 bg-primary text-bg-dark rounded text-sm font-medium disabled:opacity-50"
+                            className={`flex-1 px-3 py-2 rounded text-sm font-medium disabled:opacity-50 ${
+                              campaign.status === 'draft'
+                                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                                : 'bg-primary text-bg-dark'
+                            }`}
                           >
                             {creatingSession === campaign.id ? 'Creating...' : 'Start Session'}
                           </motion.button>
@@ -601,6 +699,115 @@ export default function DMDashboardContent() {
           </div>
         </section>
       </div>
+
+      {/* Validation Modal */}
+      <AnimatePresence>
+        {validationModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+            onClick={() => setValidationModal(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-bg-card rounded-lg border border-border p-6 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-xl font-cinzel font-bold text-text-primary mb-2">
+                {validationModal.action === 'start' ? 'Start Session' : 'Activate Campaign'}
+              </h3>
+              <p className="text-text-secondary mb-4">
+                {validationModal.campaign.name}
+              </p>
+
+              {validationModal.campaign.status === 'draft' && (
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
+                  <p className="text-yellow-400 text-sm font-medium">
+                    This campaign is still in draft mode
+                  </p>
+                  <p className="text-yellow-400/70 text-xs mt-1">
+                    You can continue building content during gameplay.
+                  </p>
+                </div>
+              )}
+
+              {validationModal.validation && validationModal.validation.warnings.length > 0 && (
+                <div className="space-y-2 mb-4">
+                  <p className="text-sm font-medium text-text-primary">Content Warnings:</p>
+                  {validationModal.validation.warnings.map((warning, i) => (
+                    <div key={i} className="flex items-start gap-2 text-sm">
+                      <span className="text-yellow-400">!</span>
+                      <span className="text-text-secondary">{warning}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {validationModal.validation && (
+                <div className="grid grid-cols-4 gap-2 text-center text-xs mb-4 p-3 bg-bg-elevated rounded-lg">
+                  <div>
+                    <span className={`block font-medium ${validationModal.validation.validation.hasMap ? 'text-green-400' : 'text-red-400'}`}>
+                      {validationModal.validation.counts.maps}
+                    </span>
+                    <span className="text-text-muted">Maps</span>
+                  </div>
+                  <div>
+                    <span className={`block font-medium ${validationModal.validation.counts.encounters > 0 ? 'text-green-400' : 'text-yellow-400'}`}>
+                      {validationModal.validation.counts.encounters}
+                    </span>
+                    <span className="text-text-muted">Encounters</span>
+                  </div>
+                  <div>
+                    <span className={`block font-medium ${validationModal.validation.validation.hasNpc ? 'text-green-400' : 'text-yellow-400'}`}>
+                      {validationModal.validation.counts.npcs}
+                    </span>
+                    <span className="text-text-muted">NPCs</span>
+                  </div>
+                  <div>
+                    <span className={`block font-medium ${validationModal.validation.counts.quests > 0 ? 'text-green-400' : 'text-yellow-400'}`}>
+                      {validationModal.validation.counts.quests}
+                    </span>
+                    <span className="text-text-muted">Quests</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <motion.button
+                  onClick={() => setValidationModal(null)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex-1 px-4 py-2 bg-bg-elevated text-text-primary rounded-lg hover:bg-border"
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  onClick={() => {
+                    if (validationModal.action === 'start') {
+                      confirmStartSession(true);
+                    } else {
+                      confirmActivateCampaign(true);
+                    }
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`flex-1 px-4 py-2 rounded-lg font-medium ${
+                    validationModal.action === 'start'
+                      ? 'bg-primary text-bg-dark'
+                      : 'bg-green-500 text-white'
+                  }`}
+                >
+                  {validationModal.action === 'start' ? 'Start Anyway' : 'Activate'}
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
