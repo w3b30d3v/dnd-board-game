@@ -8,6 +8,7 @@ import { prisma } from '../lib/db.js';
 import { logger } from '../lib/logger.js';
 import { getConversation } from '../handlers/conversation.js';
 import { AuthenticatedRequest } from '../middleware/auth.js';
+import { uploadImageFromUrl, STORAGE_ENABLED } from '../lib/storageService.js';
 
 const router: RouterType = Router();
 
@@ -450,11 +451,18 @@ router.post('/webhook/nanobanana', async (req: Request, res: Response) => {
 
     logger.info({ taskId, status }, 'NanoBanana webhook received');
 
-    // Find any pending image generation by task ID
-    // This would typically update an NPC or location with the generated image
-    // For now, just log and acknowledge
     if (status === 'completed' && imageUrl) {
-      logger.info({ taskId, imageUrl }, 'Image generation completed');
+      // Upload to permanent storage if enabled
+      if (STORAGE_ENABLED) {
+        try {
+          const permanentUrl = await uploadImageFromUrl(imageUrl, 'ai-campaigns', taskId || 'webhook');
+          logger.info({ taskId, permanentUrl }, 'Image stored permanently');
+        } catch (storageError) {
+          logger.warn({ taskId, error: storageError }, 'Failed to store image permanently');
+        }
+      } else {
+        logger.info({ taskId, imageUrl }, 'Image generation completed (no permanent storage)');
+      }
     } else if (status === 'failed') {
       logger.error({ taskId, error }, 'Image generation failed');
     }
@@ -526,12 +534,23 @@ router.post('/:campaignId/generate-image', async (req: AuthenticatedRequest, res
 
     const result = await response.json() as NanoBananaResponse;
 
-    // If entity ID provided, update the entity with the image URL
-    if (entityId && result.imageUrl) {
+    // Store image permanently if URL returned and storage is enabled
+    let finalImageUrl = result.imageUrl;
+    if (result.imageUrl && STORAGE_ENABLED) {
+      try {
+        finalImageUrl = await uploadImageFromUrl(result.imageUrl, 'ai-campaigns', type);
+        logger.info({ finalImageUrl }, 'Campaign image stored permanently');
+      } catch (storageError) {
+        logger.warn({ error: storageError }, 'Failed to store image, using temporary URL');
+      }
+    }
+
+    // If entity ID provided, update the entity with the (permanent) image URL
+    if (entityId && finalImageUrl) {
       if (type === 'npc') {
         await prisma.nPC.update({
           where: { id: entityId },
-          data: { portraitUrl: result.imageUrl },
+          data: { portraitUrl: finalImageUrl },
         });
       }
       // Could add location/scene image updates here
@@ -539,7 +558,7 @@ router.post('/:campaignId/generate-image', async (req: AuthenticatedRequest, res
 
     res.json({
       taskId: result.taskId,
-      imageUrl: result.imageUrl,
+      imageUrl: finalImageUrl,
       status: result.status ?? 'pending',
     });
   } catch (error) {

@@ -7,6 +7,7 @@ import { auth } from '../middleware/auth.js';
 import { validateBody } from '../middleware/validation.js';
 import { prisma } from '../lib/prisma.js';
 import { logger } from '../lib/logger.js';
+import { uploadImageFromUrl } from '../services/storageService.js';
 
 const router: Router = Router();
 
@@ -14,6 +15,9 @@ const router: Router = Router();
 const NANOBANANA_API_KEY = process.env.NANOBANANA_API_KEY;
 const NANOBANANA_API_URL = 'https://api.nanobananaapi.ai/api/v1/nanobanana';
 const CALLBACK_BASE_URL = process.env.CALLBACK_BASE_URL || '';
+
+// R2 permanent storage - enabled when S3_ACCESS_KEY is set
+const ENABLE_PERMANENT_STORAGE = !!process.env.S3_ACCESS_KEY;
 
 // Pending image tasks for webhook callbacks
 const pendingImageTasks = new Map<
@@ -419,7 +423,20 @@ router.post('/webhook/nanobanana', async (req: Request, res: Response) => {
     if (code !== 200) {
       pending.reject(new Error(msg || 'Image generation failed'));
     } else if (resultImageUrl) {
-      pending.resolve(resultImageUrl);
+      // Upload to permanent storage if enabled
+      if (ENABLE_PERMANENT_STORAGE) {
+        try {
+          logger.info({ taskId: resolvedTaskId }, 'Uploading campaign image to R2');
+          const permanentUrl = await uploadImageFromUrl(resultImageUrl, 'campaigns', 'webhook');
+          logger.info({ permanentUrl }, 'Campaign image stored permanently');
+          pending.resolve(permanentUrl);
+        } catch (storageError) {
+          logger.warn({ error: storageError }, 'R2 upload failed, using temporary URL');
+          pending.resolve(resultImageUrl);
+        }
+      } else {
+        pending.resolve(resultImageUrl);
+      }
     } else {
       pending.reject(new Error('No image URL in response'));
     }
@@ -702,9 +719,27 @@ async function generateWithNanoBanana(prompt: string, aspectRatio: string): Prom
     throw new Error(`NanoBanana API error: ${data.msg}`);
   }
 
-  // Immediate result
-  if (data.data?.imageUrl) return data.data.imageUrl;
-  if (data.data?.imageUrls?.[0]) return data.data.imageUrls[0];
+  // Immediate result - store permanently if enabled
+  if (data.data?.imageUrl) {
+    if (ENABLE_PERMANENT_STORAGE) {
+      try {
+        return await uploadImageFromUrl(data.data.imageUrl, 'campaigns', 'immediate');
+      } catch {
+        return data.data.imageUrl;
+      }
+    }
+    return data.data.imageUrl;
+  }
+  if (data.data?.imageUrls?.[0]) {
+    if (ENABLE_PERMANENT_STORAGE) {
+      try {
+        return await uploadImageFromUrl(data.data.imageUrls[0], 'campaigns', 'immediate');
+      } catch {
+        return data.data.imageUrls[0];
+      }
+    }
+    return data.data.imageUrls[0];
+  }
 
   // Wait for webhook
   const taskId = data.data?.taskId;
