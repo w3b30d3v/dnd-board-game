@@ -47,7 +47,9 @@
       "WebFetch(domain:api-production-2f00.up.railway.app)",
       "WebFetch(domain:ai-service-production-6069.up.railway.app)",
       "WebFetch(domain:ai-production-eb66.up.railway.app)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "WebFetch(domain:www.dndbeyond.com)",
+      "WebFetch(domain:www.ddo.com)"
     ],
     "deny": [],
     "ask": []
