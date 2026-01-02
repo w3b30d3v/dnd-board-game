@@ -169,7 +169,8 @@ export default function DMDashboardContent() {
     setValidationModal({ campaign, validation, action: 'activate' });
   };
 
-  const confirmStartSession = async (force: boolean = false) => {
+  const confirmStartSession = async (_force: boolean = false) => {
+    // Note: _force parameter available for future use when start session needs validation override
     if (!validationModal) return;
     setValidationModal(null);
     await createSession(validationModal.campaign.id, validationModal.campaign.name);
