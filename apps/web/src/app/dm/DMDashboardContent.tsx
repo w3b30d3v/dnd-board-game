@@ -1,10 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
+
+// Dynamic imports for immersive effects
+const AmbientParticles = dynamic(
+  () => import('@/components/dnd/AmbientParticles').then((mod) => mod.AmbientParticles),
+  { ssr: false }
+);
 
 interface CampaignPlayer {
   userId: string;
@@ -318,27 +325,80 @@ export default function DMDashboardContent() {
   const { stats, campaigns, activeSessions } = data;
 
   return (
-    <div className="min-h-screen bg-bg-dark">
+    <div className="min-h-screen bg-bg-dark relative overflow-hidden">
+      {/* Ambient particles */}
+      <Suspense fallback={null}>
+        <AmbientParticles variant="dust" />
+      </Suspense>
+
+      {/* Background gradient orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{
+            x: [0, 50, 0],
+            y: [0, -30, 0],
+            scale: [1, 1.2, 1],
+            opacity: [0.08, 0.15, 0.08],
+          }}
+          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-purple-500 blur-3xl"
+        />
+        <motion.div
+          animate={{
+            x: [0, -40, 0],
+            y: [0, 40, 0],
+            scale: [1, 1.15, 1],
+            opacity: [0.06, 0.12, 0.06],
+          }}
+          transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+          className="absolute bottom-1/4 right-1/4 w-[350px] h-[350px] rounded-full bg-primary blur-3xl"
+        />
+      </div>
+
+      {/* Vignette overlay */}
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at center, transparent 0%, rgba(15, 13, 19, 0.4) 100%)' }} />
+
       {/* Header */}
-      <div className="bg-bg-card border-b border-border">
+      <div className="relative z-10 bg-bg-card/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-cinzel font-bold text-text-primary">
-                Dungeon Master Dashboard
-              </h1>
-              <p className="text-text-secondary mt-1">
-                Welcome back, {user?.displayName || 'DM'}
-              </p>
+              <motion.h1
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-2xl font-cinzel font-bold text-text-primary flex items-center gap-3"
+              >
+                <span className="text-3xl">🎭</span>
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-amber-300 to-primary">
+                  Dungeon Master&apos;s Sanctum
+                </span>
+              </motion.h1>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.1 }}
+                className="text-text-secondary mt-1 italic"
+              >
+                &quot;Command your realm, {user?.displayName || 'Dungeon Master'}...&quot;
+              </motion.p>
             </div>
             <div className="flex gap-3">
-              <Link href="/dm/campaign-studio">
+              <Link href="/dashboard">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-primary text-white rounded-lg font-medium shadow-lg shadow-purple-500/20"
+                  className="px-4 py-2 bg-bg-elevated text-text-secondary rounded-lg font-medium hover:bg-border hover:text-text-primary transition-colors"
                 >
-                  Campaign Studio
+                  ← Home
+                </motion.button>
+              </Link>
+              <Link href="/dm/campaign-studio">
+                <motion.button
+                  whileHover={{ scale: 1.02, boxShadow: '0 0 25px rgba(139, 92, 246, 0.4)' }}
+                  whileTap={{ scale: 0.98 }}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-primary text-white rounded-lg font-medium shadow-lg shadow-purple-500/20"
+                >
+                  ✨ AI Campaign Studio
                 </motion.button>
               </Link>
             </div>
@@ -346,7 +406,7 @@ export default function DMDashboardContent() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Stats Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
           <StatCard label="Campaigns" value={stats.totalCampaigns} icon="📚" />
@@ -647,53 +707,53 @@ export default function DMDashboardContent() {
           )}
         </section>
 
-        {/* Quick Links */}
+        {/* DM Tools */}
         <section className="mt-8 p-6 bg-bg-card rounded-lg border border-border">
-          <h3 className="font-medium text-text-primary mb-4">Quick Actions</h3>
+          <h3 className="font-medium text-text-primary mb-4">DM Toolkit</h3>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             <Link href="/dm/campaign-studio">
               <motion.div
-                whileHover={{ scale: 1.02 }}
-                className="p-4 bg-gradient-to-br from-purple-900/30 to-bg-elevated rounded-lg text-center cursor-pointer hover:from-purple-900/50 transition-colors border border-purple-500/20"
+                whileHover={{ scale: 1.02, boxShadow: '0 0 20px rgba(139, 92, 246, 0.3)' }}
+                className="p-4 bg-gradient-to-br from-purple-900/30 to-bg-elevated rounded-lg text-center cursor-pointer hover:from-purple-900/50 transition-all border border-purple-500/20"
               >
                 <span className="text-2xl block mb-2">✨</span>
-                <span className="text-sm text-purple-400">Campaign Studio</span>
+                <span className="text-sm text-purple-400 font-medium">AI Studio</span>
               </motion.div>
             </Link>
             <Link href="/dm/campaigns">
               <motion.div
-                whileHover={{ scale: 1.02 }}
-                className="p-4 bg-bg-elevated rounded-lg text-center cursor-pointer hover:bg-border transition-colors"
+                whileHover={{ scale: 1.02, backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
+                className="p-4 bg-bg-elevated rounded-lg text-center cursor-pointer hover:border-primary/50 transition-all border border-border/50"
               >
                 <span className="text-2xl block mb-2">📚</span>
-                <span className="text-sm text-text-primary">My Campaigns</span>
+                <span className="text-sm text-text-primary">Campaigns</span>
               </motion.div>
             </Link>
-            <Link href="/characters">
+            <Link href="/dm/map-editor">
               <motion.div
-                whileHover={{ scale: 1.02 }}
-                className="p-4 bg-bg-elevated rounded-lg text-center cursor-pointer hover:bg-border transition-colors"
-              >
-                <span className="text-2xl block mb-2">🧙</span>
-                <span className="text-sm text-text-primary">Create NPC</span>
-              </motion.div>
-            </Link>
-            <Link href="/multiplayer/test">
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                className="p-4 bg-bg-elevated rounded-lg text-center cursor-pointer hover:bg-border transition-colors"
-              >
-                <span className="text-2xl block mb-2">🎮</span>
-                <span className="text-sm text-text-primary">Multiplayer Test</span>
-              </motion.div>
-            </Link>
-            <Link href="/game/test">
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                className="p-4 bg-bg-elevated rounded-lg text-center cursor-pointer hover:bg-border transition-colors"
+                whileHover={{ scale: 1.02, backgroundColor: 'rgba(34, 197, 94, 0.1)' }}
+                className="p-4 bg-bg-elevated rounded-lg text-center cursor-pointer hover:border-green-500/50 transition-all border border-border/50"
               >
                 <span className="text-2xl block mb-2">🗺️</span>
-                <span className="text-sm text-text-primary">Game Board Test</span>
+                <span className="text-sm text-text-primary">Map Editor</span>
+              </motion.div>
+            </Link>
+            <Link href="/dm/content-editors">
+              <motion.div
+                whileHover={{ scale: 1.02, backgroundColor: 'rgba(59, 130, 246, 0.1)' }}
+                className="p-4 bg-bg-elevated rounded-lg text-center cursor-pointer hover:border-blue-500/50 transition-all border border-border/50"
+              >
+                <span className="text-2xl block mb-2">📝</span>
+                <span className="text-sm text-text-primary">Content</span>
+              </motion.div>
+            </Link>
+            <Link href="/dashboard">
+              <motion.div
+                whileHover={{ scale: 1.02, backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
+                className="p-4 bg-bg-elevated rounded-lg text-center cursor-pointer hover:border-primary/50 transition-all border border-border/50"
+              >
+                <span className="text-2xl block mb-2">🏠</span>
+                <span className="text-sm text-text-primary">Home</span>
               </motion.div>
             </Link>
           </div>
@@ -812,7 +872,7 @@ export default function DMDashboardContent() {
   );
 }
 
-// Stat Card Component
+// Stat Card Component with enhanced styling
 function StatCard({
   label,
   value,
@@ -825,23 +885,38 @@ function StatCard({
   color?: 'green' | 'purple' | 'blue' | 'yellow';
 }) {
   const colorClasses = {
-    green: 'text-green-400',
-    purple: 'text-purple-400',
-    blue: 'text-blue-400',
-    yellow: 'text-yellow-400',
+    green: 'text-green-400 border-green-500/30 hover:border-green-500/50 hover:shadow-green-500/20',
+    purple: 'text-purple-400 border-purple-500/30 hover:border-purple-500/50 hover:shadow-purple-500/20',
+    blue: 'text-blue-400 border-blue-500/30 hover:border-blue-500/50 hover:shadow-blue-500/20',
+    yellow: 'text-yellow-400 border-yellow-500/30 hover:border-yellow-500/50 hover:shadow-yellow-500/20',
+  };
+
+  const bgClasses = {
+    green: 'from-green-900/20',
+    purple: 'from-purple-900/20',
+    blue: 'from-blue-900/20',
+    yellow: 'from-yellow-900/20',
   };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-bg-card rounded-lg border border-border p-4"
+      whileHover={{ scale: 1.02, y: -2 }}
+      className={`bg-gradient-to-br ${color ? bgClasses[color] : 'from-bg-card'} to-bg-card rounded-lg border p-4 transition-all hover:shadow-lg ${
+        color ? colorClasses[color] : 'border-border hover:border-primary/50 hover:shadow-primary/20'
+      }`}
     >
       <div className="flex items-center gap-2 mb-1">
-        <span className="text-lg">{icon}</span>
+        <motion.span
+          whileHover={{ scale: 1.2, rotate: 10 }}
+          className="text-xl"
+        >
+          {icon}
+        </motion.span>
         <span className="text-text-muted text-sm">{label}</span>
       </div>
-      <span className={`text-2xl font-bold ${color ? colorClasses[color] : 'text-text-primary'}`}>
+      <span className={`text-2xl font-bold font-cinzel ${color ? colorClasses[color].split(' ')[0] : 'text-text-primary'}`}>
         {value}
       </span>
     </motion.div>

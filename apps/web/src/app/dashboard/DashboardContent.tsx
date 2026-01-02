@@ -947,7 +947,7 @@ export default function DashboardContent() {
             </motion.div>
           </div>
 
-          {/* Quick Links Section */}
+          {/* Quick Actions Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -955,24 +955,24 @@ export default function DashboardContent() {
             className="mt-6"
           >
             <EnchantedCard className="p-4">
-              <h3 className="text-sm font-medium text-text-muted mb-3">Quick Links</h3>
+              <h3 className="text-sm font-medium text-text-muted mb-3">Quick Actions</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Link href="/multiplayer/test">
+                <Link href="/characters/create">
                   <motion.div
                     whileHover={{ scale: 1.02, backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
                     className="p-3 rounded-lg text-center cursor-pointer border border-border/50 hover:border-primary/50 transition-colors"
                   >
-                    <span className="text-xl block mb-1">🎮</span>
-                    <span className="text-xs text-text-secondary">Multiplayer</span>
+                    <span className="text-xl block mb-1">⚔️</span>
+                    <span className="text-xs text-text-secondary">New Character</span>
                   </motion.div>
                 </Link>
-                <Link href="/game/test">
+                <Link href="/dm/campaign-studio">
                   <motion.div
-                    whileHover={{ scale: 1.02, backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
-                    className="p-3 rounded-lg text-center cursor-pointer border border-border/50 hover:border-primary/50 transition-colors"
+                    whileHover={{ scale: 1.02, backgroundColor: 'rgba(139, 92, 246, 0.1)' }}
+                    className="p-3 rounded-lg text-center cursor-pointer border border-border/50 hover:border-secondary/50 transition-colors"
                   >
-                    <span className="text-xl block mb-1">🗺️</span>
-                    <span className="text-xs text-text-secondary">Game Board</span>
+                    <span className="text-xl block mb-1">✨</span>
+                    <span className="text-xs text-text-secondary">AI Campaign</span>
                   </motion.div>
                 </Link>
                 <Link href="/dm">
@@ -980,17 +980,17 @@ export default function DashboardContent() {
                     whileHover={{ scale: 1.02, backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
                     className="p-3 rounded-lg text-center cursor-pointer border border-border/50 hover:border-primary/50 transition-colors"
                   >
-                    <span className="text-xl block mb-1">📊</span>
-                    <span className="text-xs text-text-secondary">DM Dashboard</span>
+                    <span className="text-xl block mb-1">🎭</span>
+                    <span className="text-xs text-text-secondary">DM Tools</span>
                   </motion.div>
                 </Link>
-                <Link href="/dm/campaigns">
+                <Link href="/profile">
                   <motion.div
                     whileHover={{ scale: 1.02, backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
                     className="p-3 rounded-lg text-center cursor-pointer border border-border/50 hover:border-primary/50 transition-colors"
                   >
-                    <span className="text-xl block mb-1">📚</span>
-                    <span className="text-xs text-text-secondary">Campaigns</span>
+                    <span className="text-xl block mb-1">👤</span>
+                    <span className="text-xs text-text-secondary">Profile</span>
                   </motion.div>
                 </Link>
               </div>
