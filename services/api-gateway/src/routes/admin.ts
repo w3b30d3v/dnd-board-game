@@ -58,6 +58,45 @@ interface MigrationDetail {
   error?: string;
 }
 
+interface MigrationResults {
+  migrated: number;
+  failed: number;
+  skipped: number;
+  errors: string[];
+  details: MigrationDetail[];
+}
+
+/**
+ * Helper function to migrate a single URL to permanent storage
+ */
+async function migrateUrl(
+  url: string,
+  category: string,
+  identifier: string,
+  results: MigrationResults,
+  dryRun: boolean
+): Promise<string | null> {
+  if (!isTemporaryUrl(url)) {
+    results.skipped++;
+    return null;
+  }
+
+  if (dryRun) {
+    return `[DRY RUN] Would migrate to ${category}/${identifier}`;
+  }
+
+  try {
+    const newUrl = await uploadImageFromUrl(url, category, identifier);
+    results.migrated++;
+    return newUrl;
+  } catch (error) {
+    results.failed++;
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    results.errors.push(`${category}/${identifier}: ${errorMsg}`);
+    return null;
+  }
+}
+
 /**
  * GET /admin/migration/status
  * Get status of images that need migration
@@ -168,40 +207,13 @@ router.post('/migration/run', auth, async (req: Request, res: Response) => {
     const { dryRun = false, types = ['all'] } = req.body;
     const migrateAll = types.includes('all');
 
-    const results = {
+    const results: MigrationResults = {
       migrated: 0,
       failed: 0,
       skipped: 0,
-      errors: [] as string[],
-      details: [] as MigrationDetail[],
+      errors: [],
+      details: [],
     };
-
-    // Helper function to migrate a single URL
-    async function migrateUrl(
-      url: string,
-      category: string,
-      identifier: string
-    ): Promise<string | null> {
-      if (!isTemporaryUrl(url)) {
-        results.skipped++;
-        return null;
-      }
-
-      if (dryRun) {
-        return `[DRY RUN] Would migrate to ${category}/${identifier}`;
-      }
-
-      try {
-        const newUrl = await uploadImageFromUrl(url, category, identifier);
-        results.migrated++;
-        return newUrl;
-      } catch (error) {
-        results.failed++;
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        results.errors.push(`${category}/${identifier}: ${errorMsg}`);
-        return null;
-      }
-    }
 
     // Migrate user avatars
     if (migrateAll || types.includes('avatars')) {
@@ -215,7 +227,7 @@ router.post('/migration/run', auth, async (req: Request, res: Response) => {
           continue;
         }
 
-        const newUrl = await migrateUrl(user.avatarUrl, 'avatars', `user-${user.id}`);
+        const newUrl = await migrateUrl(user.avatarUrl, 'avatars', `user-${user.id}`, results, dryRun);
 
         results.details.push({
           type: 'avatar',
@@ -249,7 +261,7 @@ router.post('/migration/run', auth, async (req: Request, res: Response) => {
       for (const char of characters) {
         // Migrate portrait
         if (char.portraitUrl && isTemporaryUrl(char.portraitUrl)) {
-          const newUrl = await migrateUrl(char.portraitUrl, 'characters', `${char.id}-portrait`);
+          const newUrl = await migrateUrl(char.portraitUrl, 'characters', `${char.id}-portrait`, results, dryRun);
           results.details.push({
             type: 'character-portrait',
             id: char.id,
@@ -275,7 +287,7 @@ router.post('/migration/run', auth, async (req: Request, res: Response) => {
           for (let i = 0; i < char.fullBodyUrls.length; i++) {
             const url = char.fullBodyUrls[i];
             if (url && isTemporaryUrl(url)) {
-              const newUrl = await migrateUrl(url, 'characters', `${char.id}-fullbody-${i}`);
+              const newUrl = await migrateUrl(url, 'characters', `${char.id}-fullbody-${i}`, results, dryRun);
               results.details.push({
                 type: 'character-fullbody',
                 id: char.id,
@@ -313,7 +325,7 @@ router.post('/migration/run', auth, async (req: Request, res: Response) => {
           continue;
         }
 
-        const newUrl = await migrateUrl(npc.portraitUrl, 'npcs', npc.id);
+        const newUrl = await migrateUrl(npc.portraitUrl, 'npcs', npc.id, results, dryRun);
 
         results.details.push({
           type: 'npc',
@@ -344,7 +356,7 @@ router.post('/migration/run', auth, async (req: Request, res: Response) => {
           continue;
         }
 
-        const newUrl = await migrateUrl(map.backgroundUrl, 'maps', map.id);
+        const newUrl = await migrateUrl(map.backgroundUrl, 'maps', map.id, results, dryRun);
 
         results.details.push({
           type: 'map',
@@ -375,7 +387,7 @@ router.post('/migration/run', auth, async (req: Request, res: Response) => {
           continue;
         }
 
-        const newUrl = await migrateUrl(campaign.coverImageUrl, 'campaigns', campaign.id);
+        const newUrl = await migrateUrl(campaign.coverImageUrl, 'campaigns', campaign.id, results, dryRun);
 
         results.details.push({
           type: 'campaign',
