@@ -651,9 +651,27 @@ function ExportModal({
         const npcsFolder = zip.folder('npcs');
         const encountersFolder = zip.folder('encounters');
         const questsFolder = zip.folder('quests');
+        const cutscenesFolder = zip.folder('cutscenes');
+        const videosFolder = zip.folder('videos');
+        const audioFolder = zip.folder('audio');
 
-        // Collect all images to download
-        const imageDownloads: Promise<void>[] = [];
+        // Collect all media downloads (images, videos, audio)
+        const mediaDownloads: Promise<void>[] = [];
+
+        // Helper to fetch any media file as blob
+        const fetchMediaAsBlob = async (url: string): Promise<Blob | null> => {
+          try {
+            const response = await fetch(url);
+            if (!response.ok) return null;
+            return await response.blob();
+          } catch {
+            console.warn(`Failed to fetch media: ${url}`);
+            return null;
+          }
+        };
+
+        // Collect all images to download (legacy variable name for compatibility)
+        const imageDownloads: Promise<void>[] = mediaDownloads;
 
         // Organize content by type and collect images
         for (const item of content) {
@@ -715,6 +733,43 @@ function ExportModal({
             case 'quest':
               questsFolder?.file(filename, jsonContent);
               break;
+            case 'cutscene': {
+              cutscenesFolder?.file(filename, jsonContent);
+              // Download cutscene video if exists
+              const cutsceneData = item.data as { videoUrl?: string; audioUrl?: string; narrationText?: string };
+              if (cutsceneData.videoUrl) {
+                mediaDownloads.push(
+                  fetchMediaAsBlob(cutsceneData.videoUrl).then((blob) => {
+                    if (blob && videosFolder) {
+                      videosFolder.file(`${item.id}_video.mp4`, blob);
+                    }
+                  })
+                );
+              }
+              // Download cutscene audio/narration if exists
+              if (cutsceneData.audioUrl) {
+                mediaDownloads.push(
+                  fetchMediaAsBlob(cutsceneData.audioUrl).then((blob) => {
+                    if (blob && audioFolder) {
+                      audioFolder.file(`${item.id}_narration.mp3`, blob);
+                    }
+                  })
+                );
+              }
+              break;
+            }
+          }
+
+          // Also check for audioUrl on any content type (narration can be on any content)
+          const anyData = item.data as { audioUrl?: string };
+          if (anyData.audioUrl && item.type !== 'cutscene') {
+            mediaDownloads.push(
+              fetchMediaAsBlob(anyData.audioUrl).then((blob) => {
+                if (blob && audioFolder) {
+                  audioFolder.file(`${item.id}_audio.mp3`, blob);
+                }
+              })
+            );
           }
         }
 
@@ -735,17 +790,24 @@ Exported from D&D Campaign Studio on ${new Date().toLocaleDateString()}
 - npcs/ - NPC character data
 - encounters/ - Encounter definitions
 - quests/ - Quest objectives
+- cutscenes/ - Cutscene definitions
 - media/ - Downloaded images (portraits, location images, etc.)
+- videos/ - Downloaded video cutscenes (MP4)
+- audio/ - Downloaded narration and TTS audio (MP3)
 
 ## Importing
 
 To continue working on this campaign, import the campaign.json file
 in the Campaign Studio.
 
-## Images
+## Media Files
 
-All AI-generated images have been downloaded and included in the media/ folder.
-This export is fully offline-compatible.
+All AI-generated media has been downloaded and included:
+- Images (portraits, locations) in media/ folder
+- Video cutscenes in videos/ folder
+- Audio narration in audio/ folder
+
+This export is fully offline-compatible with permanent R2 storage URLs.
 `;
         zip.file('README.md', readme);
 
