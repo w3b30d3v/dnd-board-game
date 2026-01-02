@@ -144,7 +144,11 @@ export async function uploadImageFromUrl(
   );
 
   // Return the public URL
-  const publicUrl = `${config.publicUrl}/${config.bucketMedia}/${filename}`;
+  // Note: For r2.dev public URLs, the bucket is tied to the subdomain, so we don't include bucket name in path
+  const includeBucket = process.env.S3_PUBLIC_URL_INCLUDE_BUCKET === 'true';
+  const publicUrl = includeBucket
+    ? `${config.publicUrl}/${config.bucketMedia}/${filename}`
+    : `${config.publicUrl}/${filename}`;
   logger.info({ publicUrl }, 'Uploaded image to permanent storage');
 
   return publicUrl;
@@ -186,7 +190,10 @@ export async function uploadVideoFromUrl(
     })
   );
 
-  const publicUrl = `${config.publicUrl}/${config.bucketMedia}/${filename}`;
+  const includeBucket = process.env.S3_PUBLIC_URL_INCLUDE_BUCKET === 'true';
+  const publicUrl = includeBucket
+    ? `${config.publicUrl}/${config.bucketMedia}/${filename}`
+    : `${config.publicUrl}/${filename}`;
   logger.info({ publicUrl }, 'Uploaded video to permanent storage');
 
   return publicUrl;
@@ -230,7 +237,10 @@ export async function uploadAudioBuffer(
     })
   );
 
-  const publicUrl = `${config.publicUrl}/${config.bucketMedia}/${filename}`;
+  const includeBucket = process.env.S3_PUBLIC_URL_INCLUDE_BUCKET === 'true';
+  const publicUrl = includeBucket
+    ? `${config.publicUrl}/${config.bucketMedia}/${filename}`
+    : `${config.publicUrl}/${filename}`;
   logger.info({ publicUrl }, 'Uploaded audio to permanent storage');
 
   return publicUrl;

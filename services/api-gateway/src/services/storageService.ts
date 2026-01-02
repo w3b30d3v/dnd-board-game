@@ -133,7 +133,12 @@ export async function uploadImageFromUrl(
   );
 
   // Return the public URL
-  const publicUrl = `${config.storage.publicUrl}/${config.storage.bucketMedia}/${filename}`;
+  // Note: For r2.dev public URLs, the bucket is tied to the subdomain, so we don't include bucket name in path
+  // For custom domains or MinIO, the bucket may need to be in the path - check S3_PUBLIC_URL_INCLUDE_BUCKET env var
+  const includeBucket = process.env.S3_PUBLIC_URL_INCLUDE_BUCKET === 'true';
+  const publicUrl = includeBucket
+    ? `${config.storage.publicUrl}/${config.storage.bucketMedia}/${filename}`
+    : `${config.storage.publicUrl}/${filename}`;
   console.log(`[Storage] Uploaded image to ${publicUrl}`);
 
   return publicUrl;
@@ -190,7 +195,10 @@ export async function uploadBuffer(
     })
   );
 
-  return `${config.storage.publicUrl}/${config.storage.bucketMedia}/${filename}`;
+  const includeBucket = process.env.S3_PUBLIC_URL_INCLUDE_BUCKET === 'true';
+  return includeBucket
+    ? `${config.storage.publicUrl}/${config.storage.bucketMedia}/${filename}`
+    : `${config.storage.publicUrl}/${filename}`;
 }
 
 /**
