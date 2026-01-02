@@ -14,12 +14,6 @@ interface UserStats {
   totalPlayTime: string;
 }
 
-interface UserProfile {
-  bio?: string;
-  gender?: string;
-  avatarUrl?: string;
-}
-
 export default function ProfilePage() {
   const router = useRouter();
   const { user, isLoading, token, updateUser } = useAuthStore();
