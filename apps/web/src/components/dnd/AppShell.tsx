@@ -555,24 +555,30 @@ export function AppShell({ children, showSidebar = true }: AppShellProps) {
             {user && (
               <div className="p-3 border-t border-border/50">
                 <div className="flex items-center gap-3 px-2 py-2">
-                  {/* User Avatar */}
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-bg-primary font-bold text-sm shadow-glow flex-shrink-0 cursor-pointer"
-                    title={user.displayName}
-                  >
-                    {user.displayName.charAt(0).toUpperCase()}
-                  </motion.div>
+                  {/* User Avatar & Info - Clickable to Profile */}
+                  <Link href="/profile" className="flex items-center gap-3 flex-1 min-w-0 group">
+                    <motion.div
+                      whileHover={{ scale: 1.1, rotate: 5 }}
+                      className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-bg-primary font-bold text-sm shadow-glow flex-shrink-0 cursor-pointer overflow-hidden"
+                      title={`View ${user.displayName}'s profile`}
+                    >
+                      {user.avatarUrl ? (
+                        <img src={user.avatarUrl} alt={user.displayName} className="w-full h-full object-cover" />
+                      ) : (
+                        user.displayName.charAt(0).toUpperCase()
+                      )}
+                    </motion.div>
 
-                  {/* User Info */}
-                  <motion.div variants={textVariants} className="flex-1 min-w-0">
-                    <div className="font-medium text-sm text-text-primary truncate">
-                      {user.displayName}
-                    </div>
-                    <div className="text-xs text-text-muted truncate">
-                      @{user.username}
-                    </div>
-                  </motion.div>
+                    {/* User Info */}
+                    <motion.div variants={textVariants} className="flex-1 min-w-0">
+                      <div className="font-medium text-sm text-text-primary truncate group-hover:text-primary transition-colors">
+                        {user.displayName}
+                      </div>
+                      <div className="text-xs text-text-muted truncate">
+                        @{user.username}
+                      </div>
+                    </motion.div>
+                  </Link>
 
                   {/* Logout Button */}
                   <motion.button
