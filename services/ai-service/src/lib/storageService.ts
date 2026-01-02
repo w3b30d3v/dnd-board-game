@@ -150,7 +150,95 @@ export async function uploadImageFromUrl(
   return publicUrl;
 }
 
+/**
+ * Upload a video from a URL to permanent storage
+ */
+export async function uploadVideoFromUrl(
+  sourceUrl: string,
+  category: string,
+  identifier?: string
+): Promise<string> {
+  if (!s3Client) {
+    throw new Error('Storage not configured');
+  }
+
+  await ensureBucketsExist();
+
+  // Download the video
+  const response = await fetch(sourceUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to download video: ${response.status}`);
+  }
+  const arrayBuffer = await response.arrayBuffer();
+  const videoBuffer = Buffer.from(arrayBuffer);
+
+  // Generate filename
+  const prefix = identifier ? `${category}/${identifier}` : category;
+  const filename = generateFilename(prefix, 'mp4');
+
+  // Upload to R2
+  await s3Client.send(
+    new PutObjectCommand({
+      Bucket: config.bucketMedia,
+      Key: filename,
+      Body: videoBuffer,
+      ContentType: 'video/mp4',
+    })
+  );
+
+  const publicUrl = `${config.publicUrl}/${config.bucketMedia}/${filename}`;
+  logger.info({ publicUrl }, 'Uploaded video to permanent storage');
+
+  return publicUrl;
+}
+
+/**
+ * Upload audio buffer to permanent storage
+ */
+export async function uploadAudioBuffer(
+  audioBuffer: Buffer,
+  category: string,
+  identifier?: string,
+  contentType: string = 'audio/mpeg'
+): Promise<string> {
+  if (!s3Client) {
+    throw new Error('Storage not configured');
+  }
+
+  await ensureBucketsExist();
+
+  // Determine extension from content type
+  const extensionMap: Record<string, string> = {
+    'audio/mpeg': 'mp3',
+    'audio/mp3': 'mp3',
+    'audio/wav': 'wav',
+    'audio/ogg': 'ogg',
+  };
+  const extension = extensionMap[contentType] || 'mp3';
+
+  // Generate filename
+  const prefix = identifier ? `${category}/${identifier}` : category;
+  const filename = generateFilename(prefix, extension);
+
+  // Upload to R2
+  await s3Client.send(
+    new PutObjectCommand({
+      Bucket: config.bucketMedia,
+      Key: filename,
+      Body: audioBuffer,
+      ContentType: contentType,
+    })
+  );
+
+  const publicUrl = `${config.publicUrl}/${config.bucketMedia}/${filename}`;
+  logger.info({ publicUrl }, 'Uploaded audio to permanent storage');
+
+  return publicUrl;
+}
+
 export default {
   uploadImageFromUrl,
+  uploadVideoFromUrl,
+  uploadAudioBuffer,
   STORAGE_ENABLED,
 };

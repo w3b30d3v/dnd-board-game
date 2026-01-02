@@ -18,6 +18,10 @@ import {
 } from '../lib/runway.js';
 import { config } from '../lib/config.js';
 import { validateAndSanitize, ContentSafetyError } from '../lib/contentSafety.js';
+import { uploadVideoFromUrl, STORAGE_ENABLED } from '../lib/storageService.js';
+
+// Track which videos have been uploaded to R2 to avoid duplicate uploads
+const uploadedVideos = new Map<string, string>();
 
 const router: RouterType = Router();
 
@@ -305,15 +309,47 @@ router.get('/:taskId/status', async (req: Request, res: Response) => {
 
     const result = await getVideoStatus(taskId);
 
+    // If video is completed and we have a URL, upload to R2 for permanent storage
+    let finalVideoUrl = result.videoUrl;
+    let finalThumbnailUrl = result.thumbnailUrl;
+
+    if (result.status === 'SUCCEEDED' && result.videoUrl && STORAGE_ENABLED) {
+      // Check if already uploaded
+      if (uploadedVideos.has(taskId)) {
+        finalVideoUrl = uploadedVideos.get(taskId);
+        logger.info({ taskId }, 'Using cached R2 video URL');
+      } else {
+        try {
+          logger.info({ taskId }, 'Uploading completed video to R2');
+          finalVideoUrl = await uploadVideoFromUrl(result.videoUrl, 'videos', taskId);
+          uploadedVideos.set(taskId, finalVideoUrl);
+          logger.info({ taskId, finalVideoUrl }, 'Video stored permanently in R2');
+
+          // Also upload thumbnail if available
+          if (result.thumbnailUrl) {
+            try {
+              const { uploadImageFromUrl } = await import('../lib/storageService.js');
+              finalThumbnailUrl = await uploadImageFromUrl(result.thumbnailUrl, 'videos/thumbnails', taskId);
+            } catch (thumbError) {
+              logger.warn({ error: thumbError }, 'Failed to upload thumbnail');
+            }
+          }
+        } catch (uploadError) {
+          logger.warn({ error: uploadError, taskId }, 'Failed to upload video to R2, using temporary URL');
+        }
+      }
+    }
+
     res.json({
       taskId: result.taskId,
       status: result.status,
       progress: result.progress,
-      videoUrl: result.videoUrl,
-      thumbnailUrl: result.thumbnailUrl,
+      videoUrl: finalVideoUrl,
+      thumbnailUrl: finalThumbnailUrl,
       duration: result.duration,
       error: result.error,
       createdAt: result.createdAt,
+      storedPermanently: STORAGE_ENABLED && uploadedVideos.has(taskId),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

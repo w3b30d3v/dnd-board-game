@@ -15,6 +15,26 @@ import {
 } from '../lib/elevenlabs.js';
 import { logger } from '../lib/logger.js';
 import { validateAndSanitize, ContentSafetyError } from '../lib/contentSafety.js';
+import { uploadAudioBuffer, STORAGE_ENABLED } from '../lib/storageService.js';
+
+/**
+ * Convert base64 audio to R2 URL if storage is enabled
+ */
+async function storeAudioPermanently(
+  audioBase64: string | undefined,
+  category: string
+): Promise<string | null> {
+  if (!audioBase64 || !STORAGE_ENABLED) return null;
+
+  try {
+    const audioBuffer = Buffer.from(audioBase64, 'base64');
+    const permanentUrl = await uploadAudioBuffer(audioBuffer, category, undefined, 'audio/mpeg');
+    return permanentUrl;
+  } catch (error) {
+    logger.warn({ error }, 'Failed to upload audio to R2');
+    return null;
+  }
+}
 
 const router: RouterType = Router();
 
@@ -151,11 +171,20 @@ router.post('/generate', async (req: Request, res: Response) => {
       customVoiceId,
     });
 
+    // Upload to R2 for permanent storage if enabled
+    let finalAudioUrl = result.audioUrl;
+    const permanentUrl = await storeAudioPermanently(result.audioBase64, 'audio/speech');
+    if (permanentUrl) {
+      finalAudioUrl = permanentUrl;
+      logger.info({ permanentUrl }, 'Audio stored permanently in R2');
+    }
+
     res.json({
-      audioUrl: result.audioUrl,
+      audioUrl: finalAudioUrl,
       duration: result.duration,
       characterCount: result.characterCount,
       voiceProfile: result.voiceProfile,
+      storedPermanently: !!permanentUrl,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -217,12 +246,20 @@ router.post('/generate-template', async (req: Request, res: Response) => {
       emotion,
     });
 
+    // Upload to R2 for permanent storage if enabled
+    let finalAudioUrl = result.audioUrl;
+    const permanentUrl = await storeAudioPermanently(result.audioBase64, 'audio/templates');
+    if (permanentUrl) {
+      finalAudioUrl = permanentUrl;
+    }
+
     res.json({
-      audioUrl: result.audioUrl,
+      audioUrl: finalAudioUrl,
       duration: result.duration,
       text,
       template,
       voiceProfile: result.voiceProfile,
+      storedPermanently: !!permanentUrl,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -305,13 +342,21 @@ router.post('/narrate', async (req: Request, res: Response) => {
       emotion: selectedEmotion,
     });
 
+    // Upload to R2 for permanent storage if enabled
+    let finalAudioUrl = result.audioUrl;
+    const permanentUrl = await storeAudioPermanently(result.audioBase64, `audio/narration/${contentType}`);
+    if (permanentUrl) {
+      finalAudioUrl = permanentUrl;
+    }
+
     res.json({
-      audioUrl: result.audioUrl,
+      audioUrl: finalAudioUrl,
       duration: result.duration,
       characterCount: result.characterCount,
       contentType,
       speakerName,
       voiceProfile: result.voiceProfile,
+      storedPermanently: !!permanentUrl,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
