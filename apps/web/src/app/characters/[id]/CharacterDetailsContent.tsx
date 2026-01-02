@@ -622,6 +622,8 @@ export default function CharacterDetailsContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('stats');
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [regenerateMessage, setRegenerateMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const characterId = params?.id as string;
 
@@ -660,6 +662,63 @@ export default function CharacterDetailsContent() {
       fetchCharacter();
     }
   }, [token, characterId, user]);
+
+  // Handle image regeneration
+  const handleRegenerateImages = async () => {
+    if (!token || !characterId || isRegenerating) return;
+
+    setIsRegenerating(true);
+    setRegenerateMessage(null);
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const response = await fetch(`${apiUrl}/media/regenerate/${characterId}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to regenerate images');
+      }
+
+      // Update character with new images
+      if (data.images) {
+        setCharacter((prev) => {
+          if (!prev) return prev;
+          const fullBodyUrls: string[] = [];
+          if (data.images.fullBody1) fullBodyUrls.push(data.images.fullBody1);
+          if (data.images.fullBody2) fullBodyUrls.push(data.images.fullBody2);
+          return {
+            ...prev,
+            portraitUrl: data.images.portrait || prev.portraitUrl,
+            fullBodyUrls: fullBodyUrls.length > 0 ? fullBodyUrls : prev.fullBodyUrls,
+            imageSource: data.source,
+          };
+        });
+      }
+
+      setRegenerateMessage({
+        type: 'success',
+        text: `Regenerated ${data.imagesGenerated || 0} image(s) successfully!`,
+      });
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setRegenerateMessage(null), 5000);
+    } catch (err) {
+      console.error('Failed to regenerate images:', err);
+      setRegenerateMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to regenerate images',
+      });
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
 
   // Build image list
   const imageList: { url: string; label: string }[] = [];
@@ -1360,6 +1419,48 @@ export default function CharacterDetailsContent() {
                   {/* Image Carousel */}
                   <div className="flex-1 min-h-0">
                     <ImageCarousel images={imageList} characterName={character.name} characterRace={character.race} characterClass={character.class} />
+                  </div>
+
+                  {/* Regenerate Images Button */}
+                  <div className="mt-3">
+                    <motion.button
+                      onClick={handleRegenerateImages}
+                      disabled={isRegenerating}
+                      whileHover={{ scale: isRegenerating ? 1 : 1.02 }}
+                      whileTap={{ scale: isRegenerating ? 1 : 0.98 }}
+                      className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                        isRegenerating
+                          ? 'bg-bg-tertiary text-text-muted cursor-not-allowed'
+                          : 'bg-gradient-to-r from-primary/20 to-secondary/20 border border-primary/50 text-primary hover:border-primary hover:shadow-lg hover:shadow-primary/20'
+                      }`}
+                    >
+                      {isRegenerating ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <motion.span
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                          >
+                            🎨
+                          </motion.span>
+                          Regenerating...
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-center gap-2">
+                          🔄 Regenerate Images
+                        </span>
+                      )}
+                    </motion.button>
+                    {regenerateMessage && (
+                      <motion.p
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`text-xs mt-2 text-center ${
+                          regenerateMessage.type === 'success' ? 'text-success' : 'text-danger'
+                        }`}
+                      >
+                        {regenerateMessage.text}
+                      </motion.p>
+                    )}
                   </div>
 
                   {/* Created Date */}
