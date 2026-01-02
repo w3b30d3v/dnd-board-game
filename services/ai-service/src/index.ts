@@ -1,5 +1,6 @@
 // AI Service - Campaign Studio & Content Generation
 // Provides Claude-powered conversational campaign creation
+// Build version: 2026-01-02-v1 - Force redeploy
 
 import express, { type Express } from 'express';
 import cors from 'cors';
