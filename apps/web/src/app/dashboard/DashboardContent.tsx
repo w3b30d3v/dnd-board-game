@@ -784,18 +784,93 @@ export default function DashboardContent() {
 
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Hero Welcome Banner */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mb-8"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 }}
+            className="relative mb-8 rounded-2xl overflow-hidden"
           >
-            <h1 className="dnd-heading-epic text-4xl pb-4">
-              Your Quest Board
-            </h1>
-            <p className="text-text-secondary dnd-flavor">
-              &quot;What adventure calls to you today, brave {user.displayName}?&quot;
-            </p>
+            {/* Background with gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-bg-dark via-bg-dark/90 to-transparent z-10" />
+            <div
+              className="absolute inset-0 bg-cover bg-center opacity-40"
+              style={{ backgroundImage: 'url(https://api.dicebear.com/7.x/shapes/svg?seed=dungeon-hero&backgroundColor=1e1b26,2a2735&scale=200)' }}
+            />
+
+            {/* Animated magic particles on banner */}
+            <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
+              {[...Array(8)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute w-1 h-1 rounded-full bg-primary"
+                  style={{ left: `${10 + i * 12}%`, top: `${20 + (i % 3) * 25}%` }}
+                  animate={{
+                    y: [0, -15, 0],
+                    opacity: [0.3, 0.8, 0.3],
+                    scale: [1, 1.5, 1],
+                  }}
+                  transition={{ duration: 2 + i * 0.3, repeat: Infinity, delay: i * 0.2 }}
+                />
+              ))}
+            </div>
+
+            <div className="relative z-20 p-8 md:p-12">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div>
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="flex items-center gap-3 mb-3"
+                  >
+                    <motion.span
+                      animate={{ rotate: [0, 10, -10, 0] }}
+                      transition={{ duration: 4, repeat: Infinity }}
+                      className="text-4xl"
+                    >
+                      ⚔️
+                    </motion.span>
+                    <span className="text-sm uppercase tracking-widest text-primary font-medium">
+                      Adventurer&apos;s Guild
+                    </span>
+                  </motion.div>
+                  <h1 className="dnd-heading-epic text-3xl md:text-4xl pb-2">
+                    Welcome, {user.displayName}
+                  </h1>
+                  <p className="text-text-secondary dnd-flavor text-lg max-w-xl">
+                    &quot;Your legend grows with each quest. What adventure calls to you today?&quot;
+                  </p>
+                </div>
+
+                {/* Stats summary */}
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="flex gap-6 md:gap-8"
+                >
+                  <div className="text-center">
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      className="text-3xl md:text-4xl font-cinzel font-bold text-primary"
+                    >
+                      {characters.length}
+                    </motion.div>
+                    <div className="text-xs text-text-muted uppercase tracking-wide">Heroes</div>
+                  </div>
+                  <div className="text-center">
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      className="text-3xl md:text-4xl font-cinzel font-bold text-secondary"
+                    >
+                      ∞
+                    </motion.div>
+                    <div className="text-xs text-text-muted uppercase tracking-wide">Adventures</div>
+                  </div>
+                </motion.div>
+              </div>
+            </div>
           </motion.div>
 
           {/* Success Message */}

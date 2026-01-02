@@ -467,24 +467,6 @@ export default function Home() {
             </motion.div>
           </motion.div>
 
-          {/* Try Game Board CTA */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.2 }}
-            className="mt-8"
-          >
-            <Link href="/game/test">
-              <motion.button
-                whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(139, 92, 246, 0.5)' }}
-                whileTap={{ scale: 0.98 }}
-                className="btn-stone text-base px-6 py-3 border-secondary/50 hover:border-secondary"
-              >
-                🗺️ Try the Game Board Demo
-              </motion.button>
-            </Link>
-          </motion.div>
-
           {/* Available Now Section */}
           <motion.div
             initial={{ opacity: 0 }}
