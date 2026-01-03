@@ -23,11 +23,6 @@ export default function SettingsPage() {
     }
   }, [isLoading, isAuthenticated, router]);
 
-  const handleSave = async () => {
-    // Preferences are auto-saved via zustand persist
-    // Show save confirmation to user
-  };
-
   const togglePreference = (key: keyof UserPreferences) => {
     if (typeof preferences[key] === 'boolean') {
       setPreference(key, !preferences[key]);
