@@ -2,8 +2,17 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useImmersive } from '@/components/immersion/ImmersiveProvider';
 import { usePreferencesStore } from '@/stores/preferencesStore';
+
+// No-op version of playDiceRoll for when ImmersiveProvider isn't available
+// Sound effects will only play inside game sessions with ImmersiveProvider
+const noopPlayDiceRoll = (_result: 'success' | 'fail' | 'critical' | 'fumble') => {};
+
+function useOptionalImmersive() {
+  return {
+    playDiceRoll: noopPlayDiceRoll,
+  };
+}
 
 export type DiceType = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd20' | 'd100';
 export type RollContext = 'combat' | 'exploration' | 'important';
@@ -226,7 +235,7 @@ export function DiceRoller({
   const [rolls, setRolls] = useState<number[]>([]);
   const [displayValue, setDisplayValue] = useState(0);
   const [finalResult, setFinalResult] = useState<DiceRollResult | null>(null);
-  const { playDiceRoll } = useImmersive();
+  const { playDiceRoll } = useOptionalImmersive();
 
   // Get preferences
   const { preferences, shouldShowDiceAnimation, getDiceAnimationDuration } = usePreferencesStore();
