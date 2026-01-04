@@ -120,7 +120,7 @@ export function FogOfWarControls({
                       backgroundColor: selectedFogState === state.id ? `${state.color}20` : undefined,
                     }}
                   >
-                    <Icon className="w-4 h-4" style={{ color: state.color }} />
+                    <span style={{ color: state.color }}><Icon className="w-4 h-4" /></span>
                     <span className="text-xs text-white">{state.name}</span>
                   </button>
                 );

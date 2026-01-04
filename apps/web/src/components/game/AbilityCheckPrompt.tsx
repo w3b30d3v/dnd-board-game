@@ -272,7 +272,7 @@ export function AbilityCheckPrompt({
                         backgroundColor: selectedAbility === ability.id ? `${ability.color}20` : undefined,
                       }}
                     >
-                      <Icon className="w-5 h-5" style={{ color: ability.color }} />
+                      <span style={{ color: ability.color }}><Icon className="w-5 h-5" /></span>
                       <span className="text-xs text-white font-medium">{ability.name}</span>
                     </button>
                   );

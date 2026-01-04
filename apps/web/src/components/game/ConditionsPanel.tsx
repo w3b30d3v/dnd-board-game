@@ -319,7 +319,7 @@ export function ConditionsPanel({
                     )}
 
                     <div className="flex items-center gap-2 mb-1">
-                      <Icon className="w-4 h-4" style={{ color: condition.color }} />
+                      <span style={{ color: condition.color }}><Icon className="w-4 h-4" /></span>
                       <span className="font-medium text-white text-sm">{condition.name}</span>
                     </div>
                     <p className="text-xs text-gray-400 line-clamp-2">{condition.description}</p>
