@@ -8,11 +8,14 @@ import { CollapsibleSidebar } from '@/components/dnd/CollapsibleSidebar';
 import { EncounterEditor, EncounterData } from '@/components/editors/EncounterEditor';
 import { NPCEditor, NPCData } from '@/components/editors/NPCEditor';
 import { QuestEditor, QuestData } from '@/components/editors/QuestEditor';
+import { DialogueEditor, DialogueData } from '@/components/editors/DialogueEditor';
+import { ItemEditor, ItemData } from '@/components/editors/ItemEditor';
 import { CutsceneSequencer, CutsceneScene } from '@/components/cutscene/CutsceneSequencer';
 import { useCampaignStudioStore, ContentBlock, CutsceneData } from '@/stores/campaignStudioStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useCampaignStudio } from '@/hooks/useCampaignStudio';
 
-type EditorType = 'hub' | 'encounters' | 'npcs' | 'quests' | 'cutscenes';
+type EditorType = 'hub' | 'encounters' | 'npcs' | 'quests' | 'cutscenes' | 'dialogues' | 'items';
 
 interface EditorCard {
   id: EditorType;
@@ -72,6 +75,30 @@ const editorCards: EditorCard[] = [
     color: 'from-purple-500 to-pink-500',
     contentType: 'cutscene',
   },
+  {
+    id: 'dialogues',
+    title: 'Dialogue Editor',
+    description: 'Create branching conversations with NPCs and skill checks',
+    icon: (
+      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+      </svg>
+    ),
+    color: 'from-indigo-500 to-purple-500',
+    contentType: 'dialogue' as ContentBlock['type'],
+  },
+  {
+    id: 'items',
+    title: 'Item Editor',
+    description: 'Create magical items, weapons, armor, and treasure',
+    icon: (
+      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+      </svg>
+    ),
+    color: 'from-amber-500 to-yellow-500',
+    contentType: 'item' as ContentBlock['type'],
+  },
 ];
 
 export default function ContentEditorHubContent() {
@@ -90,6 +117,9 @@ export default function ContentEditorHubContent() {
     loadContent,
     addContent,
   } = useCampaignStudioStore();
+
+  // Use campaign studio hook for image generation
+  const { generateImage, isGeneratingImageFor } = useCampaignStudio(campaignId || undefined);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -179,6 +209,57 @@ export default function ContentEditorHubContent() {
     }
   }, [addContent, saveContent]);
 
+  // Handle NPC portrait generation
+  const handleGeneratePortrait = useCallback(async (npcId: string) => {
+    await generateImage(npcId);
+  }, [generateImage]);
+
+  // Handle save for dialogues
+  const handleDialogueSave = useCallback(async (data: DialogueData) => {
+    setIsSaving(true);
+    try {
+      addContent({
+        id: data.id,
+        type: 'dialogue' as ContentBlock['type'],
+        data: data as unknown as ContentBlock['data'],
+        createdAt: new Date(),
+      });
+      await saveContent();
+      setSaveMessage('Dialogue saved successfully!');
+      setTimeout(() => {
+        setSaveMessage(null);
+        setActiveEditor('hub');
+      }, 1500);
+    } catch {
+      setSaveMessage('Failed to save dialogue');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [addContent, saveContent]);
+
+  // Handle save for items
+  const handleItemSave = useCallback(async (data: ItemData) => {
+    setIsSaving(true);
+    try {
+      addContent({
+        id: data.id,
+        type: 'item' as ContentBlock['type'],
+        data: data as unknown as ContentBlock['data'],
+        createdAt: new Date(),
+      });
+      await saveContent();
+      setSaveMessage('Item saved successfully!');
+      setTimeout(() => {
+        setSaveMessage(null);
+        setActiveEditor('hub');
+      }, 1500);
+    } catch {
+      setSaveMessage('Failed to save item');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [addContent, saveContent]);
+
   // Handle save for cutscenes
   const handleCutsceneSave = useCallback(async (scenes: CutsceneScene[]) => {
     setIsSaving(true);
@@ -228,6 +309,7 @@ export default function ContentEditorHubContent() {
             campaignId={campaignId || undefined}
             onSave={handleNPCSave}
             onCancel={() => setActiveEditor('hub')}
+            onGeneratePortrait={handleGeneratePortrait}
           />
         );
       case 'quests':
@@ -243,6 +325,22 @@ export default function ContentEditorHubContent() {
           <CutsceneSequencer
             campaignId={campaignId || undefined}
             onSave={handleCutsceneSave}
+          />
+        );
+      case 'dialogues':
+        return (
+          <DialogueEditor
+            campaignId={campaignId || undefined}
+            onSave={handleDialogueSave}
+            onCancel={() => setActiveEditor('hub')}
+          />
+        );
+      case 'items':
+        return (
+          <ItemEditor
+            campaignId={campaignId || undefined}
+            onSave={handleItemSave}
+            onCancel={() => setActiveEditor('hub')}
           />
         );
       default:

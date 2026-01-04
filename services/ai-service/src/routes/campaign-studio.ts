@@ -444,6 +444,74 @@ router.post('/:campaignId/audio', async (req: AuthenticatedRequest, res: Respons
   }
 });
 
+// Webhook for Runway async video generation
+router.post('/webhook/runway', async (req: Request, res: Response) => {
+  try {
+    const { taskId, status, output, failure, progress } = req.body;
+
+    logger.info({ taskId, status, progress }, 'Runway webhook received');
+
+    // Find the video by runwayTaskId
+    const video = await prisma.campaignVideo.findFirst({
+      where: { runwayTaskId: taskId },
+    });
+
+    if (!video) {
+      logger.warn({ taskId }, 'No video found for Runway task');
+      res.json({ received: true, matched: false });
+      return;
+    }
+
+    // Map Runway status to our status
+    let videoStatus: 'pending' | 'processing' | 'completed' | 'failed' = 'pending';
+    if (status === 'RUNNING' || status === 'THROTTLED') {
+      videoStatus = 'processing';
+    } else if (status === 'SUCCEEDED') {
+      videoStatus = 'completed';
+    } else if (status === 'FAILED' || status === 'CANCELLED') {
+      videoStatus = 'failed';
+    }
+
+    // Update the video record
+    const updateData: {
+      status: typeof videoStatus;
+      videoUrl?: string;
+      thumbnailUrl?: string;
+    } = {
+      status: videoStatus,
+    };
+
+    // If succeeded, upload to permanent storage
+    if (status === 'SUCCEEDED' && output && Array.isArray(output) && output.length > 0) {
+      let videoUrl = output[0];
+
+      if (STORAGE_ENABLED) {
+        try {
+          const { uploadVideoFromUrl } = await import('../lib/storageService.js');
+          videoUrl = await uploadVideoFromUrl(output[0], 'videos', taskId);
+          logger.info({ taskId, videoUrl }, 'Video stored permanently');
+        } catch (storageError) {
+          logger.warn({ taskId, error: storageError }, 'Failed to store video permanently');
+        }
+      }
+
+      updateData.videoUrl = videoUrl;
+    }
+
+    await prisma.campaignVideo.update({
+      where: { id: video.id },
+      data: updateData,
+    });
+
+    logger.info({ taskId, videoStatus }, 'Video status updated via webhook');
+
+    res.json({ received: true, matched: true, status: videoStatus });
+  } catch (error) {
+    logger.error({ error }, 'Failed to process Runway webhook');
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
+});
+
 // Webhook for NanoBanana async image generation
 router.post('/webhook/nanobanana', async (req: Request, res: Response) => {
   try {
