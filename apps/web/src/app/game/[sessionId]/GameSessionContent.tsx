@@ -1243,6 +1243,8 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
           isSelectingTarget: combat.isSelectingTarget,
           combatLog: combat.combatLog,
           actionEconomy: combat.actionEconomy,
+          hasAdvantage: combat.hasAdvantage,
+          hasDisadvantage: combat.hasDisadvantage,
         }}
         currentCreature={creatures.find(c => c.id === combat.currentTurnCreatureId) || null}
         availableActions={combat.getAvailableActions()}
@@ -1279,6 +1281,9 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
         casterLevel={currentCreatureCharacter?.level}
         spellSlots={currentCreatureSpellSlots}
         onCastSpell={handleCastSpell}
+        // Advantage/Disadvantage
+        onSetAdvantage={combat.setAdvantage}
+        onSetDisadvantage={combat.setDisadvantage}
       />
     </div>
   );

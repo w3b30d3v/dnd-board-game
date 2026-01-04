@@ -56,6 +56,9 @@ export interface CombatState {
   combatLog: CombatLogEntry[];
   // Action economy
   actionEconomy: ActionEconomy;
+  // Advantage/Disadvantage for attacks
+  hasAdvantage: boolean;
+  hasDisadvantage: boolean;
 }
 
 export interface CombatLogEntry {
@@ -139,6 +142,8 @@ export function useCombat(creatures: Creature[], tokenManager: TokenManager | nu
     isSelectingTarget: false,
     combatLog: [],
     actionEconomy: defaultActionEconomy,
+    hasAdvantage: false,
+    hasDisadvantage: false,
   });
 
   // Initialize CombatManager
@@ -455,6 +460,28 @@ export function useCombat(creatures: Creature[], tokenManager: TokenManager | nu
       selectedAction: null,
       selectedTargetId: null,
       isSelectingTarget: false,
+      hasAdvantage: false,
+      hasDisadvantage: false,
+    }));
+  }, []);
+
+  // Set advantage for next attack
+  const setAdvantage = useCallback((hasAdvantage: boolean) => {
+    setState(prev => ({
+      ...prev,
+      hasAdvantage,
+      // If setting advantage, clear disadvantage (they cancel out in D&D 5e)
+      hasDisadvantage: hasAdvantage ? false : prev.hasDisadvantage,
+    }));
+  }, []);
+
+  // Set disadvantage for next attack
+  const setDisadvantage = useCallback((hasDisadvantage: boolean) => {
+    setState(prev => ({
+      ...prev,
+      hasDisadvantage,
+      // If setting disadvantage, clear advantage (they cancel out in D&D 5e)
+      hasAdvantage: hasDisadvantage ? false : prev.hasAdvantage,
     }));
   }, []);
 
@@ -474,8 +501,11 @@ export function useCombat(creatures: Creature[], tokenManager: TokenManager | nu
 
     const attackerId = state.currentTurnCreatureId;
 
-    // Make the attack roll
-    const attackResult = cm.attack(attackerId, targetId);
+    // Make the attack roll with advantage/disadvantage
+    const attackResult = cm.attack(attackerId, targetId, {
+      advantage: state.hasAdvantage,
+      disadvantage: state.hasDisadvantage,
+    });
 
     // If hit, deal damage
     if (attackResult.hits && action.damage && action.damageType) {
@@ -483,12 +513,14 @@ export function useCombat(creatures: Creature[], tokenManager: TokenManager | nu
         isCritical: attackResult.isCritical,
       });
 
-      // Clear selection and consume action
+      // Clear selection, consume action, and reset advantage/disadvantage
       setState(prev => ({
         ...prev,
         selectedAction: null,
         selectedTargetId: null,
         isSelectingTarget: false,
+        hasAdvantage: false,
+        hasDisadvantage: false,
         actionEconomy: {
           ...prev.actionEconomy,
           hasAction: false,
@@ -498,12 +530,14 @@ export function useCombat(creatures: Creature[], tokenManager: TokenManager | nu
       return { attackResult, damageResult };
     }
 
-    // Clear selection and consume action even on miss
+    // Clear selection, consume action, and reset advantage/disadvantage even on miss
     setState(prev => ({
       ...prev,
       selectedAction: null,
       selectedTargetId: null,
       isSelectingTarget: false,
+      hasAdvantage: false,
+      hasDisadvantage: false,
       actionEconomy: {
         ...prev.actionEconomy,
         hasAction: false,
@@ -511,7 +545,7 @@ export function useCombat(creatures: Creature[], tokenManager: TokenManager | nu
     }));
 
     return { attackResult, damageResult: null };
-  }, [state.currentTurnCreatureId, state.actionEconomy.hasAction, addLogEntry]);
+  }, [state.currentTurnCreatureId, state.actionEconomy.hasAction, state.hasAdvantage, state.hasDisadvantage, addLogEntry]);
 
   // Confirm attack (when target is selected and action is ready)
   const confirmAttack = useCallback(() => {
@@ -806,6 +840,10 @@ export function useCombat(creatures: Creature[], tokenManager: TokenManager | nu
     selectTarget,
     cancelAction,
     confirmAttack,
+
+    // Advantage/Disadvantage
+    setAdvantage,
+    setDisadvantage,
 
     // Direct effects
     applyDamage,

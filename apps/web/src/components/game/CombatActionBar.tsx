@@ -85,6 +85,9 @@ interface CombatActionBarProps {
   // Targeting mode (board integration)
   onStartTargeting?: (range: number) => void;
   onCancelTargeting?: () => void;
+  // Advantage/Disadvantage
+  onSetAdvantage?: (hasAdvantage: boolean) => void;
+  onSetDisadvantage?: (hasDisadvantage: boolean) => void;
 }
 
 // Action button definitions
@@ -143,6 +146,9 @@ export function CombatActionBar({
   // Targeting mode
   onStartTargeting,
   onCancelTargeting,
+  // Advantage/Disadvantage
+  onSetAdvantage,
+  onSetDisadvantage,
 }: CombatActionBarProps) {
   const [expandedPanel, setExpandedPanel] = useState<string | null>(null);
   const [showCombatLog, setShowCombatLog] = useState(false);
@@ -367,6 +373,46 @@ export function CombatActionBar({
                 )}
               </div>
 
+              {/* Advantage/Disadvantage Toggle */}
+              <div className="flex items-center justify-center gap-4 mt-4 pt-3 border-t border-white/10">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => onSetAdvantage?.(!combatState.hasAdvantage)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
+                    combatState.hasAdvantage
+                      ? 'bg-green-500/30 border-green-500 text-green-300 shadow-lg shadow-green-500/20'
+                      : 'bg-[#2A2735] border-white/10 text-gray-400 hover:border-green-500/50 hover:text-green-400'
+                  }`}
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-sm font-medium">Advantage</span>
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => onSetDisadvantage?.(!combatState.hasDisadvantage)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
+                    combatState.hasDisadvantage
+                      ? 'bg-red-500/30 border-red-500 text-red-300 shadow-lg shadow-red-500/20'
+                      : 'bg-[#2A2735] border-white/10 text-gray-400 hover:border-red-500/50 hover:text-red-400'
+                  }`}
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-sm font-medium">Disadvantage</span>
+                </motion.button>
+              </div>
+              {(combatState.hasAdvantage || combatState.hasDisadvantage) && (
+                <div className="text-center text-xs text-gray-400 mt-2">
+                  {combatState.hasAdvantage && '📈 Roll 2d20, take higher'}
+                  {combatState.hasDisadvantage && '📉 Roll 2d20, take lower'}
+                </div>
+              )}
+
               {/* Confirm/Cancel */}
               <div className="flex gap-2 mt-4">
                 <motion.button
@@ -384,7 +430,7 @@ export function CombatActionBar({
                   disabled={!combatState.selectedTargetId}
                   className="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Attack!
+                  Attack{combatState.hasAdvantage ? ' (Adv)' : combatState.hasDisadvantage ? ' (Disadv)' : ''}!
                 </motion.button>
               </div>
             </motion.div>
