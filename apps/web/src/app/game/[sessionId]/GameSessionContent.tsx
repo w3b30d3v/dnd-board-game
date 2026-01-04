@@ -18,6 +18,8 @@ import { useCombat } from '@/hooks/useCombat';
 import { useMovementAndTargeting } from '@/hooks/useMovementAndTargeting';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { WSMessageType } from '@dnd/shared';
+import type { Spell } from '@/data/spells';
+import { calculateAoE, getCreaturesInAoE, SPELL_AOE_PRESETS } from '@/game/AoECalculator';
 
 interface GameSessionContentProps {
   sessionId: string;
@@ -245,6 +247,109 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
     },
     [combat, syncCreatureHp]
   );
+
+  // Handle spell casting
+  const handleCastSpell = useCallback(
+    async (
+      spell: Spell,
+      targetId?: string,
+      targetPosition?: { x: number; y: number },
+      spellLevel?: number
+    ) => {
+      if (!combat.isInCombat || !combat.currentTurnCreatureId) return;
+
+      // Log the spell cast
+      combat.addLogEntry({
+        type: 'info',
+        message: `${creatures.find(c => c.id === combat.currentTurnCreatureId)?.name} casts ${spell.name}!`,
+      });
+
+      // Parse spell damage from description (simplified - would need proper spell data)
+      const damageMatch = spell.description.match(/(\d+d\d+)\s+(acid|bludgeoning|cold|fire|force|lightning|necrotic|piercing|poison|psychic|radiant|slashing|thunder)/i);
+
+      // Check for AoE preset
+      const spellKey = spell.name.toLowerCase().replace(/\s+/g, '');
+      const aoePreset = SPELL_AOE_PRESETS[spellKey];
+
+      if (aoePreset && targetPosition) {
+        // AoE spell
+        const aoeResult = calculateAoE({
+          ...aoePreset,
+          origin: targetPosition,
+          direction: 0,
+        });
+
+        // Show AoE on board
+        if (gameRef.current) {
+          // Convert lowercase shape to uppercase for AreaOfEffect type
+          const shapeUppercase = aoeResult.shape.toUpperCase() as import('@/game/types').AoEShape;
+          const aoeSize = aoePreset.radius || aoePreset.length || aoePreset.size || 20;
+          gameRef.current.showAoE('spell-effect', {
+            shape: shapeUppercase,
+            origin: targetPosition,
+            size: aoeSize,
+            direction: 0,
+            color: 0xF59E0B, // Gold for spells
+            alpha: 0.4,
+          });
+
+          // Clear after animation
+          setTimeout(() => {
+            gameRef.current?.hideAoE('spell-effect');
+          }, 2000);
+        }
+
+        // Get affected creatures
+        const affectedIds = getCreaturesInAoE(aoeResult, creatures);
+
+        // Apply damage to all affected creatures
+        if (damageMatch) {
+          const diceNotation = damageMatch[1];
+          const damageType = damageMatch[2].toUpperCase() as import('@dnd/rules-engine').DamageType;
+
+          for (const affectedId of affectedIds) {
+            await handleApplyDamage(affectedId, parseDiceRoll(diceNotation), damageType);
+          }
+        }
+      } else if (targetId && damageMatch) {
+        // Single target damage spell
+        const diceNotation = damageMatch[1];
+        const damageType = damageMatch[2].toUpperCase() as import('@dnd/rules-engine').DamageType;
+        await handleApplyDamage(targetId, parseDiceRoll(diceNotation), damageType);
+      } else if (spell.description.toLowerCase().includes('heal') && targetId) {
+        // Healing spell
+        const healMatch = spell.description.match(/(\d+d\d+)/);
+        if (healMatch) {
+          await handleApplyHealing(targetId, parseDiceRoll(healMatch[1]));
+        }
+      }
+
+      // Broadcast spell cast via WebSocket
+      wsSendMessage(WSMessageType.SPELL_RESULT, {
+        sessionId,
+        creatureId: combat.currentTurnCreatureId,
+        spellId: spell.id,
+        spellName: spell.name,
+        targetId,
+        targetPosition,
+        spellLevel: spellLevel || spell.level,
+      });
+    },
+    [combat, creatures, sessionId, wsSendMessage, handleApplyDamage, handleApplyHealing]
+  );
+
+  // Simple dice roll parser (e.g., "1d10" returns a random value)
+  function parseDiceRoll(notation: string): number {
+    const match = notation.match(/(\d+)d(\d+)/);
+    if (!match) return 0;
+    const numDice = parseInt(match[1], 10);
+    const dieSize = parseInt(match[2], 10);
+    let total = 0;
+    for (let i = 0; i < numDice; i++) {
+      total += Math.floor(Math.random() * dieSize) + 1;
+    }
+    return total;
+  }
 
   // Get current user's character ID
   const myCharacterId = useMemo(() => {
@@ -876,6 +981,8 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
         // Targeting system integration
         onStartTargeting={movement.startTargetingMode}
         onCancelTargeting={movement.cancelMode}
+        // Spell casting
+        onCastSpell={handleCastSpell}
       />
     </div>
   );
