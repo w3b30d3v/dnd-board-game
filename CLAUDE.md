@@ -35,6 +35,7 @@ All specifications are in the `/docs/` directory. **Read in this order:**
 |----------|---------|
 | `CLAUDE_CODE_INSTRUCTIONS.md` | Master instructions for implementation |
 | `24_Phased_Implementation_Guide.md` | **START HERE** - Phase-by-phase build order |
+| `GAMEPLAY_IMPLEMENTATION_PLAN.md` | **231 tasks to complete gameplay** - prioritized by tier |
 | `16_Root_Configuration_Files.md` | All config files to create (package.json, etc) |
 | `10_Project_Structure.md` | Complete folder structure |
 
