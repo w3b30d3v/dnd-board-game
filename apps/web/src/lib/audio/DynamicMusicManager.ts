@@ -306,7 +306,7 @@ class DynamicMusicManagerClass {
     this.updateStemVolumes();
 
     // Start all stems simultaneously
-    this.stems.forEach((state, stem) => {
+    this.stems.forEach((state, _stem) => {
       if (state.howl) {
         state.soundId = state.howl.play();
         state.howl.volume(state.currentVolume * this.masterVolume, state.soundId);

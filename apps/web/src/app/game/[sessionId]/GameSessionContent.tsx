@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,6 +13,8 @@ import { PlayerPanel } from './PlayerPanel';
 import { InitiativeTracker } from './InitiativeTracker';
 import { useImmersive } from '@/components/immersion/ImmersiveProvider';
 import { AudioControls } from './AudioControls';
+import { CombatActionBar } from '@/components/game/CombatActionBar';
+import { useCombat } from '@/hooks/useCombat';
 
 interface GameSessionContentProps {
   sessionId: string;
@@ -53,6 +55,12 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
     playHeal,
     playCriticalHit,
   } = useImmersive();
+
+  // Get creatures from game state
+  const creatures = useMemo(() => gameState?.creatures || [], [gameState?.creatures]);
+
+  // Combat system - the heart of gameplay
+  const combat = useCombat(creatures, null); // TokenManager accessed through gameRef
 
   // Track previous HP values to detect damage/healing
   const prevCreatureHp = useRef<Map<string, number>>(new Map());
@@ -471,11 +479,13 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
           </div>
 
           {/* Initiative Tracker (Combat) */}
-          {session.inCombat && (
+          {(session.inCombat || combat.isInCombat) && (
             <div className="absolute top-4 right-4 z-10">
               <InitiativeTracker
-                initiativeOrder={session.initiativeOrder || []}
-                currentTurn={session.currentTurn}
+                initiativeOrder={combat.isInCombat ? combat.initiativeOrder : (session.initiativeOrder || [])}
+                currentTurn={combat.isInCombat ?
+                  combat.initiativeOrder.findIndex(e => e.creatureId === combat.currentTurnCreatureId) :
+                  session.currentTurn}
                 creatures={gameState?.creatures || []}
               />
             </div>
@@ -501,6 +511,34 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Combat Action Bar - Bottom of screen */}
+      <CombatActionBar
+        combatState={{
+          isInCombat: combat.isInCombat,
+          round: combat.round,
+          currentTurnCreatureId: combat.currentTurnCreatureId,
+          initiativeOrder: combat.initiativeOrder,
+          selectedTargetId: combat.selectedTargetId,
+          selectedAction: combat.selectedAction,
+          isSelectingTarget: combat.isSelectingTarget,
+          combatLog: combat.combatLog,
+        }}
+        currentCreature={creatures.find(c => c.id === combat.currentTurnCreatureId) || null}
+        availableActions={combat.getAvailableActions()}
+        validTargets={combat.getValidTargets()}
+        creatures={creatures}
+        isDM={isDM}
+        onSelectAction={combat.selectAction}
+        onSelectTarget={combat.selectTarget}
+        onConfirmAttack={combat.confirmAttack}
+        onCancelAction={combat.cancelAction}
+        onEndTurn={combat.nextTurn}
+        onStartCombat={combat.startCombat}
+        onEndCombat={combat.endCombat}
+        isInRange={combat.isInRange}
+        getDistance={combat.getDistance}
+      />
     </div>
   );
 }

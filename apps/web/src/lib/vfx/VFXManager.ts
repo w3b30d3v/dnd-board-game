@@ -245,9 +245,7 @@ class VFXManagerClass {
   /**
    * Fire animation - rises and flickers
    */
-  private getFireAnimation(angle: number, distance: number, duration: number): string {
-    const x = Math.cos(angle) * distance * 0.5;
-    const y = -Math.abs(Math.sin(angle) * distance) - distance;
+  private getFireAnimation(_angle: number, _distance: number, duration: number): string {
     return `vfx-fire ${duration}ms ease-out forwards`;
   }
 

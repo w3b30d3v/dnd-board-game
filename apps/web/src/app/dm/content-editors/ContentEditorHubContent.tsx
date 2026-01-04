@@ -119,7 +119,7 @@ export default function ContentEditorHubContent() {
   } = useCampaignStudioStore();
 
   // Use campaign studio hook for image generation
-  const { generateImage, isGeneratingImageFor } = useCampaignStudio(campaignId || undefined);
+  const { generateImage } = useCampaignStudio(campaignId || undefined);
 
   // Redirect if not authenticated
   useEffect(() => {
