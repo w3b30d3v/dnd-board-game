@@ -477,6 +477,35 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
       // Parse spell damage from description (simplified - would need proper spell data)
       const damageMatch = spell.description.match(/(\d+d\d+)\s+(acid|bludgeoning|cold|fire|force|lightning|necrotic|piercing|poison|psychic|radiant|slashing|thunder)/i);
 
+      // Parse saving throw from description
+      const saveMatch = spell.description.match(/(strength|dexterity|constitution|intelligence|wisdom|charisma)\s+sav/i);
+      const saveType = saveMatch ? saveMatch[1].toUpperCase() as 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA' : null;
+
+      // Calculate spell save DC
+      const casterLevel = currentCreatureCharacter?.level || 1;
+      const profBonus = Math.floor((casterLevel - 1) / 4) + 2;
+      const spellSaveDC = 8 + profBonus + 2; // +2 for typical spellcasting mod
+
+      // Helper to roll saving throw for a creature
+      const rollSavingThrow = (creatureId: string, saveAbility: 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA') => {
+        const creature = creatures.find(c => c.id === creatureId);
+        if (!creature) return { success: false, roll: 0, total: 0 };
+
+        // Estimate creature's save modifier (simplified)
+        const baseMod = creature.type === 'character' ? 2 : Math.floor(creature.armorClass / 4) - 2;
+        const roll = Math.floor(Math.random() * 20) + 1;
+        const total = roll + baseMod;
+        const success = total >= spellSaveDC;
+
+        // Log the save result
+        combat.addLogEntry({
+          type: 'info',
+          message: `${creature.name} ${saveAbility} save: ${roll} + ${baseMod} = ${total} vs DC ${spellSaveDC} - ${success ? 'SUCCESS!' : 'FAILED!'}`,
+        });
+
+        return { success, roll, total };
+      };
+
       // Check for AoE preset
       const spellKey = spell.name.toLowerCase().replace(/\s+/g, '');
       const aoePreset = SPELL_AOE_PRESETS[spellKey];
@@ -518,14 +547,36 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
           const damageType = damageMatch[2].toUpperCase() as import('@dnd/rules-engine').DamageType;
 
           for (const affectedId of affectedIds) {
-            await handleApplyDamage(affectedId, parseDiceRoll(diceNotation), damageType);
+            let finalDamage = parseDiceRoll(diceNotation);
+
+            // Check for saving throw
+            if (saveType) {
+              const saveResult = rollSavingThrow(affectedId, saveType);
+              if (saveResult.success) {
+                // Most AoE spells deal half damage on save
+                finalDamage = Math.floor(finalDamage / 2);
+              }
+            }
+
+            await handleApplyDamage(affectedId, finalDamage, damageType);
           }
         }
       } else if (targetId && damageMatch) {
         // Single target damage spell
         const diceNotation = damageMatch[1];
         const damageType = damageMatch[2].toUpperCase() as import('@dnd/rules-engine').DamageType;
-        await handleApplyDamage(targetId, parseDiceRoll(diceNotation), damageType);
+        let finalDamage = parseDiceRoll(diceNotation);
+
+        // Check for saving throw
+        if (saveType) {
+          const saveResult = rollSavingThrow(targetId, saveType);
+          if (saveResult.success) {
+            // Half damage on save
+            finalDamage = Math.floor(finalDamage / 2);
+          }
+        }
+
+        await handleApplyDamage(targetId, finalDamage, damageType);
       } else if (spell.description.toLowerCase().includes('heal') && targetId) {
         // Healing spell
         const healMatch = spell.description.match(/(\d+d\d+)/);
