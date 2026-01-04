@@ -187,6 +187,9 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
   // Spell slots state - keyed by creature ID
   const [spellSlotsUsed, setSpellSlotsUsed] = useState<Record<string, Record<number, number>>>({});
 
+  // Concentration tracking state - maps creature ID to spell info
+  const [concentration, setConcentration] = useState<Record<string, { spellId: string; spellName: string }>>({});
+
   // Immersive system hooks
   const {
     setGamePhase,
@@ -278,6 +281,84 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
       });
     },
     [sessionId, wsSendMessage]
+  );
+
+  // Break concentration on a spell
+  const breakConcentration = useCallback(
+    (creatureId: string, reason: string = 'lost concentration') => {
+      const conc = concentration[creatureId];
+      if (!conc) return;
+
+      combat.addLogEntry({
+        type: 'info',
+        message: `${creatures.find(c => c.id === creatureId)?.name} ${reason} on ${conc.spellName}!`,
+      });
+
+      setConcentration(prev => {
+        const next = { ...prev };
+        delete next[creatureId];
+        return next;
+      });
+
+      // Broadcast concentration break via WebSocket
+      wsSendMessage(WSMessageType.GAME_STATE_SYNC, {
+        sessionId,
+        type: 'concentration_broken',
+        creatureId,
+        spellName: conc.spellName,
+      });
+    },
+    [concentration, creatures, combat, sessionId, wsSendMessage]
+  );
+
+  // Set concentration on a spell
+  const setConcentrationSpell = useCallback(
+    (creatureId: string, spellId: string, spellName: string) => {
+      // If already concentrating, break the previous concentration
+      if (concentration[creatureId]) {
+        breakConcentration(creatureId, 'broke concentration to cast a new spell');
+      }
+
+      setConcentration(prev => ({
+        ...prev,
+        [creatureId]: { spellId, spellName },
+      }));
+
+      combat.addLogEntry({
+        type: 'info',
+        message: `${creatures.find(c => c.id === creatureId)?.name} is now concentrating on ${spellName}`,
+      });
+    },
+    [concentration, creatures, combat, breakConcentration]
+  );
+
+  // Check concentration when taking damage (D&D 5e: DC = max(10, damage/2))
+  const checkConcentration = useCallback(
+    (creatureId: string, damageAmount: number) => {
+      if (!concentration[creatureId]) return true; // No concentration to check
+
+      const dc = Math.max(10, Math.floor(damageAmount / 2));
+      const creature = creatures.find(c => c.id === creatureId);
+      if (!creature) return true;
+
+      // Roll CON save (simplified: use base modifier)
+      const conMod = creature.type === 'character' ? 2 : Math.floor(creature.armorClass / 5);
+      const roll = Math.floor(Math.random() * 20) + 1;
+      const total = roll + conMod;
+      const success = total >= dc;
+
+      combat.addLogEntry({
+        type: 'info',
+        message: `${creature.name} Concentration check (CON): ${roll} + ${conMod} = ${total} vs DC ${dc} - ${success ? 'MAINTAINED!' : 'FAILED!'}`,
+      });
+
+      if (!success) {
+        breakConcentration(creatureId, 'lost concentration due to damage');
+      }
+
+      return success;
+    },
+    [concentration, creatures, combat, breakConcentration]
   );
 
   // Handle moving a creature on the board
@@ -421,10 +502,15 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
           if (gameRef.current) {
             gameRef.current.showDamage(targetId, amount, false);
           }
+
+          // Check concentration if creature took damage
+          if (amount > 0) {
+            checkConcentration(targetId, amount);
+          }
         }
       }
     },
-    [combat, syncCreatureHp]
+    [combat, syncCreatureHp, checkConcentration]
   );
 
   // Handle healing application
@@ -473,6 +559,11 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
         type: 'info',
         message: `${creatures.find(c => c.id === combat.currentTurnCreatureId)?.name} casts ${spell.name}${slotInfo}!`,
       });
+
+      // Handle concentration spells
+      if (spell.concentration) {
+        setConcentrationSpell(combat.currentTurnCreatureId, spell.id, spell.name);
+      }
 
       // Parse spell damage from description (simplified - would need proper spell data)
       const damageMatch = spell.description.match(/(\d+d\d+)\s+(acid|bludgeoning|cold|fire|force|lightning|necrotic|piercing|poison|psychic|radiant|slashing|thunder)/i);
@@ -596,7 +687,7 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
         spellLevel: spellLevel || spell.level,
       });
     },
-    [combat, creatures, sessionId, wsSendMessage, handleApplyDamage, handleApplyHealing, consumeSpellSlot]
+    [combat, creatures, sessionId, wsSendMessage, handleApplyDamage, handleApplyHealing, consumeSpellSlot, setConcentrationSpell]
   );
 
   // Simple dice roll parser (e.g., "1d10" returns a random value)
