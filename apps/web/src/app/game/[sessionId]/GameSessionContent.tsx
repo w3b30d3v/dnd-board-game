@@ -21,6 +21,27 @@ import { useMultiplayerStore } from '@/stores/multiplayerStore';
 import { WSMessageType } from '@dnd/shared';
 import type { Spell } from '@/data/spells';
 import { calculateAoE, getCreaturesInAoE, SPELL_AOE_PRESETS } from '@/game/AoECalculator';
+import type { TileData } from '@/game/types';
+
+// Generate default tiles if map doesn't have them
+function generateDefaultTiles(width: number, height: number): TileData[] {
+  const tiles: TileData[] = [];
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      tiles.push({
+        x,
+        y,
+        terrain: 'NORMAL',
+        elevation: 0,
+        isExplored: true,
+        isVisible: true,
+        lightLevel: 1,
+        effects: [],
+      });
+    }
+  }
+  return tiles;
+}
 
 interface GameSessionContentProps {
   sessionId: string;
@@ -365,11 +386,22 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
   }, [combat.isInCombat, combat.currentTurnCreatureId, myCharacterId]);
 
   // Movement and targeting system
+  // Get tiles - use map tiles or generate defaults
+  const mapWidth = gameState?.map.width || 20;
+  const mapHeight = gameState?.map.height || 20;
+  const mapTiles = useMemo(() => {
+    if (gameState?.map.tiles && gameState.map.tiles.length > 0) {
+      return gameState.map.tiles;
+    }
+    // Generate default tiles if none provided
+    return generateDefaultTiles(mapWidth, mapHeight);
+  }, [gameState?.map.tiles, mapWidth, mapHeight]);
+
   const movement = useMovementAndTargeting({
     creatures,
-    tiles: gameState?.map.tiles || [],
-    gridWidth: gameState?.map.width || 20,
-    gridHeight: gameState?.map.height || 20,
+    tiles: mapTiles,
+    gridWidth: mapWidth,
+    gridHeight: mapHeight,
     currentCreatureId: combat.currentTurnCreatureId,
     remainingMovement: combat.getRemainingMovement(),
     isInCombat: combat.isInCombat,
