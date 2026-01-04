@@ -34,13 +34,6 @@ function feetToTiles(feet: number): number {
 }
 
 /**
- * Calculate distance between two grid positions in tiles (Chebyshev distance for D&D)
- */
-function tileDistance(a: GridPosition, b: GridPosition): number {
-  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
-}
-
-/**
  * Calculate Euclidean distance for circular effects
  */
 function euclideanDistance(a: GridPosition, b: GridPosition): number {

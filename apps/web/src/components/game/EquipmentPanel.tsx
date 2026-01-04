@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence, Reorder } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sword,
   Shield,
@@ -18,7 +18,6 @@ import {
   Coins,
   Hand,
   CircleDot,
-  Check,
   Plus,
   Trash2,
   Info,
@@ -123,7 +122,6 @@ export function EquipmentPanel({
   onUnattune,
 }: EquipmentPanelProps) {
   const [activeTab, setActiveTab] = useState<'equipped' | 'inventory' | 'all'>('equipped');
-  const [selectedItem, setSelectedItem] = useState<EquipmentItem | null>(null);
   const [expandedSlots, setExpandedSlots] = useState<Set<EquipmentSlot>>(new Set(['mainHand', 'offHand', 'armor']));
 
   // Calculate totals
@@ -178,7 +176,6 @@ export function EquipmentPanel({
   // Handle equip item
   const handleEquip = useCallback((item: EquipmentItem, slot: EquipmentSlot) => {
     onEquip(item.id, slot);
-    setSelectedItem(null);
   }, [onEquip]);
 
   // Handle unequip item

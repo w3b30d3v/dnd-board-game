@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { calculateAoE, getCreaturesInAoE, SPELL_AOE_PRESETS, type AoEShape } from '@/game/AoECalculator';
+import { calculateAoE, getCreaturesInAoE, SPELL_AOE_PRESETS } from '@/game/AoECalculator';
 
 describe('AoECalculator', () => {
   describe('calculateAoE', () => {

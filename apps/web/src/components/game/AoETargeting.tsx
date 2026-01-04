@@ -10,7 +10,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Circle,
   Square,
-  ArrowRight,
   Minus,
   Cylinder,
   X,
@@ -19,7 +18,7 @@ import {
   Target,
 } from 'lucide-react';
 import type { GridPosition, Creature } from '@/game/types';
-import { calculateAoE, getCreaturesInAoE, AoEShape, SPELL_AOE_PRESETS } from '@/game/AoECalculator';
+import { calculateAoE, getCreaturesInAoE, type AoEShape } from '@/game/AoECalculator';
 
 interface AoETargetingProps {
   isOpen: boolean;
@@ -125,12 +124,6 @@ export function AoETargeting({
       }
     };
   }, [isOpen, validAffectedTiles, onPreviewChange]);
-
-  // Handle origin selection from grid click
-  const handleOriginSelect = useCallback((pos: GridPosition) => {
-    setOrigin(pos);
-    setIsSelectingOrigin(false);
-  }, []);
 
   // Reset to caster position
   const handleReset = useCallback(() => {

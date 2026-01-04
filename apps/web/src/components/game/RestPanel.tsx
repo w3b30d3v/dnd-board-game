@@ -9,16 +9,13 @@ import { useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Moon,
-  Sun,
   Coffee,
   Heart,
   Dice6,
   Sparkles,
-  Clock,
   X,
   Check,
   AlertTriangle,
-  Plus,
   Minus,
 } from 'lucide-react';
 import type { Creature } from '@/game/types';
@@ -53,9 +50,9 @@ export function RestPanel({
   currentHp,
   maxHp,
   constitutionModifier,
-  level,
+  level: _level,
   spellSlotsUsed = {},
-  maxSpellSlots = {},
+  maxSpellSlots: _maxSpellSlots = {},
   usedAbilities = [],
   onShortRest,
   onLongRest,
@@ -64,18 +61,6 @@ export function RestPanel({
   const [hitDiceToSpend, setHitDiceToSpend] = useState(0);
   const [showConfirmLongRest, setShowConfirmLongRest] = useState(false);
   const [rolledHp, setRolledHp] = useState<number[]>([]);
-
-  // Calculate hit die average
-  const hitDieAverage = useMemo(() => {
-    return Math.floor((hitDice.dieType + 1) / 2);
-  }, [hitDice.dieType]);
-
-  // Calculate expected HP recovery for short rest
-  const expectedHpRecovery = useMemo(() => {
-    if (hitDiceToSpend === 0) return 0;
-    // Each hit die: average + CON modifier
-    return hitDiceToSpend * (hitDieAverage + constitutionModifier);
-  }, [hitDiceToSpend, hitDieAverage, constitutionModifier]);
 
   // Calculate actual HP recovery (from rolled dice)
   const actualHpRecovery = useMemo(() => {
