@@ -447,7 +447,7 @@ router.post('/:campaignId/audio', async (req: AuthenticatedRequest, res: Respons
 // Webhook for Runway async video generation
 router.post('/webhook/runway', async (req: Request, res: Response) => {
   try {
-    const { taskId, status, output, failure, progress } = req.body;
+    const { taskId, status, output, progress } = req.body;
 
     logger.info({ taskId, status, progress }, 'Runway webhook received');
 
