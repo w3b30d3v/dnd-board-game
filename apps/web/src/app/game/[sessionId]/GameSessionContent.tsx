@@ -50,10 +50,12 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
   // Immersive system hooks
   const {
     setGamePhase,
+    setCombatIntensity,
     enterLocation,
     playDamage,
     playHeal,
     playCriticalHit,
+    playVictory,
   } = useImmersive();
 
   // Get creatures from game state
@@ -97,12 +99,55 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
   useEffect(() => {
     if (!session) return;
 
-    if (session.inCombat) {
+    if (session.inCombat || combat.isInCombat) {
       setGamePhase('combat');
     } else {
       setGamePhase('exploration');
     }
-  }, [session?.inCombat, setGamePhase, session]);
+  }, [session?.inCombat, combat.isInCombat, setGamePhase, session]);
+
+  // Adjust combat intensity based on HP levels of player characters
+  useEffect(() => {
+    if (!combat.isInCombat || !gameState?.creatures) return;
+
+    const playerCharacters = gameState.creatures.filter(c => c.type === 'character');
+    if (playerCharacters.length === 0) return;
+
+    // Calculate average HP percentage
+    const totalHpPercent = playerCharacters.reduce((sum, c) => {
+      return sum + (c.currentHitPoints / c.maxHitPoints);
+    }, 0);
+    const avgHpPercent = totalHpPercent / playerCharacters.length;
+
+    // Check if any player is at low HP (below 25%)
+    const anyLowHp = playerCharacters.some(c => c.currentHitPoints / c.maxHitPoints < 0.25);
+
+    // Check if any player is unconscious (0 HP)
+    const anyUnconscious = playerCharacters.some(c => c.currentHitPoints <= 0);
+
+    // Determine intensity
+    if (anyUnconscious) {
+      setCombatIntensity('boss'); // Maximum tension when someone is down
+    } else if (anyLowHp || avgHpPercent < 0.4) {
+      setCombatIntensity('high');
+    } else if (avgHpPercent < 0.7) {
+      setCombatIntensity('medium');
+    } else {
+      setCombatIntensity('low');
+    }
+  }, [combat.isInCombat, gameState?.creatures, setCombatIntensity]);
+
+  // Play victory when combat ends with all enemies defeated
+  useEffect(() => {
+    if (!combat.isInCombat && gameState?.creatures) {
+      const enemies = gameState.creatures.filter(c => c.type === 'monster');
+      const allDefeated = enemies.length > 0 && enemies.every(e => e.currentHitPoints <= 0);
+
+      if (allDefeated) {
+        playVictory();
+      }
+    }
+  }, [combat.isInCombat, gameState?.creatures, playVictory]);
 
   // Set ambient soundscape based on map
   useEffect(() => {

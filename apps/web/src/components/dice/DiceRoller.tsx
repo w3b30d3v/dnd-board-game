@@ -3,15 +3,45 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePreferencesStore } from '@/stores/preferencesStore';
+import { SFXManager, playSFX } from '@/lib/audio/SFXManager';
 
-// No-op version of playDiceRoll for when ImmersiveProvider isn't available
-// Sound effects will only play inside game sessions with ImmersiveProvider
-const noopPlayDiceRoll = (_result: 'success' | 'fail' | 'critical' | 'fumble') => {};
+// Hook to safely use audio - initializes SFX and provides playback
+function useOptionalAudio() {
+  const [initialized, setInitialized] = useState(false);
 
-function useOptionalImmersive() {
-  return {
-    playDiceRoll: noopPlayDiceRoll,
-  };
+  useEffect(() => {
+    // Initialize SFX manager on mount
+    SFXManager.init().then(() => {
+      setInitialized(true);
+    });
+  }, []);
+
+  const playDiceRoll = useCallback((result: 'success' | 'fail' | 'critical' | 'fumble') => {
+    if (!initialized) return;
+
+    // Play roll sound immediately
+    playSFX.diceRoll();
+
+    // Play result sound after a delay (when dice lands)
+    setTimeout(() => {
+      switch (result) {
+        case 'critical':
+          playSFX.diceCritical();
+          break;
+        case 'fumble':
+          playSFX.diceFumble();
+          break;
+        case 'success':
+          playSFX.diceLand();
+          break;
+        case 'fail':
+          playSFX.diceLand();
+          break;
+      }
+    }, 800);
+  }, [initialized]);
+
+  return { playDiceRoll };
 }
 
 export type DiceType = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd20' | 'd100';
@@ -235,7 +265,7 @@ export function DiceRoller({
   const [rolls, setRolls] = useState<number[]>([]);
   const [displayValue, setDisplayValue] = useState(0);
   const [finalResult, setFinalResult] = useState<DiceRollResult | null>(null);
-  const { playDiceRoll } = useOptionalImmersive();
+  const { playDiceRoll } = useOptionalAudio();
 
   // Get preferences
   const { preferences, shouldShowDiceAnimation, getDiceAnimationDuration } = usePreferencesStore();
