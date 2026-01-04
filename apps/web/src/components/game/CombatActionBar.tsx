@@ -74,6 +74,11 @@ interface CombatActionBarProps {
     level9: { used: number; max: number };
   };
   onCastSpell?: (spell: Spell, targetId?: string, targetPosition?: { x: number; y: number }, spellLevel?: number) => void;
+  // Movement mode (board integration)
+  isMovementMode?: boolean;
+  canMove?: boolean;
+  onStartMovement?: () => void;
+  onCancelMovement?: () => void;
 }
 
 // Action button definitions
@@ -124,6 +129,11 @@ export function CombatActionBar({
   casterLevel = 1,
   spellSlots = DEFAULT_SPELL_SLOTS,
   onCastSpell,
+  // Movement mode
+  isMovementMode = false,
+  canMove = false,
+  onStartMovement,
+  onCancelMovement,
 }: CombatActionBarProps) {
   const [expandedPanel, setExpandedPanel] = useState<string | null>(null);
   const [showCombatLog, setShowCombatLog] = useState(false);
@@ -474,6 +484,11 @@ export function CombatActionBar({
                 <h3 className="font-cinzel text-blue-400 mb-3 flex items-center gap-2">
                   <Footprints className="w-5 h-5" />
                   Movement
+                  {isMovementMode && (
+                    <span className="ml-2 px-2 py-0.5 bg-blue-500/30 text-blue-400 text-xs rounded-full animate-pulse">
+                      Active
+                    </span>
+                  )}
                 </h3>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
@@ -492,8 +507,29 @@ export function CombatActionBar({
                       }}
                     />
                   </div>
+                  {/* Movement Mode Button */}
+                  {isMovementMode ? (
+                    <button
+                      onClick={onCancelMovement}
+                      className="w-full mt-3 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400 font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      <X className="w-4 h-4" />
+                      Cancel Movement
+                    </button>
+                  ) : (
+                    <button
+                      onClick={onStartMovement}
+                      disabled={!canMove || getRemainingMovement() <= 0}
+                      className="w-full mt-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 rounded-lg text-blue-400 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      <Footprints className="w-4 h-4" />
+                      Move on Board
+                    </button>
+                  )}
                   <p className="text-xs text-gray-500 mt-2">
-                    Click on a tile within range to move there.
+                    {isMovementMode
+                      ? 'Click on a highlighted tile to move there. Hover to see path.'
+                      : 'Click "Move on Board" to see available destinations.'}
                   </p>
                 </div>
               </>

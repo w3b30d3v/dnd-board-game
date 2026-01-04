@@ -15,6 +15,7 @@ import { useImmersive } from '@/components/immersion/ImmersiveProvider';
 import { AudioControls } from './AudioControls';
 import { CombatActionBar } from '@/components/game/CombatActionBar';
 import { useCombat } from '@/hooks/useCombat';
+import { useMovementAndTargeting } from '@/hooks/useMovementAndTargeting';
 
 interface GameSessionContentProps {
   sessionId: string;
@@ -38,6 +39,7 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
     loadMaps,
     loadEncounters,
     changeMap,
+    updateGameState,
     reset,
   } = useGameSessionStore();
 
@@ -63,6 +65,81 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
 
   // Combat system - the heart of gameplay
   const combat = useCombat(creatures, null); // TokenManager accessed through gameRef
+
+  // Handle moving a creature on the board
+  const handleMoveCreature = useCallback(
+    async (creatureId: string, newPosition: GridPosition, path: GridPosition[]) => {
+      if (!gameState) return;
+
+      // Calculate movement distance
+      const movementDistance = (path.length - 1) * 5; // 5 feet per tile
+
+      // Use movement in combat system
+      if (combat.isInCombat) {
+        const success = combat.useMovement(movementDistance);
+        if (!success) {
+          console.warn('Not enough movement remaining');
+          return;
+        }
+      }
+
+      // Update creature position locally
+      const updatedCreatures = gameState.creatures.map((c) =>
+        c.id === creatureId ? { ...c, position: newPosition } : c
+      );
+
+      // Animate token movement on board
+      if (gameRef.current) {
+        // Animate along path
+        for (let i = 1; i < path.length; i++) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          gameRef.current.moveToken(creatureId, path[i].x, path[i].y);
+        }
+      }
+
+      // Persist to server
+      try {
+        await updateGameState(sessionId, { creatures: updatedCreatures });
+      } catch (err) {
+        console.error('Failed to persist movement:', err);
+      }
+    },
+    [gameState, combat, sessionId, updateGameState]
+  );
+
+  // Handle targeting a creature
+  const handleSelectTarget = useCallback(
+    (targetId: string) => {
+      combat.selectTarget(targetId);
+    },
+    [combat]
+  );
+
+  // Get current user's character ID
+  const myCharacterId = useMemo(() => {
+    if (isDM) return combat.currentTurnCreatureId;
+    // Find participant with user's ID - would need userId from auth
+    return combat.currentTurnCreatureId; // For now, allow controlling current turn
+  }, [isDM, combat.currentTurnCreatureId]);
+
+  // Check if it's my turn
+  const isMyTurn = useMemo(() => {
+    return combat.isInCombat && combat.currentTurnCreatureId === myCharacterId;
+  }, [combat.isInCombat, combat.currentTurnCreatureId, myCharacterId]);
+
+  // Movement and targeting system
+  const movement = useMovementAndTargeting({
+    creatures,
+    tiles: gameState?.map.tiles || [],
+    gridWidth: gameState?.map.width || 20,
+    gridHeight: gameState?.map.height || 20,
+    currentCreatureId: combat.currentTurnCreatureId,
+    remainingMovement: combat.getRemainingMovement(),
+    isInCombat: combat.isInCombat,
+    isMyTurn,
+    onMoveCreature: handleMoveCreature,
+    onSelectTarget: handleSelectTarget,
+  });
 
   // Track previous HP values to detect damage/healing
   const prevCreatureHp = useRef<Map<string, number>>(new Map());
@@ -235,9 +312,19 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
       tileSize: 48,
       gridWidth: gameState.map.width,
       gridHeight: gameState.map.height,
-      onTileClick: (pos) => setSelectedTile(pos),
-      onTileHover: () => {},
-      onTokenClick: (id) => setSelectedCreature(id),
+      onTileClick: (pos) => {
+        setSelectedTile(pos);
+        // If in movement mode, handle tile click for movement
+        movement.handleTileClick(pos);
+      },
+      onTileHover: (pos) => {
+        movement.handleTileHover(pos);
+      },
+      onTokenClick: (id) => {
+        setSelectedCreature(id);
+        // Handle token click for targeting
+        movement.handleTokenClick(id);
+      },
     });
 
     gameRef.current = game;
@@ -270,6 +357,29 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
       gameRef.current?.loadState(gameState);
     });
   }, [gameState]);
+
+  // Highlight tiles for movement/targeting
+  useEffect(() => {
+    if (!gameRef.current) return;
+
+    if (movement.highlightedTiles.length > 0) {
+      // Different colors for different modes
+      const color = movement.interactionMode === 'move' ? 0x22C55E : 0xEF4444; // Green for move, red for target
+      gameRef.current.highlightTiles(movement.highlightedTiles, color, 0.3);
+    } else {
+      gameRef.current.clearHighlights();
+    }
+  }, [movement.highlightedTiles, movement.interactionMode]);
+
+  // Show path preview when hovering during movement
+  useEffect(() => {
+    if (!gameRef.current || movement.interactionMode !== 'move') return;
+
+    if (movement.selectedPath.length > 0) {
+      // Show path as brighter highlight
+      gameRef.current.highlightTiles(movement.selectedPath, 0x3B82F6, 0.5); // Blue for path
+    }
+  }, [movement.selectedPath, movement.interactionMode]);
 
   // Zoom controls
   const handleZoomIn = useCallback(() => {
@@ -590,6 +700,11 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
         performDodge={combat.performDodge}
         useMovement={combat.useMovement}
         getRemainingMovement={combat.getRemainingMovement}
+        // Movement system integration
+        isMovementMode={movement.interactionMode === 'move'}
+        canMove={movement.canMove}
+        onStartMovement={movement.startMovementMode}
+        onCancelMovement={movement.cancelMode}
       />
     </div>
   );

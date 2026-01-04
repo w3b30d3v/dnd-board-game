@@ -309,6 +309,31 @@ export class GameApplication {
   }
 
   /**
+   * Move a token to a new grid position (with animation)
+   */
+  public moveToken(creatureId: string, x: number, y: number): void {
+    if (!this.currentState) return;
+
+    const creature = this.currentState.creatures.find((c) => c.id === creatureId);
+    if (!creature) return;
+
+    // Create updated creature with new position
+    const updatedCreature: Creature = {
+      ...creature,
+      position: { x, y },
+    };
+
+    // Update token (triggers movement animation)
+    this.tokenManager.updateToken(updatedCreature);
+
+    // Update state
+    const index = this.currentState.creatures.findIndex((c) => c.id === creatureId);
+    if (index >= 0) {
+      this.currentState.creatures[index] = updatedCreature;
+    }
+  }
+
+  /**
    * Select a creature
    */
   public selectCreature(creatureId: string | null): void {
