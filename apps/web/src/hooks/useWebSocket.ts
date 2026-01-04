@@ -41,6 +41,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     setIsHost,
     setIsReady,
     setIsSessionLocked,
+    addPendingTokenMove,
+    setLastGameStateSync,
     reset,
   } = useMultiplayerStore();
 
@@ -404,6 +406,79 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
             });
             break;
 
+          // Game state sync handlers
+          case WSMessageType.TOKEN_MOVED:
+            // Store the pending token move for the game to process
+            addPendingTokenMove({
+              tokenId: payload.tokenId || payload.creatureId,
+              fromPosition: payload.fromPosition,
+              toPosition: payload.toPosition,
+              path: payload.path || [payload.fromPosition, payload.toPosition],
+            });
+            addMessage({
+              senderId: 'system',
+              senderName: 'System',
+              content: `Token moved to (${payload.toPosition.x}, ${payload.toPosition.y})`,
+              isInCharacter: false,
+              isWhisper: false,
+              isSystem: true,
+              level: 'info',
+              timestamp: Date.now(),
+            });
+            break;
+
+          case WSMessageType.ACTION_RESULT:
+            // Handle attack/action results from other players
+            if (payload.damage) {
+              addMessage({
+                senderId: 'system',
+                senderName: 'System',
+                content: `${payload.success ? 'Hit!' : 'Miss!'} ${payload.damage ? `${payload.damage.amount} ${payload.damage.type} damage` : ''}${payload.damage?.isCritical ? ' (CRITICAL!)' : ''}`,
+                isInCharacter: false,
+                isWhisper: false,
+                isSystem: true,
+                level: payload.success ? 'success' : 'info',
+                timestamp: Date.now(),
+              });
+            }
+            // Dispatch a custom event for GameSessionContent to handle
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('ws:action-result', { detail: payload }));
+            }
+            break;
+
+          case WSMessageType.SPELL_RESULT:
+            addMessage({
+              senderId: 'system',
+              senderName: 'System',
+              content: `${payload.spellName} was cast!`,
+              isInCharacter: false,
+              isWhisper: false,
+              isSystem: true,
+              level: 'info',
+              timestamp: Date.now(),
+            });
+            // Dispatch a custom event for GameSessionContent to handle
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('ws:spell-result', { detail: payload }));
+            }
+            break;
+
+          case WSMessageType.GAME_STATE_SYNC:
+            // Full game state sync - dispatch for game to handle
+            setLastGameStateSync(Date.now());
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('ws:game-state-sync', { detail: payload }));
+            }
+            break;
+
+          case WSMessageType.TOKEN_UPDATE:
+            // Individual token update (HP, conditions, etc.)
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('ws:token-update', { detail: payload }));
+            }
+            break;
+
           default:
             console.log('Unhandled message type:', type, payload);
         }
@@ -429,6 +504,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       setIsReady,
       setIsSessionLocked,
       setSession,
+      addPendingTokenMove,
+      setLastGameStateSync,
     ]
   );
 

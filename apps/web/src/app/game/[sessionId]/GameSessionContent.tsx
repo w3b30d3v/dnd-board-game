@@ -17,6 +17,7 @@ import { CombatActionBar } from '@/components/game/CombatActionBar';
 import { useCombat } from '@/hooks/useCombat';
 import { useMovementAndTargeting } from '@/hooks/useMovementAndTargeting';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { useMultiplayerStore } from '@/stores/multiplayerStore';
 import { WSMessageType } from '@dnd/shared';
 import type { Spell } from '@/data/spells';
 import { calculateAoE, getCreaturesInAoE, SPELL_AOE_PRESETS } from '@/game/AoECalculator';
@@ -405,6 +406,78 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
       wsJoinSession(sessionId);
     }
   }, [wsAuthenticated, sessionId, wsJoinSession]);
+
+  // Get pending token moves from multiplayer store
+  const { pendingTokenMoves, clearPendingTokenMoves } = useMultiplayerStore();
+
+  // Process pending token moves from other players
+  useEffect(() => {
+    if (!gameRef.current || pendingTokenMoves.length === 0) return;
+
+    // Process each pending move
+    pendingTokenMoves.forEach(async (move) => {
+      // Animate the token movement on the board
+      if (move.path && move.path.length > 1) {
+        for (let i = 1; i < move.path.length; i++) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          gameRef.current?.moveToken(move.tokenId, move.path[i].x, move.path[i].y);
+        }
+      } else {
+        // Direct move without path
+        gameRef.current?.moveToken(move.tokenId, move.toPosition.x, move.toPosition.y);
+      }
+    });
+
+    // Clear processed moves
+    clearPendingTokenMoves();
+  }, [pendingTokenMoves, clearPendingTokenMoves]);
+
+  // Listen for WebSocket game events
+  useEffect(() => {
+    // Handle action results from other players
+    const handleActionResult = (event: CustomEvent) => {
+      const payload = event.detail;
+      if (!gameRef.current || !payload.targetId) return;
+
+      // Show damage/healing VFX
+      if (payload.damage) {
+        gameRef.current.showDamage(
+          payload.targetId,
+          payload.damage.amount,
+          payload.damage.isCritical
+        );
+        // Trigger a state refresh to get updated HP
+        loadSession(sessionId);
+      }
+      if (payload.healing) {
+        gameRef.current.showHealing(payload.targetId, payload.healing);
+      }
+    };
+
+    // Handle token updates (HP, conditions)
+    const handleTokenUpdate = () => {
+      if (!gameRef.current) return;
+      // Refresh game state to get latest
+      loadSession(sessionId);
+    };
+
+    // Handle game state sync
+    const handleGameStateSync = () => {
+      // Refresh the full game state
+      loadSession(sessionId);
+    };
+
+    // Add event listeners
+    window.addEventListener('ws:action-result', handleActionResult as EventListener);
+    window.addEventListener('ws:token-update', handleTokenUpdate as EventListener);
+    window.addEventListener('ws:game-state-sync', handleGameStateSync as EventListener);
+
+    return () => {
+      window.removeEventListener('ws:action-result', handleActionResult as EventListener);
+      window.removeEventListener('ws:token-update', handleTokenUpdate as EventListener);
+      window.removeEventListener('ws:game-state-sync', handleGameStateSync as EventListener);
+    };
+  }, [gameState, sessionId, loadSession]);
 
   // Load session data
   useEffect(() => {
