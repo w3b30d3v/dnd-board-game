@@ -43,6 +43,115 @@ function generateDefaultTiles(width: number, height: number): TileData[] {
   return tiles;
 }
 
+// D&D 5e Spell Slot Progression by caster level
+// Full casters: Bard, Cleric, Druid, Sorcerer, Wizard
+// Half casters: Paladin, Ranger (start at level 2, use half level)
+// Third casters: Arcane Trickster, Eldritch Knight (use 1/3 level, start at 3)
+const SPELL_SLOT_TABLE: Record<number, number[]> = {
+  1: [2, 0, 0, 0, 0, 0, 0, 0, 0],
+  2: [3, 0, 0, 0, 0, 0, 0, 0, 0],
+  3: [4, 2, 0, 0, 0, 0, 0, 0, 0],
+  4: [4, 3, 0, 0, 0, 0, 0, 0, 0],
+  5: [4, 3, 2, 0, 0, 0, 0, 0, 0],
+  6: [4, 3, 3, 0, 0, 0, 0, 0, 0],
+  7: [4, 3, 3, 1, 0, 0, 0, 0, 0],
+  8: [4, 3, 3, 2, 0, 0, 0, 0, 0],
+  9: [4, 3, 3, 3, 1, 0, 0, 0, 0],
+  10: [4, 3, 3, 3, 2, 0, 0, 0, 0],
+  11: [4, 3, 3, 3, 2, 1, 0, 0, 0],
+  12: [4, 3, 3, 3, 2, 1, 0, 0, 0],
+  13: [4, 3, 3, 3, 2, 1, 1, 0, 0],
+  14: [4, 3, 3, 3, 2, 1, 1, 0, 0],
+  15: [4, 3, 3, 3, 2, 1, 1, 1, 0],
+  16: [4, 3, 3, 3, 2, 1, 1, 1, 0],
+  17: [4, 3, 3, 3, 2, 1, 1, 1, 1],
+  18: [4, 3, 3, 3, 3, 1, 1, 1, 1],
+  19: [4, 3, 3, 3, 3, 2, 1, 1, 1],
+  20: [4, 3, 3, 3, 3, 2, 2, 1, 1],
+};
+
+// Full caster classes
+const FULL_CASTERS = ['bard', 'cleric', 'druid', 'sorcerer', 'wizard'];
+const HALF_CASTERS = ['paladin', 'ranger'];
+
+// Spell slots interface
+interface SpellSlots {
+  level1: { used: number; max: number };
+  level2: { used: number; max: number };
+  level3: { used: number; max: number };
+  level4: { used: number; max: number };
+  level5: { used: number; max: number };
+  level6: { used: number; max: number };
+  level7: { used: number; max: number };
+  level8: { used: number; max: number };
+  level9: { used: number; max: number };
+}
+
+// Get spell slots based on class and level
+function getSpellSlotsForClass(className: string, level: number): SpellSlots {
+  const classLower = className.toLowerCase();
+
+  // Determine effective caster level
+  let casterLevel = 0;
+  if (FULL_CASTERS.includes(classLower)) {
+    casterLevel = level;
+  } else if (HALF_CASTERS.includes(classLower)) {
+    casterLevel = Math.floor(level / 2);
+  } else if (classLower === 'warlock') {
+    // Warlock uses Pact Magic (different system, simplified here)
+    const pactSlots = Math.min(2 + Math.floor((level - 1) / 2), 4);
+    const pactLevel = Math.min(Math.ceil(level / 2), 5);
+    const slots: SpellSlots = {
+      level1: { used: 0, max: pactLevel >= 1 ? pactSlots : 0 },
+      level2: { used: 0, max: pactLevel >= 2 ? pactSlots : 0 },
+      level3: { used: 0, max: pactLevel >= 3 ? pactSlots : 0 },
+      level4: { used: 0, max: pactLevel >= 4 ? pactSlots : 0 },
+      level5: { used: 0, max: pactLevel >= 5 ? pactSlots : 0 },
+      level6: { used: 0, max: 0 },
+      level7: { used: 0, max: 0 },
+      level8: { used: 0, max: 0 },
+      level9: { used: 0, max: 0 },
+    };
+    // Warlocks get 6-9 level slots as Mystic Arcanum (1/day each at higher levels)
+    if (level >= 11) slots.level6.max = 1;
+    if (level >= 13) slots.level7.max = 1;
+    if (level >= 15) slots.level8.max = 1;
+    if (level >= 17) slots.level9.max = 1;
+    return slots;
+  }
+
+  // Non-casters get no spell slots
+  if (casterLevel <= 0) {
+    return {
+      level1: { used: 0, max: 0 },
+      level2: { used: 0, max: 0 },
+      level3: { used: 0, max: 0 },
+      level4: { used: 0, max: 0 },
+      level5: { used: 0, max: 0 },
+      level6: { used: 0, max: 0 },
+      level7: { used: 0, max: 0 },
+      level8: { used: 0, max: 0 },
+      level9: { used: 0, max: 0 },
+    };
+  }
+
+  // Cap at 20
+  casterLevel = Math.min(casterLevel, 20);
+  const slotArray = SPELL_SLOT_TABLE[casterLevel] || SPELL_SLOT_TABLE[1];
+
+  return {
+    level1: { used: 0, max: slotArray[0] },
+    level2: { used: 0, max: slotArray[1] },
+    level3: { used: 0, max: slotArray[2] },
+    level4: { used: 0, max: slotArray[3] },
+    level5: { used: 0, max: slotArray[4] },
+    level6: { used: 0, max: slotArray[5] },
+    level7: { used: 0, max: slotArray[6] },
+    level8: { used: 0, max: slotArray[7] },
+    level9: { used: 0, max: slotArray[8] },
+  };
+}
+
 interface GameSessionContentProps {
   sessionId: string;
 }
@@ -75,6 +184,9 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
   const [showDMControls, setShowDMControls] = useState(false);
   const [showPlayerPanel, setShowPlayerPanel] = useState(true);
 
+  // Spell slots state - keyed by creature ID
+  const [spellSlotsUsed, setSpellSlotsUsed] = useState<Record<string, Record<number, number>>>({});
+
   // Immersive system hooks
   const {
     setGamePhase,
@@ -100,6 +212,73 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
 
   // Combat system - the heart of gameplay
   const combat = useCombat(creatures, null); // TokenManager accessed through gameRef
+
+  // Find current creature's character data for spell slots
+  const currentCreatureCharacter = useMemo(() => {
+    if (!combat.currentTurnCreatureId || !session?.participants) return null;
+
+    const creature = creatures.find((c) => c.id === combat.currentTurnCreatureId);
+    if (!creature) return null;
+
+    // Match creature to participant's character by name (creature name should match character name)
+    const participant = session.participants.find(
+      (p) => p.character?.name === creature.name
+    );
+
+    return participant?.character || null;
+  }, [combat.currentTurnCreatureId, creatures, session?.participants]);
+
+  // Compute spell slots for current creature
+  const currentCreatureSpellSlots = useMemo((): SpellSlots => {
+    if (!currentCreatureCharacter || !combat.currentTurnCreatureId) {
+      // Default slots for non-character creatures (e.g., wizard NPC)
+      return getSpellSlotsForClass('wizard', 1);
+    }
+
+    const baseSlots = getSpellSlotsForClass(
+      currentCreatureCharacter.class,
+      currentCreatureCharacter.level
+    );
+
+    // Apply used slots from state
+    const usedSlots = spellSlotsUsed[combat.currentTurnCreatureId] || {};
+
+    return {
+      level1: { ...baseSlots.level1, used: usedSlots[1] || 0 },
+      level2: { ...baseSlots.level2, used: usedSlots[2] || 0 },
+      level3: { ...baseSlots.level3, used: usedSlots[3] || 0 },
+      level4: { ...baseSlots.level4, used: usedSlots[4] || 0 },
+      level5: { ...baseSlots.level5, used: usedSlots[5] || 0 },
+      level6: { ...baseSlots.level6, used: usedSlots[6] || 0 },
+      level7: { ...baseSlots.level7, used: usedSlots[7] || 0 },
+      level8: { ...baseSlots.level8, used: usedSlots[8] || 0 },
+      level9: { ...baseSlots.level9, used: usedSlots[9] || 0 },
+    };
+  }, [currentCreatureCharacter, combat.currentTurnCreatureId, spellSlotsUsed]);
+
+  // Consume a spell slot
+  const consumeSpellSlot = useCallback(
+    (creatureId: string, level: number) => {
+      if (level <= 0) return; // Cantrips don't consume slots
+
+      setSpellSlotsUsed((prev) => ({
+        ...prev,
+        [creatureId]: {
+          ...(prev[creatureId] || {}),
+          [level]: (prev[creatureId]?.[level] || 0) + 1,
+        },
+      }));
+
+      // Broadcast spell slot usage via WebSocket
+      wsSendMessage(WSMessageType.GAME_STATE_SYNC, {
+        sessionId,
+        type: 'spell_slot_used',
+        creatureId,
+        level,
+      });
+    },
+    [sessionId, wsSendMessage]
+  );
 
   // Handle moving a creature on the board
   const handleMoveCreature = useCallback(
@@ -280,10 +459,19 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
     ) => {
       if (!combat.isInCombat || !combat.currentTurnCreatureId) return;
 
+      // Determine spell level (upcast level or base spell level)
+      const castLevel = spellLevel || spell.level;
+
+      // Consume spell slot (cantrips don't use slots)
+      if (castLevel > 0) {
+        consumeSpellSlot(combat.currentTurnCreatureId, castLevel);
+      }
+
       // Log the spell cast
+      const slotInfo = castLevel > 0 ? ` (level ${castLevel} slot)` : ' (cantrip)';
       combat.addLogEntry({
         type: 'info',
-        message: `${creatures.find(c => c.id === combat.currentTurnCreatureId)?.name} casts ${spell.name}!`,
+        message: `${creatures.find(c => c.id === combat.currentTurnCreatureId)?.name} casts ${spell.name}${slotInfo}!`,
       });
 
       // Parse spell damage from description (simplified - would need proper spell data)
@@ -357,7 +545,7 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
         spellLevel: spellLevel || spell.level,
       });
     },
-    [combat, creatures, sessionId, wsSendMessage, handleApplyDamage, handleApplyHealing]
+    [combat, creatures, sessionId, wsSendMessage, handleApplyDamage, handleApplyHealing, consumeSpellSlot]
   );
 
   // Simple dice roll parser (e.g., "1d10" returns a random value)
@@ -1087,6 +1275,9 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
         onStartTargeting={movement.startTargetingMode}
         onCancelTargeting={movement.cancelMode}
         // Spell casting
+        casterClass={currentCreatureCharacter?.class}
+        casterLevel={currentCreatureCharacter?.level}
+        spellSlots={currentCreatureSpellSlots}
         onCastSpell={handleCastSpell}
       />
     </div>
