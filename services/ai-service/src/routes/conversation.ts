@@ -584,4 +584,58 @@ router.post('/import', async (req: Request, res: Response) => {
   }
 });
 
+// Cleanup old inactive conversations for the current user
+// Deletes conversations that haven't been updated in the specified number of days
+router.post('/cleanup', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as Request & { user?: { userId: string } }).user?.userId;
+    if (!userId) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+
+    // Default to 30 days for cleanup
+    const daysOld = parseInt(req.body.daysOld as string, 10) || 30;
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+
+    // Get all conversations for this user
+    const conversations = await getUserConversations(userId);
+
+    // Find old inactive conversations (no generated content and older than cutoff)
+    const toDelete = conversations.filter((c) => {
+      const lastUpdate = new Date(c.updatedAt);
+      const isOld = lastUpdate < cutoffDate;
+      const isEmpty = c.generatedContent.length === 0;
+      return isOld && isEmpty;
+    });
+
+    // Delete each old conversation
+    let deletedCount = 0;
+    for (const conv of toDelete) {
+      const deleted = await deleteConversation(conv.id);
+      if (deleted) {
+        deletedCount++;
+      }
+    }
+
+    logger.info({
+      userId,
+      daysOld,
+      totalConversations: conversations.length,
+      deletedCount,
+    }, 'Cleaned up old conversations');
+
+    res.json({
+      success: true,
+      deletedCount,
+      totalConversations: conversations.length,
+      remainingConversations: conversations.length - deletedCount,
+    });
+  } catch (error) {
+    logger.error({ error }, 'Failed to cleanup conversations');
+    res.status(500).json({ error: 'Failed to cleanup conversations' });
+  }
+});
+
 export default router;

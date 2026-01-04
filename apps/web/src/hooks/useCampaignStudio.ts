@@ -29,6 +29,8 @@ export function useCampaignStudio(campaignId?: string) {
     isSaving,
     lastSavedAt,
     error,
+    generatingImageIds,
+    totalCost,
     startConversation,
     sendMessage,
     advancePhase,
@@ -41,6 +43,9 @@ export function useCampaignStudio(campaignId?: string) {
     generateImage,
     loadContent,
     addContent,
+    isGeneratingImageFor,
+    canAdvancePhase: storeCanAdvancePhase,
+    deleteContent,
   } = useCampaignStudioStore();
 
   // Redirect if not authenticated (only after hydration)
@@ -170,11 +175,14 @@ export function useCampaignStudio(campaignId?: string) {
     error,
     isAuthenticated: !!token,
     user,
+    generatingImageIds,
+    totalCost,
 
     // Phase helpers
     isPhaseComplete,
     canAdvancePhase,
     getPhaseContent,
+    canAdvancePhaseWithReason: storeCanAdvancePhase,
 
     // Actions
     sendMessage: handleSendMessage,
@@ -189,6 +197,8 @@ export function useCampaignStudio(campaignId?: string) {
     saveContent,
     generateImage,
     loadContent,
+    isGeneratingImageFor,
+    deleteContent,
   };
 }
 

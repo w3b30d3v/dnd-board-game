@@ -104,6 +104,10 @@ export interface ConversationState {
   isSaving: boolean;
   lastSavedAt: Date | null;
   error: string | null;
+  // New: per-item image generation tracking
+  generatingImageIds: Set<string>;
+  // New: cost tracking
+  totalCost: number;
 }
 
 // Import data structure
@@ -142,6 +146,12 @@ interface CampaignStudioState extends ConversationState {
   loadContent: () => Promise<void>;
   // Import functionality
   importFromJson: (data: CampaignExportData, campaignId: string) => void;
+  // New: helper to check if specific item is generating image
+  isGeneratingImageFor: (contentId: string) => boolean;
+  // New: phase validation
+  canAdvancePhase: () => { canAdvance: boolean; reason?: string };
+  // New: delete content
+  deleteContent: (contentId: string) => void;
 }
 
 const AI_SERVICE_URL = process.env.NEXT_PUBLIC_AI_SERVICE_URL || 'http://localhost:4003';
@@ -172,6 +182,8 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
   isSaving: false,
   lastSavedAt: null,
   error: null,
+  generatingImageIds: new Set<string>(),
+  totalCost: 0,
 
   // Start or resume a conversation
   startConversation: async (campaignId: string) => {
@@ -531,6 +543,8 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
       isSaving: false,
       lastSavedAt: null,
       error: null,
+      generatingImageIds: new Set<string>(),
+      totalCost: 0,
     });
   },
 
@@ -693,7 +707,7 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
 
   // Generate an image for a specific content item
   generateImage: async (contentId: string) => {
-    const { campaignId, generatedContent } = get();
+    const { campaignId, generatedContent, generatingImageIds } = get();
     const token = getAuthToken();
 
     if (!token || !campaignId) {
@@ -706,6 +720,11 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
       set({ error: 'Content not found' });
       return null;
     }
+
+    // Track that this item is generating
+    const newGeneratingIds = new Set(generatingImageIds);
+    newGeneratingIds.add(contentId);
+    set({ generatingImageIds: newGeneratingIds });
 
     try {
       let requestBody: Record<string, string | undefined>;
@@ -782,35 +801,47 @@ export const useCampaignStudioStore = create<CampaignStudioState>((set, get) => 
         throw new Error('No image URL returned from server');
       }
 
-      // Update the content with the new image URL
-      set((state) => ({
-        generatedContent: state.generatedContent.map((c) => {
-          if (c.id !== contentId) return c;
+      // Update the content with the new image URL and remove from generating set
+      set((state) => {
+        const updatedGeneratingIds = new Set(state.generatingImageIds);
+        updatedGeneratingIds.delete(contentId);
+        return {
+          generatingImageIds: updatedGeneratingIds,
+          generatedContent: state.generatedContent.map((c) => {
+            if (c.id !== contentId) return c;
 
-          if (c.type === 'setting') {
-            return {
-              ...c,
-              data: { ...(c.data as SettingData), imageUrl: imageUrl },
-            };
-          } else if (c.type === 'npc') {
-            return {
-              ...c,
-              data: { ...(c.data as NPCData), portraitUrl: imageUrl },
-            };
-          } else if (c.type === 'location') {
-            return {
-              ...c,
-              data: { ...(c.data as LocationData), imageUrl: imageUrl },
-            };
-          }
-          return c;
-        }),
-      }));
+            if (c.type === 'setting') {
+              return {
+                ...c,
+                data: { ...(c.data as SettingData), imageUrl: imageUrl },
+              };
+            } else if (c.type === 'npc') {
+              return {
+                ...c,
+                data: { ...(c.data as NPCData), portraitUrl: imageUrl },
+              };
+            } else if (c.type === 'location') {
+              return {
+                ...c,
+                data: { ...(c.data as LocationData), imageUrl: imageUrl },
+              };
+            }
+            return c;
+          }),
+        };
+      });
 
       return imageUrl;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to generate image';
-      set({ error: message });
+      // Remove from generating set on error
+      set((state) => {
+        const updatedGeneratingIds = new Set(state.generatingImageIds);
+        updatedGeneratingIds.delete(contentId);
+        return {
+          generatingImageIds: updatedGeneratingIds,
+          error: error instanceof Error ? error.message : 'Failed to generate image',
+        };
+      });
       return null;
     }
   },
@@ -1035,6 +1066,41 @@ You can continue building your campaign from where you left off. All your previo
       console.error('[CampaignStudio] Import error:', message);
       set({ error: message });
     }
+  },
+
+  // Check if a specific content item is generating an image
+  isGeneratingImageFor: (contentId: string) => {
+    return get().generatingImageIds.has(contentId);
+  },
+
+  // Check if we can advance to the next phase (validation)
+  canAdvancePhase: () => {
+    const { currentPhase, generatedContent } = get();
+
+    const phaseRequirements: Record<CampaignPhase, { type: string; minCount: number; message: string }> = {
+      setting: { type: 'setting', minCount: 1, message: 'Create a setting before advancing' },
+      story: { type: 'setting', minCount: 1, message: 'Define your story before advancing to locations' },
+      locations: { type: 'location', minCount: 1, message: 'Create at least one location before advancing' },
+      npcs: { type: 'npc', minCount: 1, message: 'Create at least one NPC before advancing' },
+      encounters: { type: 'encounter', minCount: 1, message: 'Create at least one encounter before advancing' },
+      quests: { type: 'quest', minCount: 0, message: '' }, // Last phase, no requirement
+    };
+
+    const requirement = phaseRequirements[currentPhase];
+    const contentOfType = generatedContent.filter((c) => c.type === requirement.type);
+
+    if (contentOfType.length < requirement.minCount) {
+      return { canAdvance: false, reason: requirement.message };
+    }
+
+    return { canAdvance: true };
+  },
+
+  // Delete a content item
+  deleteContent: (contentId: string) => {
+    set((state) => ({
+      generatedContent: state.generatedContent.filter((c) => c.id !== contentId),
+    }));
   },
 }));
 

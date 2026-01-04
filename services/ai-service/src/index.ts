@@ -8,6 +8,12 @@ import helmet from 'helmet';
 import { config, validateConfig } from './lib/config.js';
 import { logger } from './lib/logger.js';
 import { authMiddleware } from './middleware/auth.js';
+import {
+  chatRateLimiter,
+  generationRateLimiter,
+  videoRateLimiter,
+  voiceRateLimiter,
+} from './middleware/rateLimiter.js';
 import conversationRoutes from './routes/conversation.js';
 import generationRoutes from './routes/generation.js';
 import videoRoutes from './routes/video.js';
@@ -157,12 +163,12 @@ app.get('/test/elevenlabs/generate', async (_req, res) => {
 // Must be defined BEFORE protected routes to avoid auth middleware
 app.use('/ai/webhook', campaignStudioRoutes);
 
-// Routes (protected)
-app.use('/ai/conversation', authMiddleware, conversationRoutes);
-app.use('/ai/generate', authMiddleware, generationRoutes);
-app.use('/ai/video', authMiddleware, videoRoutes);
-app.use('/ai/voice', authMiddleware, voiceRoutes);
-app.use('/ai/campaign-studio', authMiddleware, campaignStudioRoutes);
+// Routes (protected with rate limiting)
+app.use('/ai/conversation', authMiddleware, chatRateLimiter, conversationRoutes);
+app.use('/ai/generate', authMiddleware, generationRateLimiter, generationRoutes);
+app.use('/ai/video', authMiddleware, videoRateLimiter, videoRoutes);
+app.use('/ai/voice', authMiddleware, voiceRateLimiter, voiceRoutes);
+app.use('/ai/campaign-studio', authMiddleware, generationRateLimiter, campaignStudioRoutes);
 
 // Error handling middleware
 app.use(
