@@ -54,6 +54,16 @@ interface MultiplayerState {
   round: number;
   isInCombat: boolean;
 
+  // Game sync state
+  pendingTokenMoves: Array<{
+    tokenId: string;
+    fromPosition: { x: number; y: number };
+    toPosition: { x: number; y: number };
+    path: Array<{ x: number; y: number }>;
+    timestamp: number;
+  }>;
+  lastGameStateSync: number | null;
+
   // Actions
   setConnectionStatus: (status: ConnectionStatus, error?: string) => void;
   setConnectionId: (id: string | null) => void;
@@ -72,6 +82,14 @@ interface MultiplayerState {
   clearDiceResults: () => void;
   setCurrentTurn: (creatureId: string | null, round: number) => void;
   setIsInCombat: (inCombat: boolean) => void;
+  addPendingTokenMove: (move: {
+    tokenId: string;
+    fromPosition: { x: number; y: number };
+    toPosition: { x: number; y: number };
+    path: Array<{ x: number; y: number }>;
+  }) => void;
+  clearPendingTokenMoves: () => void;
+  setLastGameStateSync: (timestamp: number) => void;
   reset: () => void;
 }
 
@@ -90,6 +108,8 @@ const initialState = {
   currentTurnCreatureId: null,
   round: 0,
   isInCombat: false,
+  pendingTokenMoves: [],
+  lastGameStateSync: null,
 };
 
 export const useMultiplayerStore = create<MultiplayerState>()(
@@ -161,6 +181,18 @@ export const useMultiplayerStore = create<MultiplayerState>()(
         set({ currentTurnCreatureId: creatureId, round }),
 
       setIsInCombat: (inCombat) => set({ isInCombat: inCombat }),
+
+      addPendingTokenMove: (move) =>
+        set((state) => ({
+          pendingTokenMoves: [
+            ...state.pendingTokenMoves,
+            { ...move, timestamp: Date.now() },
+          ].slice(-50), // Keep last 50 moves
+        })),
+
+      clearPendingTokenMoves: () => set({ pendingTokenMoves: [] }),
+
+      setLastGameStateSync: (timestamp) => set({ lastGameStateSync: timestamp }),
 
       reset: () => set(initialState),
     }),

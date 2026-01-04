@@ -35,6 +35,16 @@ export interface InitiativeEntry {
   tieBreaker: number;
 }
 
+// Action economy tracking per turn (D&D 5e RAW)
+export interface ActionEconomy {
+  hasAction: boolean;       // Standard action available
+  hasBonusAction: boolean;  // Bonus action available
+  hasReaction: boolean;     // Reaction available (resets at start of turn)
+  movementUsed: number;     // Feet of movement used
+  movementMax: number;      // Max movement (typically 30)
+  hasUsedObject: boolean;   // Free object interaction used
+}
+
 export interface CombatState {
   isInCombat: boolean;
   round: number;
@@ -44,6 +54,8 @@ export interface CombatState {
   selectedAction: CombatAction | null;
   isSelectingTarget: boolean;
   combatLog: CombatLogEntry[];
+  // Action economy
+  actionEconomy: ActionEconomy;
 }
 
 export interface CombatLogEntry {
@@ -107,6 +119,16 @@ export function useCombat(creatures: Creature[], tokenManager: TokenManager | nu
   const combatManagerRef = useRef<CombatManager | null>(null);
   const immersive = useImmersive();
 
+  // Default action economy (resets each turn)
+  const defaultActionEconomy: ActionEconomy = {
+    hasAction: true,
+    hasBonusAction: true,
+    hasReaction: true,
+    movementUsed: 0,
+    movementMax: 30, // Default 30 ft movement
+    hasUsedObject: false,
+  };
+
   const [state, setState] = useState<CombatState>({
     isInCombat: false,
     round: 0,
@@ -116,6 +138,7 @@ export function useCombat(creatures: Creature[], tokenManager: TokenManager | nu
     selectedAction: null,
     isSelectingTarget: false,
     combatLog: [],
+    actionEconomy: defaultActionEconomy,
   });
 
   // Initialize CombatManager
@@ -360,13 +383,17 @@ export function useCombat(creatures: Creature[], tokenManager: TokenManager | nu
     });
   }, [immersive, addLogEntry]);
 
-  // Next turn
+  // Next turn (resets action economy)
   const nextTurn = useCallback(() => {
     const cm = combatManagerRef.current;
     if (!cm) return;
 
     const nextCreatureId = cm.nextTurn();
     const newRound = cm.getCurrentRound();
+
+    // Get movement speed for the next creature
+    const nextCreature = creatures.find(c => c.id === nextCreatureId);
+    const movementMax = nextCreature?.speed ?? 30;
 
     setState(prev => {
       const roundChanged = newRound !== prev.round;
@@ -390,9 +417,18 @@ export function useCombat(creatures: Creature[], tokenManager: TokenManager | nu
         selectedTargetId: null,
         selectedAction: null,
         isSelectingTarget: false,
+        // Reset action economy for new turn
+        actionEconomy: {
+          hasAction: true,
+          hasBonusAction: true,
+          hasReaction: true, // Reaction resets at start of your turn
+          movementUsed: 0,
+          movementMax,
+          hasUsedObject: false,
+        },
       };
     });
-  }, [addLogEntry]);
+  }, [addLogEntry, creatures]);
 
   // Select action
   const selectAction = useCallback((action: CombatAction | null) => {
@@ -422,10 +458,19 @@ export function useCombat(creatures: Creature[], tokenManager: TokenManager | nu
     }));
   }, []);
 
-  // Execute attack
+  // Execute attack (consumes action economy)
   const executeAttack = useCallback((targetId: string, action: CombatAction) => {
     const cm = combatManagerRef.current;
     if (!cm || !state.currentTurnCreatureId) return null;
+
+    // Check action economy - attacks use standard action
+    if (!state.actionEconomy.hasAction) {
+      addLogEntry({
+        type: 'info',
+        message: 'No action available this turn!',
+      });
+      return null;
+    }
 
     const attackerId = state.currentTurnCreatureId;
 
@@ -438,27 +483,35 @@ export function useCombat(creatures: Creature[], tokenManager: TokenManager | nu
         isCritical: attackResult.isCritical,
       });
 
-      // Clear selection
+      // Clear selection and consume action
       setState(prev => ({
         ...prev,
         selectedAction: null,
         selectedTargetId: null,
         isSelectingTarget: false,
+        actionEconomy: {
+          ...prev.actionEconomy,
+          hasAction: false,
+        },
       }));
 
       return { attackResult, damageResult };
     }
 
-    // Clear selection even on miss
+    // Clear selection and consume action even on miss
     setState(prev => ({
       ...prev,
       selectedAction: null,
       selectedTargetId: null,
       isSelectingTarget: false,
+      actionEconomy: {
+        ...prev.actionEconomy,
+        hasAction: false,
+      },
     }));
 
     return { attackResult, damageResult: null };
-  }, [state.currentTurnCreatureId]);
+  }, [state.currentTurnCreatureId, state.actionEconomy.hasAction, addLogEntry]);
 
   // Confirm attack (when target is selected and action is ready)
   const confirmAttack = useCallback(() => {
@@ -561,6 +614,183 @@ export function useCombat(creatures: Creature[], tokenManager: TokenManager | nu
     return distance <= state.selectedAction.range;
   }, [state.currentTurnCreatureId, state.selectedAction, getDistance]);
 
+  // ==================== ACTION ECONOMY HELPERS ====================
+
+  // Check if action can be performed based on action economy
+  const canPerformAction = useCallback((actionType: CombatActionType): boolean => {
+    switch (actionType) {
+      case 'attack':
+      case 'spell':
+      case 'dash':
+      case 'disengage':
+      case 'dodge':
+      case 'help':
+      case 'hide':
+      case 'ready':
+        return state.actionEconomy.hasAction;
+      case 'ability':
+      case 'item':
+        // Bonus actions (simplified - real implementation would check specific abilities)
+        return state.actionEconomy.hasBonusAction;
+      case 'move':
+        return state.actionEconomy.movementUsed < state.actionEconomy.movementMax;
+      default:
+        return true;
+    }
+  }, [state.actionEconomy]);
+
+  // Consume bonus action
+  const useBonusAction = useCallback(() => {
+    if (!state.actionEconomy.hasBonusAction) {
+      addLogEntry({
+        type: 'info',
+        message: 'No bonus action available this turn!',
+      });
+      return false;
+    }
+
+    setState(prev => ({
+      ...prev,
+      actionEconomy: {
+        ...prev.actionEconomy,
+        hasBonusAction: false,
+      },
+    }));
+    return true;
+  }, [state.actionEconomy.hasBonusAction, addLogEntry]);
+
+  // Consume reaction
+  const useReaction = useCallback(() => {
+    if (!state.actionEconomy.hasReaction) {
+      addLogEntry({
+        type: 'info',
+        message: 'No reaction available!',
+      });
+      return false;
+    }
+
+    setState(prev => ({
+      ...prev,
+      actionEconomy: {
+        ...prev.actionEconomy,
+        hasReaction: false,
+      },
+    }));
+    return true;
+  }, [state.actionEconomy.hasReaction, addLogEntry]);
+
+  // Use movement (returns true if successful, false if not enough movement)
+  const useMovement = useCallback((distance: number): boolean => {
+    const remaining = state.actionEconomy.movementMax - state.actionEconomy.movementUsed;
+    if (distance > remaining) {
+      addLogEntry({
+        type: 'info',
+        message: `Not enough movement! (${remaining} ft remaining)`,
+      });
+      return false;
+    }
+
+    setState(prev => ({
+      ...prev,
+      actionEconomy: {
+        ...prev.actionEconomy,
+        movementUsed: prev.actionEconomy.movementUsed + distance,
+      },
+    }));
+    return true;
+  }, [state.actionEconomy.movementMax, state.actionEconomy.movementUsed, addLogEntry]);
+
+  // Get remaining movement
+  const getRemainingMovement = useCallback((): number => {
+    return state.actionEconomy.movementMax - state.actionEconomy.movementUsed;
+  }, [state.actionEconomy.movementMax, state.actionEconomy.movementUsed]);
+
+  // Perform Dash action (doubles movement)
+  const performDash = useCallback(() => {
+    if (!state.actionEconomy.hasAction) {
+      addLogEntry({
+        type: 'info',
+        message: 'No action available for Dash!',
+      });
+      return false;
+    }
+
+    const creature = creatures.find(c => c.id === state.currentTurnCreatureId);
+    const extraMovement = creature?.speed ?? 30;
+
+    setState(prev => ({
+      ...prev,
+      actionEconomy: {
+        ...prev.actionEconomy,
+        hasAction: false,
+        movementMax: prev.actionEconomy.movementMax + extraMovement,
+      },
+    }));
+
+    addLogEntry({
+      type: 'info',
+      message: `${creature?.name || 'Creature'} uses Dash! (+${extraMovement} ft movement)`,
+    });
+
+    return true;
+  }, [state.actionEconomy.hasAction, state.currentTurnCreatureId, creatures, addLogEntry]);
+
+  // Perform Disengage action
+  const performDisengage = useCallback(() => {
+    if (!state.actionEconomy.hasAction) {
+      addLogEntry({
+        type: 'info',
+        message: 'No action available for Disengage!',
+      });
+      return false;
+    }
+
+    const creature = creatures.find(c => c.id === state.currentTurnCreatureId);
+
+    setState(prev => ({
+      ...prev,
+      actionEconomy: {
+        ...prev.actionEconomy,
+        hasAction: false,
+      },
+    }));
+
+    addLogEntry({
+      type: 'info',
+      message: `${creature?.name || 'Creature'} uses Disengage! (movement doesn't provoke opportunity attacks)`,
+    });
+
+    return true;
+  }, [state.actionEconomy.hasAction, state.currentTurnCreatureId, creatures, addLogEntry]);
+
+  // Perform Dodge action
+  const performDodge = useCallback(() => {
+    if (!state.actionEconomy.hasAction) {
+      addLogEntry({
+        type: 'info',
+        message: 'No action available for Dodge!',
+      });
+      return false;
+    }
+
+    const creature = creatures.find(c => c.id === state.currentTurnCreatureId);
+
+    setState(prev => ({
+      ...prev,
+      actionEconomy: {
+        ...prev.actionEconomy,
+        hasAction: false,
+      },
+    }));
+
+    addLogEntry({
+      type: 'info',
+      message: `${creature?.name || 'Creature'} uses Dodge! (attacks against have disadvantage until next turn)`,
+    });
+
+    return true;
+  }, [state.actionEconomy.hasAction, state.currentTurnCreatureId, creatures, addLogEntry]);
+
   return {
     // State
     ...state,
@@ -587,6 +817,16 @@ export function useCombat(creatures: Creature[], tokenManager: TokenManager | nu
     getDistance,
     isInRange,
     addLogEntry,
+
+    // Action economy
+    canPerformAction,
+    useBonusAction,
+    useReaction,
+    useMovement,
+    getRemainingMovement,
+    performDash,
+    performDisengage,
+    performDodge,
   };
 }
 

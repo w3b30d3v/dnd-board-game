@@ -523,6 +523,7 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
           selectedAction: combat.selectedAction,
           isSelectingTarget: combat.isSelectingTarget,
           combatLog: combat.combatLog,
+          actionEconomy: combat.actionEconomy,
         }}
         currentCreature={creatures.find(c => c.id === combat.currentTurnCreatureId) || null}
         availableActions={combat.getAvailableActions()}
@@ -538,6 +539,12 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
         onEndCombat={combat.endCombat}
         isInRange={combat.isInRange}
         getDistance={combat.getDistance}
+        canPerformAction={combat.canPerformAction}
+        performDash={combat.performDash}
+        performDisengage={combat.performDisengage}
+        performDodge={combat.performDodge}
+        useMovement={combat.useMovement}
+        getRemainingMovement={combat.getRemainingMovement}
       />
     </div>
   );
