@@ -16,6 +16,8 @@ import { AudioControls } from './AudioControls';
 import { CombatActionBar } from '@/components/game/CombatActionBar';
 import { useCombat } from '@/hooks/useCombat';
 import { useMovementAndTargeting } from '@/hooks/useMovementAndTargeting';
+import { useWebSocket } from '@/hooks/useWebSocket';
+import { WSMessageType } from '@dnd/shared';
 
 interface GameSessionContentProps {
   sessionId: string;
@@ -63,6 +65,15 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
   // Get creatures from game state
   const creatures = useMemo(() => gameState?.creatures || [], [gameState?.creatures]);
 
+  // WebSocket for real-time multiplayer sync
+  const {
+    connect: wsConnect,
+    disconnect: wsDisconnect,
+    isAuthenticated: wsAuthenticated,
+    joinSession: wsJoinSession,
+    sendMessage: wsSendMessage,
+  } = useWebSocket({ autoConnect: false });
+
   // Combat system - the heart of gameplay
   const combat = useCombat(creatures, null); // TokenManager accessed through gameRef
 
@@ -100,11 +111,18 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
       // Persist to server
       try {
         await updateGameState(sessionId, { creatures: updatedCreatures });
+
+        // Broadcast movement to other players via WebSocket
+        wsSendMessage(WSMessageType.MOVE_TOKEN, {
+          sessionId,
+          tokenId: creatureId,
+          path,
+        });
       } catch (err) {
         console.error('Failed to persist movement:', err);
       }
     },
-    [gameState, combat, sessionId, updateGameState]
+    [gameState, combat, sessionId, updateGameState, wsSendMessage]
   );
 
   // Handle targeting a creature
@@ -142,6 +160,7 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
 
     // Get the updated HP from CombatManager
     const targetId = combat.selectedTargetId;
+    const attackerId = combat.currentTurnCreatureId;
     const cm = combat.combatManager;
     if (cm) {
       const updatedCreature = cm.getCreature(targetId);
@@ -157,11 +176,31 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
             result.attackResult.isCritical
           );
         }
+
+        // Broadcast attack result to other players via WebSocket
+        wsSendMessage(WSMessageType.ACTION_RESULT, {
+          sessionId,
+          creatureId: attackerId,
+          actionType: 'ATTACK',
+          success: result.attackResult.hits,
+          rolls: [{
+            type: 'attack',
+            dice: '1d20',
+            result: result.attackResult.roll,
+            total: result.attackResult.total,
+            isCritical: result.attackResult.isCritical,
+          }],
+          damage: result.damageResult ? {
+            amount: result.damageResult.finalDamage,
+            type: result.damageResult.damageType,
+            isCritical: result.attackResult.isCritical,
+          } : undefined,
+        });
       }
     }
 
     return result;
-  }, [combat, syncCreatureHp]);
+  }, [combat, syncCreatureHp, wsSendMessage, sessionId]);
 
   // Handle direct damage application (DM only)
   const handleApplyDamage = useCallback(
@@ -242,6 +281,25 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
       router.push(`/login?redirect=/game/${sessionId}`);
     }
   }, [_hasHydrated, token, router, sessionId]);
+
+  // Connect to WebSocket for real-time multiplayer
+  useEffect(() => {
+    if (!token || !sessionId) return;
+
+    // Connect to WebSocket server
+    wsConnect();
+
+    return () => {
+      wsDisconnect();
+    };
+  }, [token, sessionId, wsConnect, wsDisconnect]);
+
+  // Join session via WebSocket once authenticated
+  useEffect(() => {
+    if (wsAuthenticated && sessionId) {
+      wsJoinSession(sessionId);
+    }
+  }, [wsAuthenticated, sessionId, wsJoinSession]);
 
   // Load session data
   useEffect(() => {
