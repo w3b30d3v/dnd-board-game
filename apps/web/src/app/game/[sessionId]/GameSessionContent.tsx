@@ -115,6 +115,98 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
     [combat]
   );
 
+  // Sync HP changes from combat system to game state and persist
+  const syncCreatureHp = useCallback(
+    async (creatureId: string, newHp: number) => {
+      if (!gameState) return;
+
+      const updatedCreatures = gameState.creatures.map((c) =>
+        c.id === creatureId
+          ? { ...c, currentHitPoints: Math.max(0, Math.min(newHp, c.maxHitPoints)) }
+          : c
+      );
+
+      try {
+        await updateGameState(sessionId, { creatures: updatedCreatures });
+      } catch (err) {
+        console.error('Failed to persist HP change:', err);
+      }
+    },
+    [gameState, sessionId, updateGameState]
+  );
+
+  // Handle attack confirmation with damage persistence
+  const handleConfirmAttack = useCallback(async () => {
+    const result = combat.confirmAttack();
+    if (!result || !combat.selectedTargetId) return result;
+
+    // Get the updated HP from CombatManager
+    const targetId = combat.selectedTargetId;
+    const cm = combat.combatManager;
+    if (cm) {
+      const updatedCreature = cm.getCreature(targetId);
+      if (updatedCreature) {
+        // Sync the HP change to game state and persist
+        await syncCreatureHp(targetId, updatedCreature.currentHitPoints);
+
+        // Show floating damage on the game board
+        if (gameRef.current && result.damageResult) {
+          gameRef.current.showDamage(
+            targetId,
+            result.damageResult.finalDamage,
+            result.attackResult.isCritical
+          );
+        }
+      }
+    }
+
+    return result;
+  }, [combat, syncCreatureHp]);
+
+  // Handle direct damage application (DM only)
+  const handleApplyDamage = useCallback(
+    async (targetId: string, amount: number, damageType: import('@dnd/rules-engine').DamageType = 'BLUDGEONING') => {
+      combat.applyDamage(targetId, amount, damageType);
+
+      // Get updated HP and sync
+      const cm = combat.combatManager;
+      if (cm) {
+        const creature = cm.getCreature(targetId);
+        if (creature) {
+          await syncCreatureHp(targetId, creature.currentHitPoints);
+
+          // Show floating damage
+          if (gameRef.current) {
+            gameRef.current.showDamage(targetId, amount, false);
+          }
+        }
+      }
+    },
+    [combat, syncCreatureHp]
+  );
+
+  // Handle healing application
+  const handleApplyHealing = useCallback(
+    async (targetId: string, amount: number) => {
+      combat.applyHealing(targetId, amount);
+
+      // Get updated HP and sync
+      const cm = combat.combatManager;
+      if (cm) {
+        const creature = cm.getCreature(targetId);
+        if (creature) {
+          await syncCreatureHp(targetId, creature.currentHitPoints);
+
+          // Show floating healing
+          if (gameRef.current) {
+            gameRef.current.showHealing(targetId, amount);
+          }
+        }
+      }
+    },
+    [combat, syncCreatureHp]
+  );
+
   // Get current user's character ID
   const myCharacterId = useMemo(() => {
     if (isDM) return combat.currentTurnCreatureId;
@@ -687,8 +779,10 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
         isDM={isDM}
         onSelectAction={combat.selectAction}
         onSelectTarget={combat.selectTarget}
-        onConfirmAttack={combat.confirmAttack}
+        onConfirmAttack={handleConfirmAttack}
         onCancelAction={combat.cancelAction}
+        onApplyDamage={handleApplyDamage}
+        onApplyHealing={handleApplyHealing}
         onEndTurn={combat.nextTurn}
         onStartCombat={combat.startCombat}
         onEndCombat={combat.endCombat}

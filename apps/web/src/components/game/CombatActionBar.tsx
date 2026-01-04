@@ -79,6 +79,9 @@ interface CombatActionBarProps {
   canMove?: boolean;
   onStartMovement?: () => void;
   onCancelMovement?: () => void;
+  // Direct damage/healing (DM controls)
+  onApplyDamage?: (targetId: string, amount: number, damageType?: import('@dnd/rules-engine').DamageType) => void;
+  onApplyHealing?: (targetId: string, amount: number) => void;
 }
 
 // Action button definitions
