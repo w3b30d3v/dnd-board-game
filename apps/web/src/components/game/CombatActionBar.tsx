@@ -82,6 +82,9 @@ interface CombatActionBarProps {
   // Direct damage/healing (DM controls)
   onApplyDamage?: (targetId: string, amount: number, damageType?: import('@dnd/rules-engine').DamageType) => void;
   onApplyHealing?: (targetId: string, amount: number) => void;
+  // Targeting mode (board integration)
+  onStartTargeting?: (range: number) => void;
+  onCancelTargeting?: () => void;
 }
 
 // Action button definitions
@@ -137,6 +140,9 @@ export function CombatActionBar({
   canMove = false,
   onStartMovement,
   onCancelMovement,
+  // Targeting mode
+  onStartTargeting,
+  onCancelTargeting,
 }: CombatActionBarProps) {
   const [expandedPanel, setExpandedPanel] = useState<string | null>(null);
   const [showCombatLog, setShowCombatLog] = useState(false);
@@ -159,13 +165,18 @@ export function CombatActionBar({
       setExpandedPanel(prev => (prev === panelId ? null : panelId));
     }
     onCancelAction();
-  }, [onCancelAction]);
+    onCancelTargeting?.();
+  }, [onCancelAction, onCancelTargeting]);
 
   // Handle action selection
   const handleActionSelect = useCallback((action: CombatAction) => {
     onSelectAction(action);
     setExpandedPanel(null);
-  }, [onSelectAction]);
+    // Start board targeting mode for attacks with targets
+    if (action.requiresTarget && action.range && onStartTargeting) {
+      onStartTargeting(action.range);
+    }
+  }, [onSelectAction, onStartTargeting]);
 
   // Handle other actions
   const handleOtherAction = useCallback((actionName: string) => {

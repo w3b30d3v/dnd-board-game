@@ -531,6 +531,22 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
     }
   }, [movement.selectedPath, movement.interactionMode]);
 
+  // Auto-confirm attack when target is selected via board click during targeting mode
+  useEffect(() => {
+    if (
+      movement.interactionMode === 'target' &&
+      combat.selectedTargetId &&
+      combat.selectedAction?.requiresTarget
+    ) {
+      // Execute the attack after a brief delay for visual feedback
+      const timer = setTimeout(() => {
+        handleConfirmAttack();
+        movement.cancelMode();
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [movement.interactionMode, combat.selectedTargetId, combat.selectedAction, handleConfirmAttack, movement]);
+
   // Zoom controls
   const handleZoomIn = useCallback(() => {
     if (!gameRef.current) return;
@@ -857,6 +873,9 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
         canMove={movement.canMove}
         onStartMovement={movement.startMovementMode}
         onCancelMovement={movement.cancelMode}
+        // Targeting system integration
+        onStartTargeting={movement.startTargetingMode}
+        onCancelTargeting={movement.cancelMode}
       />
     </div>
   );
