@@ -1,9 +1,12 @@
 # D&D Digital Board Game - Complete Gameplay Implementation Plan
 
 **Created:** January 4, 2026
-**Status:** Ready for Implementation
+**Updated:** January 8, 2026
+**Status:** Tier 1 Complete
 **Total Tasks:** 231 across 4 tiers
-**Estimated Effort:** 230-310 hours
+**Completed:** 67 (Tier 1)
+**Remaining:** 164 (Tiers 2-4)
+**Estimated Remaining Effort:** 150-210 hours
 
 ---
 
@@ -19,7 +22,16 @@ This document contains the complete, exhaustive implementation plan to make the 
 
 ## Progress Summary
 
-### Already Implemented
+### Tier 1 Complete (67 tasks)
+- **1.1 Rest Mechanics**: shortRest(), longRest(), hit dice, spell slot restoration
+- **1.2 Spell System**: Cantrip scaling, upcasting, ritual casting, spell components
+- **1.3 Combat Persistence**: combatState field, API endpoints, participant metadata
+- **1.4 Multiplayer Sync**: HP_UPDATE, DEATH_SAVE, CONDITION_CHANGE, etc.
+- **1.5 Death System**: Death saves, stabilization, nat 20/1 handling
+- **1.6 Conditions**: All 14 D&D 5e conditions with RAW effects
+- **1.7 Core Actions**: Dash, Disengage, Dodge, Help, Hide, Ready
+
+### Previously Implemented
 - Basic combat flow (initiative, turns, attacks)
 - Spell casting with slot consumption
 - Concentration tracking with damage checks
@@ -32,7 +44,7 @@ This document contains the complete, exhaustive implementation plan to make the 
 - Basic fog of war
 
 ### Needs Implementation
-- 231 tasks organized below by priority tier
+- 164 tasks in Tiers 2-4 organized below
 
 ---
 
