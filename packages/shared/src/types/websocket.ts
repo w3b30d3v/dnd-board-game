@@ -87,6 +87,14 @@ export const WSMessageType = {
   GAME_LOAD: 'GAME_LOAD',
   GAME_LOADED: 'GAME_LOADED',
 
+  // Combat State Sync (Tier 1 multiplayer)
+  HP_UPDATE: 'HP_UPDATE',
+  CONDITION_CHANGE: 'CONDITION_CHANGE',
+  DEATH_SAVE: 'DEATH_SAVE',
+  CONCENTRATION_CHECK: 'CONCENTRATION_CHECK',
+  SPELL_CAST: 'SPELL_CAST',
+  REST: 'REST',
+
   // Errors
   ERROR: 'ERROR',
 } as const;

@@ -276,3 +276,330 @@ export async function handleCombatEnd(
 
   logger.info('Combat ended', { sessionId, victorious });
 }
+
+/**
+ * Handle HP update (broadcast to all players)
+ */
+export async function handleHpUpdate(
+  connection: Connection,
+  message: IncomingMessage
+): Promise<void> {
+  if (message.type !== WSMessageType.HP_UPDATE) return;
+  if (!connection.user || !connection.sessionId) {
+    sendError(connection.id, 'NOT_IN_SESSION', 'You must be in a session');
+    return;
+  }
+
+  const { creatureId, currentHp, maxHp, tempHp, damage, healing, source } = message.payload;
+
+  sessionManager.broadcastToSession(connection.sessionId, {
+    type: WSMessageType.HP_UPDATE,
+    timestamp: Date.now(),
+    payload: {
+      sessionId: connection.sessionId,
+      creatureId,
+      currentHp,
+      maxHp,
+      tempHp,
+      damage,
+      healing,
+      source,
+    },
+  });
+
+  logger.debug('HP updated', {
+    sessionId: connection.sessionId,
+    creatureId,
+    currentHp,
+    damage,
+    healing,
+  });
+}
+
+/**
+ * Handle condition change (broadcast to all players)
+ */
+export async function handleConditionChange(
+  connection: Connection,
+  message: IncomingMessage
+): Promise<void> {
+  if (message.type !== WSMessageType.CONDITION_CHANGE) return;
+  if (!connection.user || !connection.sessionId) {
+    sendError(connection.id, 'NOT_IN_SESSION', 'You must be in a session');
+    return;
+  }
+
+  const { creatureId, condition, added, source, duration } = message.payload;
+
+  sessionManager.broadcastToSession(connection.sessionId, {
+    type: WSMessageType.CONDITION_CHANGE,
+    timestamp: Date.now(),
+    payload: {
+      sessionId: connection.sessionId,
+      creatureId,
+      condition,
+      added,
+      source,
+      duration,
+    },
+  });
+
+  // Also send system message
+  const session = await sessionManager.getSession(connection.sessionId);
+  const player = session?.players.find((p) => p.userId === connection.user?.userId);
+  broadcastSystemMessage(
+    connection.sessionId,
+    `${player?.displayName || 'Someone'} ${added ? 'applied' : 'removed'} ${condition} condition`,
+    'info'
+  );
+
+  logger.debug('Condition changed', {
+    sessionId: connection.sessionId,
+    creatureId,
+    condition,
+    added,
+  });
+}
+
+/**
+ * Handle death save result (broadcast to all players)
+ */
+export async function handleDeathSave(
+  connection: Connection,
+  message: IncomingMessage
+): Promise<void> {
+  if (message.type !== WSMessageType.DEATH_SAVE) return;
+  if (!connection.user || !connection.sessionId) {
+    sendError(connection.id, 'NOT_IN_SESSION', 'You must be in a session');
+    return;
+  }
+
+  const { creatureId, creatureName, roll, successes, failures, stabilized, dead, regainedConsciousness } = message.payload;
+
+  sessionManager.broadcastToSession(connection.sessionId, {
+    type: WSMessageType.DEATH_SAVE,
+    timestamp: Date.now(),
+    payload: {
+      sessionId: connection.sessionId,
+      creatureId,
+      creatureName,
+      roll,
+      successes,
+      failures,
+      stabilized,
+      dead,
+      regainedConsciousness,
+    },
+  });
+
+  // Send dramatic system message
+  let msg = `${creatureName} rolls a death save: ${roll}`;
+  let level: 'info' | 'warning' | 'error' | 'success' = 'info';
+
+  if (roll === 20) {
+    msg = `NATURAL 20! ${creatureName} regains consciousness with 1 HP!`;
+    level = 'success';
+  } else if (roll === 1) {
+    msg = `NATURAL 1! ${creatureName} suffers two death save failures!`;
+    level = 'error';
+  } else if (dead) {
+    msg = `${creatureName} has died...`;
+    level = 'error';
+  } else if (stabilized) {
+    msg = `${creatureName} has stabilized!`;
+    level = 'success';
+  } else if (roll >= 10) {
+    msg = `${creatureName} succeeds on death save! (${successes}/3)`;
+    level = 'success';
+  } else {
+    msg = `${creatureName} fails death save! (${failures}/3)`;
+    level = 'warning';
+  }
+
+  broadcastSystemMessage(connection.sessionId, msg, level);
+
+  logger.debug('Death save rolled', {
+    sessionId: connection.sessionId,
+    creatureId,
+    roll,
+    successes,
+    failures,
+    stabilized,
+    dead,
+  });
+}
+
+/**
+ * Handle concentration check (broadcast to all players)
+ */
+export async function handleConcentrationCheck(
+  connection: Connection,
+  message: IncomingMessage
+): Promise<void> {
+  if (message.type !== WSMessageType.CONCENTRATION_CHECK) return;
+  if (!connection.user || !connection.sessionId) {
+    sendError(connection.id, 'NOT_IN_SESSION', 'You must be in a session');
+    return;
+  }
+
+  const { creatureId, creatureName, spellName, dc, roll, total, success, broken } = message.payload;
+
+  sessionManager.broadcastToSession(connection.sessionId, {
+    type: WSMessageType.CONCENTRATION_CHECK,
+    timestamp: Date.now(),
+    payload: {
+      sessionId: connection.sessionId,
+      creatureId,
+      creatureName,
+      spellName,
+      dc,
+      roll,
+      total,
+      success,
+      broken,
+    },
+  });
+
+  // Send system message
+  const msg = success
+    ? `${creatureName} maintains concentration on ${spellName}! (${total} vs DC ${dc})`
+    : `${creatureName} loses concentration on ${spellName}! (${total} vs DC ${dc})`;
+
+  broadcastSystemMessage(connection.sessionId, msg, success ? 'info' : 'warning');
+
+  logger.debug('Concentration check', {
+    sessionId: connection.sessionId,
+    creatureId,
+    spellName,
+    success,
+    broken,
+  });
+}
+
+/**
+ * Handle spell cast (broadcast to all players)
+ */
+export async function handleSpellCast(
+  connection: Connection,
+  message: IncomingMessage
+): Promise<void> {
+  if (message.type !== WSMessageType.SPELL_CAST) return;
+  if (!connection.user || !connection.sessionId) {
+    sendError(connection.id, 'NOT_IN_SESSION', 'You must be in a session');
+    return;
+  }
+
+  const { casterId, casterName, spellId, spellName, spellLevel, slotUsed, targets, isRitual, concentration } = message.payload;
+
+  sessionManager.broadcastToSession(connection.sessionId, {
+    type: WSMessageType.SPELL_CAST,
+    timestamp: Date.now(),
+    payload: {
+      sessionId: connection.sessionId,
+      casterId,
+      casterName,
+      spellId,
+      spellName,
+      spellLevel,
+      slotUsed,
+      targets,
+      isRitual,
+      concentration,
+    },
+  });
+
+  // Send system message
+  const slotInfo = isRitual ? '(ritual)' : slotUsed > 0 ? `(level ${slotUsed} slot)` : '(cantrip)';
+  broadcastSystemMessage(
+    connection.sessionId,
+    `${casterName} casts ${spellName} ${slotInfo}!`,
+    'info'
+  );
+
+  logger.debug('Spell cast', {
+    sessionId: connection.sessionId,
+    casterId,
+    spellName,
+    slotUsed,
+    isRitual,
+  });
+}
+
+/**
+ * Handle full combat state sync (for reconnection)
+ */
+export async function handleCombatStateSync(
+  connection: Connection,
+  message: IncomingMessage
+): Promise<void> {
+  if (message.type !== WSMessageType.GAME_STATE_SYNC) return;
+  if (!connection.user || !connection.sessionId) {
+    sendError(connection.id, 'NOT_IN_SESSION', 'You must be in a session');
+    return;
+  }
+
+  // Only DM can broadcast full state sync
+  const session = await sessionManager.getSession(connection.sessionId);
+  const player = session?.players.find((p) => p.userId === connection.user?.userId);
+
+  if (!player?.isDM) {
+    sendError(connection.id, 'NOT_DM', 'Only the DM can sync game state');
+    return;
+  }
+
+  // Broadcast full state to all players
+  sessionManager.broadcastToSession(connection.sessionId, {
+    type: WSMessageType.GAME_STATE_SYNC,
+    timestamp: Date.now(),
+    payload: {
+      sessionId: connection.sessionId,
+      ...message.payload,
+    },
+  });
+
+  logger.debug('Combat state synced', {
+    sessionId: connection.sessionId,
+  });
+}
+
+/**
+ * Handle rest action (short or long rest)
+ */
+export async function handleRest(
+  connection: Connection,
+  message: IncomingMessage
+): Promise<void> {
+  if (message.type !== WSMessageType.REST) return;
+  if (!connection.user || !connection.sessionId) {
+    sendError(connection.id, 'NOT_IN_SESSION', 'You must be in a session');
+    return;
+  }
+
+  const { restType, participants, healing, spellSlotsRestored } = message.payload;
+
+  sessionManager.broadcastToSession(connection.sessionId, {
+    type: WSMessageType.REST,
+    timestamp: Date.now(),
+    payload: {
+      sessionId: connection.sessionId,
+      restType,
+      participants,
+      healing,
+      spellSlotsRestored,
+    },
+  });
+
+  // Send system message
+  const restName = restType === 'short' ? 'short rest (1 hour)' : 'long rest (8 hours)';
+  broadcastSystemMessage(
+    connection.sessionId,
+    `The party takes a ${restName}...`,
+    'info'
+  );
+
+  logger.debug('Rest taken', {
+    sessionId: connection.sessionId,
+    restType,
+    participantCount: participants?.length,
+  });
+}

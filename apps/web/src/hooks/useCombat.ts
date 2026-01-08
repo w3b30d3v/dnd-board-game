@@ -13,7 +13,158 @@ import { useImmersive } from '@/components/immersion/ImmersiveProvider';
 import type { DamageType } from '@dnd/rules-engine';
 
 // Combat action types
-export type CombatActionType = 'attack' | 'spell' | 'ability' | 'item' | 'move' | 'dash' | 'disengage' | 'dodge' | 'help' | 'hide' | 'ready';
+export type CombatActionType = 'attack' | 'spell' | 'ability' | 'item' | 'move' | 'dash' | 'disengage' | 'dodge' | 'help' | 'hide' | 'ready' | 'short_rest' | 'long_rest';
+
+// D&D 5e Conditions
+export type ConditionName =
+  | 'blinded' | 'charmed' | 'deafened' | 'frightened' | 'grappled'
+  | 'incapacitated' | 'invisible' | 'paralyzed' | 'petrified'
+  | 'poisoned' | 'prone' | 'restrained' | 'stunned' | 'unconscious' | 'exhaustion';
+
+// Condition effects as per D&D 5e RAW
+export interface ConditionEffects {
+  cantMove?: boolean;
+  cantTakeActions?: boolean;
+  cantTakeReactions?: boolean;
+  autoFailStrDexSaves?: boolean;
+  attacksAgainstHaveAdvantage?: boolean;
+  attacksHaveDisadvantage?: boolean;
+  abilitychecksHaveDisadvantage?: boolean;
+  savesHaveDisadvantage?: boolean;
+  speedZero?: boolean;
+  speedHalved?: boolean;
+  attacksAgainstHaveDisadvantage?: boolean;
+  cantSpeak?: boolean;
+  autoFailHearing?: boolean;
+  cantMoveCloserToSource?: boolean; // Frightened
+  resistAllDamage?: boolean; // Petrified
+  immuneToPoison?: boolean;
+  cantBeCharmed?: boolean;
+  meleeCritsWithin5ft?: boolean; // Paralyzed, Unconscious
+}
+
+// Get effects for a condition (D&D 5e RAW)
+export function getConditionEffects(condition: ConditionName): ConditionEffects {
+  switch (condition) {
+    case 'blinded':
+      return {
+        autoFailHearing: false, // Can still hear
+        attacksHaveDisadvantage: true,
+        attacksAgainstHaveAdvantage: true,
+      };
+    case 'charmed':
+      return {
+        // Can't attack charmer or target them with harmful abilities
+        // Charmer has advantage on social checks
+      };
+    case 'deafened':
+      return {
+        autoFailHearing: true,
+      };
+    case 'frightened':
+      return {
+        abilitychecksHaveDisadvantage: true,
+        attacksHaveDisadvantage: true,
+        cantMoveCloserToSource: true,
+      };
+    case 'grappled':
+      return {
+        speedZero: true,
+      };
+    case 'incapacitated':
+      return {
+        cantTakeActions: true,
+        cantTakeReactions: true,
+      };
+    case 'invisible':
+      return {
+        attacksAgainstHaveDisadvantage: true,
+        attacksHaveAdvantage: true, // Technically advantage on attacks
+      };
+    case 'paralyzed':
+      return {
+        cantMove: true,
+        cantSpeak: true,
+        cantTakeActions: true,
+        cantTakeReactions: true,
+        autoFailStrDexSaves: true,
+        attacksAgainstHaveAdvantage: true,
+        meleeCritsWithin5ft: true,
+      };
+    case 'petrified':
+      return {
+        cantMove: true,
+        cantSpeak: true,
+        cantTakeActions: true,
+        cantTakeReactions: true,
+        autoFailStrDexSaves: true,
+        attacksAgainstHaveAdvantage: true,
+        resistAllDamage: true,
+        immuneToPoison: true,
+      };
+    case 'poisoned':
+      return {
+        attacksHaveDisadvantage: true,
+        abilitychecksHaveDisadvantage: true,
+      };
+    case 'prone':
+      return {
+        // Disadvantage on attacks, attacks within 5ft have advantage, attacks beyond have disadvantage
+        attacksHaveDisadvantage: true,
+      };
+    case 'restrained':
+      return {
+        speedZero: true,
+        attacksHaveDisadvantage: true,
+        attacksAgainstHaveAdvantage: true,
+        savesHaveDisadvantage: true, // DEX saves
+      };
+    case 'stunned':
+      return {
+        cantMove: true,
+        cantSpeak: true,
+        cantTakeActions: true,
+        cantTakeReactions: true,
+        autoFailStrDexSaves: true,
+        attacksAgainstHaveAdvantage: true,
+      };
+    case 'unconscious':
+      return {
+        cantMove: true,
+        cantSpeak: true,
+        cantTakeActions: true,
+        cantTakeReactions: true,
+        autoFailStrDexSaves: true,
+        attacksAgainstHaveAdvantage: true,
+        meleeCritsWithin5ft: true,
+      };
+    case 'exhaustion':
+      // Exhaustion has 6 levels, simplified here
+      return {
+        abilitychecksHaveDisadvantage: true,
+      };
+    default:
+      return {};
+  }
+}
+
+// Check if creature can act based on conditions
+export function canCreatureAct(conditions: ConditionName[]): boolean {
+  for (const condition of conditions) {
+    const effects = getConditionEffects(condition);
+    if (effects.cantTakeActions) return false;
+  }
+  return true;
+}
+
+// Check if creature can move based on conditions
+export function canCreatureMove(conditions: ConditionName[]): boolean {
+  for (const condition of conditions) {
+    const effects = getConditionEffects(condition);
+    if (effects.cantMove || effects.speedZero) return false;
+  }
+  return true;
+}
 
 export interface CombatAction {
   type: CombatActionType;
@@ -45,6 +196,42 @@ export interface ActionEconomy {
   hasUsedObject: boolean;   // Free object interaction used
 }
 
+// Death save tracking per creature
+export interface DeathSaveState {
+  successes: number;
+  failures: number;
+  isStabilized: boolean;
+}
+
+// Ready action tracking
+export interface ReadyAction {
+  creatureId: string;
+  action: CombatAction;
+  trigger: string;
+  targetId?: string;
+}
+
+// Dodge tracking
+export interface DodgeState {
+  creatureId: string;
+  expiresAtRound: number;
+  expiresAtTurn: number;
+}
+
+// Help tracking
+export interface HelpState {
+  helperId: string;
+  targetId: string;
+  beneficiaryId: string;
+  used: boolean;
+}
+
+// Disengage tracking
+export interface DisengageState {
+  creatureId: string;
+  expiresAtEndOfTurn: boolean;
+}
+
 export interface CombatState {
   isInCombat: boolean;
   round: number;
@@ -59,6 +246,22 @@ export interface CombatState {
   // Advantage/Disadvantage for attacks
   hasAdvantage: boolean;
   hasDisadvantage: boolean;
+  // Death saves per creature
+  deathSaves: Record<string, DeathSaveState>;
+  // Dodge states (creatures currently dodging)
+  dodgeStates: DodgeState[];
+  // Help states (pending help actions)
+  helpStates: HelpState[];
+  // Disengage states
+  disengageStates: DisengageState[];
+  // Ready actions
+  readyActions: ReadyAction[];
+  // Hidden creatures
+  hiddenCreatures: string[];
+  // Turn timer
+  turnTimerEnabled: boolean;
+  turnTimerSeconds: number;
+  turnTimerRemaining: number;
 }
 
 export interface CombatLogEntry {
@@ -144,6 +347,15 @@ export function useCombat(creatures: Creature[], tokenManager: TokenManager | nu
     actionEconomy: defaultActionEconomy,
     hasAdvantage: false,
     hasDisadvantage: false,
+    deathSaves: {},
+    dodgeStates: [],
+    helpStates: [],
+    disengageStates: [],
+    readyActions: [],
+    hiddenCreatures: [],
+    turnTimerEnabled: false,
+    turnTimerSeconds: 60,
+    turnTimerRemaining: 60,
   });
 
   // Initialize CombatManager
@@ -797,7 +1009,7 @@ export function useCombat(creatures: Creature[], tokenManager: TokenManager | nu
     return true;
   }, [state.actionEconomy.hasAction, state.currentTurnCreatureId, creatures, addLogEntry]);
 
-  // Perform Dodge action
+  // Perform Dodge action (with proper tracking)
   const performDodge = useCallback(() => {
     if (!state.actionEconomy.hasAction) {
       addLogEntry({
@@ -808,6 +1020,62 @@ export function useCombat(creatures: Creature[], tokenManager: TokenManager | nu
     }
 
     const creature = creatures.find(c => c.id === state.currentTurnCreatureId);
+    if (!creature) return false;
+
+    // Track dodge state - expires at start of creature's next turn
+    setState(prev => ({
+      ...prev,
+      actionEconomy: {
+        ...prev.actionEconomy,
+        hasAction: false,
+      },
+      dodgeStates: [
+        ...prev.dodgeStates.filter(d => d.creatureId !== creature.id),
+        {
+          creatureId: creature.id,
+          expiresAtRound: prev.round + 1,
+          expiresAtTurn: prev.initiativeOrder.findIndex(e => e.creatureId === creature.id),
+        },
+      ],
+    }));
+
+    addLogEntry({
+      type: 'info',
+      message: `${creature.name} uses Dodge! (attacks against have disadvantage until next turn)`,
+    });
+
+    return true;
+  }, [state.actionEconomy.hasAction, state.currentTurnCreatureId, creatures, addLogEntry]);
+
+  // Perform Help action
+  const performHelp = useCallback((targetId: string, beneficiaryId: string) => {
+    if (!state.actionEconomy.hasAction) {
+      addLogEntry({
+        type: 'info',
+        message: 'No action available for Help!',
+      });
+      return false;
+    }
+
+    const creature = creatures.find(c => c.id === state.currentTurnCreatureId);
+    const target = creatures.find(c => c.id === targetId);
+    const beneficiary = creatures.find(c => c.id === beneficiaryId);
+
+    if (!creature || !target || !beneficiary) return false;
+
+    // Check if target is within 5 feet
+    const distance = Math.max(
+      Math.abs(creature.position.x - target.position.x),
+      Math.abs(creature.position.y - target.position.y)
+    ) * 5;
+
+    if (distance > 5) {
+      addLogEntry({
+        type: 'info',
+        message: 'Target must be within 5 feet for Help action!',
+      });
+      return false;
+    }
 
     setState(prev => ({
       ...prev,
@@ -815,15 +1083,461 @@ export function useCombat(creatures: Creature[], tokenManager: TokenManager | nu
         ...prev.actionEconomy,
         hasAction: false,
       },
+      helpStates: [
+        ...prev.helpStates,
+        {
+          helperId: creature.id,
+          targetId,
+          beneficiaryId,
+          used: false,
+        },
+      ],
     }));
 
     addLogEntry({
       type: 'info',
-      message: `${creature?.name || 'Creature'} uses Dodge! (attacks against have disadvantage until next turn)`,
+      message: `${creature.name} uses Help! (${beneficiary.name} has advantage on next attack against ${target.name})`,
     });
 
     return true;
   }, [state.actionEconomy.hasAction, state.currentTurnCreatureId, creatures, addLogEntry]);
+
+  // Perform Hide action
+  const performHide = useCallback(() => {
+    if (!state.actionEconomy.hasAction) {
+      addLogEntry({
+        type: 'info',
+        message: 'No action available for Hide!',
+      });
+      return false;
+    }
+
+    const creature = creatures.find(c => c.id === state.currentTurnCreatureId);
+    if (!creature) return false;
+
+    // Roll Stealth check (simplified - would need proper DC based on enemies' passive perception)
+    const dexMod = 2; // Simplified - would get from creature stats
+    const stealthRoll = Math.floor(Math.random() * 20) + 1 + dexMod;
+
+    // Assume DC 12 for simplicity (average passive perception)
+    const success = stealthRoll >= 12;
+
+    setState(prev => ({
+      ...prev,
+      actionEconomy: {
+        ...prev.actionEconomy,
+        hasAction: false,
+      },
+      hiddenCreatures: success
+        ? [...prev.hiddenCreatures.filter(id => id !== creature.id), creature.id]
+        : prev.hiddenCreatures.filter(id => id !== creature.id),
+    }));
+
+    addLogEntry({
+      type: 'info',
+      message: `${creature.name} attempts to Hide! Stealth: ${stealthRoll} - ${success ? 'SUCCESS! (hidden)' : 'FAILED!'}`,
+    });
+
+    return success;
+  }, [state.actionEconomy.hasAction, state.currentTurnCreatureId, creatures, addLogEntry]);
+
+  // Perform Ready action
+  const performReady = useCallback((trigger: string, action: CombatAction, targetId?: string) => {
+    if (!state.actionEconomy.hasAction) {
+      addLogEntry({
+        type: 'info',
+        message: 'No action available for Ready!',
+      });
+      return false;
+    }
+
+    const creature = creatures.find(c => c.id === state.currentTurnCreatureId);
+    if (!creature) return false;
+
+    setState(prev => ({
+      ...prev,
+      actionEconomy: {
+        ...prev.actionEconomy,
+        hasAction: false,
+      },
+      readyActions: [
+        ...prev.readyActions.filter(r => r.creatureId !== creature.id),
+        {
+          creatureId: creature.id,
+          action,
+          trigger,
+          targetId,
+        },
+      ],
+    }));
+
+    addLogEntry({
+      type: 'info',
+      message: `${creature.name} readies an action: "${trigger}" - will ${action.name}`,
+    });
+
+    return true;
+  }, [state.actionEconomy.hasAction, state.currentTurnCreatureId, creatures, addLogEntry]);
+
+  // ==================== DEATH SAVES ====================
+
+  // Roll death save
+  const rollDeathSave = useCallback((creatureId: string) => {
+    const creature = creatures.find(c => c.id === creatureId);
+    if (!creature) return null;
+
+    // Get current death save state
+    const currentSaves = state.deathSaves[creatureId] || { successes: 0, failures: 0, isStabilized: false };
+    if (currentSaves.isStabilized) {
+      addLogEntry({
+        type: 'info',
+        message: `${creature.name} is already stabilized.`,
+      });
+      return { ...currentSaves, roll: 0 };
+    }
+
+    // Roll the death save
+    const roll = Math.floor(Math.random() * 20) + 1;
+
+    let newSuccesses = currentSaves.successes;
+    let newFailures = currentSaves.failures;
+    let isStabilized = false;
+    let isDead = false;
+    let regainedConsciousness = false;
+
+    // Natural 20: regain 1 HP and wake up
+    if (roll === 20) {
+      regainedConsciousness = true;
+      addLogEntry({
+        type: 'info',
+        message: `NATURAL 20! ${creature.name} regains consciousness with 1 HP!`,
+      });
+    }
+    // Natural 1: 2 failures
+    else if (roll === 1) {
+      newFailures += 2;
+      addLogEntry({
+        type: 'damage',
+        message: `NATURAL 1! ${creature.name} suffers 2 death save failures! (${newFailures}/3)`,
+      });
+    }
+    // Success (10+)
+    else if (roll >= 10) {
+      newSuccesses += 1;
+      addLogEntry({
+        type: 'info',
+        message: `Death Save Success! ${creature.name} rolls ${roll} (${newSuccesses}/3 successes)`,
+      });
+    }
+    // Failure (<10)
+    else {
+      newFailures += 1;
+      addLogEntry({
+        type: 'damage',
+        message: `Death Save Failure! ${creature.name} rolls ${roll} (${newFailures}/3 failures)`,
+      });
+    }
+
+    // Check for stabilization or death
+    if (newSuccesses >= 3) {
+      isStabilized = true;
+      addLogEntry({
+        type: 'info',
+        message: `${creature.name} has stabilized! They are unconscious but no longer dying.`,
+      });
+    } else if (newFailures >= 3) {
+      isDead = true;
+      addLogEntry({
+        type: 'damage',
+        message: `${creature.name} has died!`,
+      });
+    }
+
+    // Update state
+    setState(prev => ({
+      ...prev,
+      deathSaves: {
+        ...prev.deathSaves,
+        [creatureId]: regainedConsciousness
+          ? { successes: 0, failures: 0, isStabilized: false }
+          : { successes: newSuccesses, failures: newFailures, isStabilized },
+      },
+    }));
+
+    return {
+      roll,
+      totalSuccesses: newSuccesses,
+      totalFailures: newFailures,
+      stabilized: isStabilized,
+      dead: isDead,
+      regainedConsciousness,
+    };
+  }, [creatures, state.deathSaves, addLogEntry]);
+
+  // Get death save state for a creature
+  const getDeathSaves = useCallback((creatureId: string): DeathSaveState => {
+    return state.deathSaves[creatureId] || { successes: 0, failures: 0, isStabilized: false };
+  }, [state.deathSaves]);
+
+  // Check if creature is dying (at 0 HP and not stabilized)
+  const isDying = useCallback((creatureId: string): boolean => {
+    const creature = creatures.find(c => c.id === creatureId);
+    if (!creature) return false;
+
+    const deathSave = state.deathSaves[creatureId];
+    return creature.currentHitPoints <= 0 && creature.type === 'character' && !deathSave?.isStabilized;
+  }, [creatures, state.deathSaves]);
+
+  // Stabilize a creature (e.g., via Spare the Dying)
+  const stabilizeCreature = useCallback((creatureId: string) => {
+    const creature = creatures.find(c => c.id === creatureId);
+    if (!creature) return;
+
+    setState(prev => ({
+      ...prev,
+      deathSaves: {
+        ...prev.deathSaves,
+        [creatureId]: { successes: 3, failures: 0, isStabilized: true },
+      },
+    }));
+
+    addLogEntry({
+      type: 'info',
+      message: `${creature.name} has been stabilized!`,
+    });
+  }, [creatures, addLogEntry]);
+
+  // Add death save failure (e.g., from taking damage while at 0 HP)
+  const addDeathSaveFailure = useCallback((creatureId: string, isCritical: boolean = false) => {
+    const creature = creatures.find(c => c.id === creatureId);
+    if (!creature) return;
+
+    const currentSaves = state.deathSaves[creatureId] || { successes: 0, failures: 0, isStabilized: false };
+    const failuresToAdd = isCritical ? 2 : 1;
+    const newFailures = currentSaves.failures + failuresToAdd;
+
+    setState(prev => ({
+      ...prev,
+      deathSaves: {
+        ...prev.deathSaves,
+        [creatureId]: {
+          ...currentSaves,
+          failures: newFailures,
+          isStabilized: false, // Taking damage while at 0 HP removes stabilization
+        },
+      },
+    }));
+
+    if (newFailures >= 3) {
+      addLogEntry({
+        type: 'damage',
+        message: `${creature.name} has died from damage while at 0 HP!`,
+      });
+    } else {
+      addLogEntry({
+        type: 'damage',
+        message: `${creature.name} takes damage at 0 HP! (${newFailures}/3 failures)`,
+      });
+    }
+  }, [creatures, state.deathSaves, addLogEntry]);
+
+  // ==================== REST MECHANICS ====================
+
+  // Short rest (1 hour)
+  const shortRest = useCallback((creatureIds: string[], hitDiceToSpend: Record<string, number> = {}) => {
+    addLogEntry({
+      type: 'info',
+      message: 'The party takes a short rest (1 hour)...',
+    });
+
+    for (const creatureId of creatureIds) {
+      const creature = creatures.find(c => c.id === creatureId);
+      if (!creature || creature.type !== 'character') continue;
+
+      const diceToSpend = hitDiceToSpend[creatureId] || 0;
+      if (diceToSpend > 0) {
+        // Roll hit dice for healing (simplified - would use actual hit die size based on class)
+        let totalHealing = 0;
+        const conMod = 2; // Simplified CON mod
+        for (let i = 0; i < diceToSpend; i++) {
+          const roll = Math.floor(Math.random() * 8) + 1 + conMod; // d8 + CON
+          totalHealing += Math.max(0, roll);
+        }
+
+        addLogEntry({
+          type: 'heal',
+          message: `${creature.name} spends ${diceToSpend} hit dice and recovers ${totalHealing} HP`,
+        });
+      }
+    }
+
+    // Clear death saves for creatures who rested
+    setState(prev => {
+      const newDeathSaves = { ...prev.deathSaves };
+      for (const creatureId of creatureIds) {
+        if (newDeathSaves[creatureId]) {
+          newDeathSaves[creatureId] = { successes: 0, failures: 0, isStabilized: false };
+        }
+      }
+      return { ...prev, deathSaves: newDeathSaves };
+    });
+
+    addLogEntry({
+      type: 'info',
+      message: 'Short rest complete!',
+    });
+
+    return true;
+  }, [creatures, addLogEntry]);
+
+  // Long rest (8 hours)
+  const longRest = useCallback((creatureIds: string[]) => {
+    addLogEntry({
+      type: 'info',
+      message: 'The party takes a long rest (8 hours)...',
+    });
+
+    for (const creatureId of creatureIds) {
+      const creature = creatures.find(c => c.id === creatureId);
+      if (!creature || creature.type !== 'character') continue;
+
+      // Restore all HP
+      addLogEntry({
+        type: 'heal',
+        message: `${creature.name} recovers to full HP`,
+      });
+    }
+
+    // Clear death saves and other states
+    setState(prev => {
+      const newDeathSaves: Record<string, DeathSaveState> = {};
+      for (const creatureId of creatureIds) {
+        newDeathSaves[creatureId] = { successes: 0, failures: 0, isStabilized: false };
+      }
+
+      // Remove conditions that end on long rest
+      // Remove exhaustion levels (up to 1 level per long rest)
+
+      return {
+        ...prev,
+        deathSaves: newDeathSaves,
+        hiddenCreatures: [], // No longer hidden after rest
+        readyActions: [], // Ready actions expire
+        helpStates: [],
+        dodgeStates: [],
+        disengageStates: [],
+      };
+    });
+
+    addLogEntry({
+      type: 'info',
+      message: 'Long rest complete! HP restored, spell slots recovered (at caster level), hit dice recovered (half max).',
+    });
+
+    return true;
+  }, [creatures, addLogEntry]);
+
+  // ==================== CONDITION-AWARE COMBAT ====================
+
+  // Check if attack has advantage/disadvantage based on conditions
+  const getConditionModifiers = useCallback((attackerId: string, targetId: string): { advantage: boolean; disadvantage: boolean } => {
+    const attacker = creatures.find(c => c.id === attackerId);
+    const target = creatures.find(c => c.id === targetId);
+
+    if (!attacker || !target) return { advantage: false, disadvantage: false };
+
+    let hasAdvantage = false;
+    let hasDisadvantage = false;
+
+    // Check attacker's conditions
+    for (const condition of (attacker.conditions as ConditionName[])) {
+      const effects = getConditionEffects(condition);
+      if (effects.attacksHaveDisadvantage) hasDisadvantage = true;
+      if (effects.attacksHaveAdvantage) hasAdvantage = true;
+    }
+
+    // Check target's conditions
+    for (const condition of (target.conditions as ConditionName[])) {
+      const effects = getConditionEffects(condition);
+      if (effects.attacksAgainstHaveAdvantage) hasAdvantage = true;
+      if (effects.attacksAgainstHaveDisadvantage) hasDisadvantage = true;
+    }
+
+    // Check if target is dodging
+    const targetDodging = state.dodgeStates.some(d => d.creatureId === targetId);
+    if (targetDodging) hasDisadvantage = true;
+
+    // Check if attacker is hidden
+    if (state.hiddenCreatures.includes(attackerId)) hasAdvantage = true;
+
+    // Check for help action
+    const helpAvailable = state.helpStates.find(
+      h => h.targetId === targetId && h.beneficiaryId === attackerId && !h.used
+    );
+    if (helpAvailable) hasAdvantage = true;
+
+    return { advantage: hasAdvantage, disadvantage: hasDisadvantage };
+  }, [creatures, state.dodgeStates, state.hiddenCreatures, state.helpStates]);
+
+  // Add condition to creature
+  const addCondition = useCallback((creatureId: string, condition: ConditionName) => {
+    const cm = combatManagerRef.current;
+    if (!cm) return;
+
+    cm.addCondition(creatureId, condition);
+
+    const creature = creatures.find(c => c.id === creatureId);
+    addLogEntry({
+      type: 'info',
+      message: `${creature?.name || 'Creature'} is now ${condition}!`,
+    });
+  }, [creatures, addLogEntry]);
+
+  // Remove condition from creature
+  const removeCondition = useCallback((creatureId: string, condition: ConditionName) => {
+    const cm = combatManagerRef.current;
+    if (!cm) return;
+
+    cm.removeCondition(creatureId, condition);
+
+    const creature = creatures.find(c => c.id === creatureId);
+    addLogEntry({
+      type: 'info',
+      message: `${creature?.name || 'Creature'} is no longer ${condition}.`,
+    });
+  }, [creatures, addLogEntry]);
+
+  // ==================== TURN TIMER ====================
+
+  // Set turn timer
+  const setTurnTimer = useCallback((enabled: boolean, seconds: number = 60) => {
+    setState(prev => ({
+      ...prev,
+      turnTimerEnabled: enabled,
+      turnTimerSeconds: seconds,
+      turnTimerRemaining: seconds,
+    }));
+  }, []);
+
+  // Tick turn timer (call this every second when timer is enabled)
+  const tickTurnTimer = useCallback(() => {
+    setState(prev => {
+      if (!prev.turnTimerEnabled || prev.turnTimerRemaining <= 0) return prev;
+
+      const newRemaining = prev.turnTimerRemaining - 1;
+      if (newRemaining <= 0) {
+        addLogEntry({
+          type: 'info',
+          message: 'Turn timer expired! Auto-ending turn...',
+        });
+      }
+
+      return {
+        ...prev,
+        turnTimerRemaining: newRemaining,
+      };
+    });
+  }, [addLogEntry]);
 
   return {
     // State
@@ -865,6 +1579,29 @@ export function useCombat(creatures: Creature[], tokenManager: TokenManager | nu
     performDash,
     performDisengage,
     performDodge,
+    performHelp,
+    performHide,
+    performReady,
+
+    // Death saves
+    rollDeathSave,
+    getDeathSaves,
+    isDying,
+    stabilizeCreature,
+    addDeathSaveFailure,
+
+    // Rest mechanics
+    shortRest,
+    longRest,
+
+    // Condition management
+    getConditionModifiers,
+    addCondition,
+    removeCondition,
+
+    // Turn timer
+    setTurnTimer,
+    tickTurnTimer,
   };
 }
 

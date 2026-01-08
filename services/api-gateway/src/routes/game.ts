@@ -521,7 +521,16 @@ router.patch('/sessions/:id/state', auth, async (req: Request, res: Response) =>
   try {
     const userId = req.user!.id;
     const { id } = req.params;
-    const { tokenStates, revealedCells, inCombat, round, currentTurn, initiativeOrder } = req.body;
+    const {
+      tokenStates,
+      revealedCells,
+      inCombat,
+      round,
+      currentTurn,
+      initiativeOrder,
+      // Extended combat state
+      combatState,
+    } = req.body;
 
     // Verify user is DM
     const session = await prisma.gameSession.findUnique({
@@ -555,6 +564,8 @@ router.patch('/sessions/:id/state', auth, async (req: Request, res: Response) =>
     if (round !== undefined) updateData.round = round;
     if (currentTurn !== undefined) updateData.currentTurn = currentTurn;
     if (initiativeOrder !== undefined) updateData.initiativeOrder = initiativeOrder;
+    // Extended combat state (death saves, spell slots, concentration, etc.)
+    if (combatState !== undefined) updateData.combatState = combatState;
 
     const updated = await prisma.gameSession.update({
       where: { id },
@@ -567,6 +578,7 @@ router.patch('/sessions/:id/state', auth, async (req: Request, res: Response) =>
         round: true,
         currentTurn: true,
         initiativeOrder: true,
+        combatState: true,
       },
     });
 
@@ -574,6 +586,177 @@ router.patch('/sessions/:id/state', auth, async (req: Request, res: Response) =>
   } catch (error) {
     console.error('Error updating game state:', error);
     return res.status(500).json({ error: 'Failed to update game state' });
+  }
+});
+
+/**
+ * PATCH /game/sessions/:id/combat-state
+ * Save full combat state (used for persistence) - DM or system
+ */
+router.patch('/sessions/:id/combat-state', auth, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { id } = req.params;
+    const {
+      deathSaves,
+      spellSlots,
+      concentration,
+      conditions,
+      actionEconomy,
+      dodgeStates,
+      helpStates,
+      hiddenCreatures,
+      readyActions,
+    } = req.body;
+
+    // Verify user is DM or participant
+    const session = await prisma.gameSession.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        combatState: true,
+        campaign: {
+          select: {
+            ownerId: true,
+          },
+        },
+        participants: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    const isDM = session.campaign.ownerId === userId;
+    const isParticipant = session.participants.some(p => p.userId === userId);
+
+    if (!isDM && !isParticipant) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // Merge with existing combat state
+    const existingState = (session.combatState as Record<string, unknown>) || {};
+    const newCombatState = {
+      ...existingState,
+      ...(deathSaves !== undefined && { deathSaves }),
+      ...(spellSlots !== undefined && { spellSlots }),
+      ...(concentration !== undefined && { concentration }),
+      ...(conditions !== undefined && { conditions }),
+      ...(actionEconomy !== undefined && { actionEconomy }),
+      ...(dodgeStates !== undefined && { dodgeStates }),
+      ...(helpStates !== undefined && { helpStates }),
+      ...(hiddenCreatures !== undefined && { hiddenCreatures }),
+      ...(readyActions !== undefined && { readyActions }),
+      lastUpdated: new Date().toISOString(),
+    };
+
+    const updated = await prisma.gameSession.update({
+      where: { id },
+      data: {
+        combatState: newCombatState,
+        lastActivityAt: new Date(),
+      },
+      select: {
+        id: true,
+        combatState: true,
+      },
+    });
+
+    return res.json({ session: updated });
+  } catch (error) {
+    console.error('Error updating combat state:', error);
+    return res.status(500).json({ error: 'Failed to update combat state' });
+  }
+});
+
+/**
+ * PATCH /game/sessions/:id/participant/:participantId
+ * Update participant state (HP, conditions, etc.)
+ */
+router.patch('/sessions/:id/participant/:participantId', auth, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { id, participantId } = req.params;
+    const { currentHp, tempHp, conditions, inspiration, spellSlots, deathSaves } = req.body;
+
+    // Get session and verify access
+    const session = await prisma.gameSession.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        campaign: {
+          select: {
+            ownerId: true,
+          },
+        },
+        participants: {
+          where: { id: participantId },
+          select: {
+            id: true,
+            userId: true,
+          },
+        },
+      },
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    const participant = session.participants[0];
+    if (!participant) {
+      return res.status(404).json({ error: 'Participant not found' });
+    }
+
+    // Only DM or the participant themselves can update
+    const isDM = session.campaign.ownerId === userId;
+    const isOwner = participant.userId === userId;
+
+    if (!isDM && !isOwner) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // Build update data
+    const updateData: Record<string, unknown> = {};
+    if (currentHp !== undefined) updateData.currentHp = currentHp;
+    if (tempHp !== undefined) updateData.tempHp = tempHp;
+    if (conditions !== undefined) updateData.conditions = conditions;
+    if (inspiration !== undefined) updateData.inspiration = inspiration;
+
+    // Store spell slots and death saves in participant's metadata
+    if (spellSlots !== undefined || deathSaves !== undefined) {
+      const currentParticipant = await prisma.gameSessionParticipant.findUnique({
+        where: { id: participantId },
+        select: { metadata: true },
+      });
+      const metadata = (currentParticipant?.metadata as Record<string, unknown>) || {};
+      if (spellSlots !== undefined) metadata.spellSlots = spellSlots;
+      if (deathSaves !== undefined) metadata.deathSaves = deathSaves;
+      updateData.metadata = metadata;
+    }
+
+    const updated = await prisma.gameSessionParticipant.update({
+      where: { id: participantId },
+      data: updateData,
+      select: {
+        id: true,
+        currentHp: true,
+        tempHp: true,
+        conditions: true,
+        inspiration: true,
+        metadata: true,
+      },
+    });
+
+    return res.json({ participant: updated });
+  } catch (error) {
+    console.error('Error updating participant:', error);
+    return res.status(500).json({ error: 'Failed to update participant' });
   }
 });
 

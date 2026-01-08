@@ -73,6 +73,96 @@ const SPELL_SLOT_TABLE: Record<number, number[]> = {
 // Full caster classes
 const FULL_CASTERS = ['bard', 'cleric', 'druid', 'sorcerer', 'wizard'];
 const HALF_CASTERS = ['paladin', 'ranger'];
+const THIRD_CASTERS = ['arcane trickster', 'eldritch knight'];
+
+// Cantrip damage scaling by character level (D&D 5e RAW)
+function getCantripDamageDice(baseDice: string, characterLevel: number): string {
+  const match = baseDice.match(/(\d+)d(\d+)/);
+  if (!match) return baseDice;
+
+  const dieSize = match[2];
+  let numDice = 1;
+
+  if (characterLevel >= 17) numDice = 4;
+  else if (characterLevel >= 11) numDice = 3;
+  else if (characterLevel >= 5) numDice = 2;
+
+  return `${numDice}d${dieSize}`;
+}
+
+// Get upcast damage bonus for a spell
+function getUpcastDamageBonus(spell: { name: string; level: number; description: string }, castLevel: number): string {
+  if (castLevel <= spell.level) return '';
+
+  const levelsAbove = castLevel - spell.level;
+  const descLower = spell.description.toLowerCase();
+
+  // Common upcast patterns
+  if (descLower.includes('for each slot level above')) {
+    // Find the upcast damage pattern
+    const upcastMatch = descLower.match(/(\d+d\d+)\s+(?:extra\s+)?(?:damage\s+)?for each slot level above/i);
+    if (upcastMatch) {
+      const [numDice, dieSize] = upcastMatch[1].match(/(\d+)d(\d+)/)?.slice(1) || ['1', '6'];
+      const totalExtraDice = parseInt(numDice) * levelsAbove;
+      return `+${totalExtraDice}d${dieSize}`;
+    }
+  }
+
+  // Default: +1d6 per level above for damage spells (simplified)
+  if (descLower.includes('damage')) {
+    return `+${levelsAbove}d6`;
+  }
+
+  return '';
+}
+
+// Check if spell can be cast as ritual
+function canCastAsRitual(spell: { ritual?: boolean; name: string }): boolean {
+  return spell.ritual === true;
+}
+
+// Spell component requirements
+interface SpellComponents {
+  verbal: boolean;
+  somatic: boolean;
+  material: boolean;
+  materialDescription?: string;
+  materialCost?: number;
+  materialConsumed?: boolean;
+}
+
+// Parse spell components from description
+function parseSpellComponents(spell: { components?: string; description: string }): SpellComponents {
+  const components = spell.components || '';
+  return {
+    verbal: components.includes('V'),
+    somatic: components.includes('S'),
+    material: components.includes('M'),
+    materialDescription: components.match(/\(([^)]+)\)/)?.[1],
+    materialCost: parseInt(components.match(/(\d+)\s*gp/)?.[1] || '0'),
+    materialConsumed: components.toLowerCase().includes('consume'),
+  };
+}
+
+// Check if creature can cast spell (based on conditions)
+function canCastSpell(conditions: string[], components: SpellComponents): { canCast: boolean; reason?: string } {
+  // Silenced/Deafened prevents verbal components (in some interpretations)
+  if (components.verbal && conditions.includes('silenced')) {
+    return { canCast: false, reason: 'Cannot use verbal components while silenced' };
+  }
+
+  // Restrained/Grappled might affect somatic (simplified - usually still allowed)
+  if (components.somatic && (conditions.includes('paralyzed') || conditions.includes('petrified') || conditions.includes('stunned'))) {
+    return { canCast: false, reason: 'Cannot use somatic components while incapacitated' };
+  }
+
+  // Incapacitated prevents all spellcasting
+  if (conditions.includes('incapacitated') || conditions.includes('unconscious')) {
+    return { canCast: false, reason: 'Cannot cast spells while incapacitated' };
+  }
+
+  return { canCast: true };
+}
 
 // Spell slots interface
 interface SpellSlots {
@@ -541,23 +631,41 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
       spell: Spell,
       targetId?: string,
       targetPosition?: { x: number; y: number },
-      spellLevel?: number
+      spellLevel?: number,
+      isRitual?: boolean
     ) => {
       if (!combat.isInCombat || !combat.currentTurnCreatureId) return;
+
+      const currentCreature = creatures.find(c => c.id === combat.currentTurnCreatureId);
+      const casterLevel = currentCreatureCharacter?.level || 1;
 
       // Determine spell level (upcast level or base spell level)
       const castLevel = spellLevel || spell.level;
 
-      // Consume spell slot (cantrips don't use slots)
-      if (castLevel > 0) {
+      // Check if ritual casting
+      if (isRitual) {
+        if (!canCastAsRitual(spell)) {
+          combat.addLogEntry({
+            type: 'info',
+            message: `${spell.name} cannot be cast as a ritual!`,
+          });
+          return;
+        }
+        combat.addLogEntry({
+          type: 'info',
+          message: `${currentCreature?.name} begins casting ${spell.name} as a ritual (10 minutes)...`,
+        });
+        // Ritual casting doesn't consume a spell slot
+      } else if (castLevel > 0) {
+        // Consume spell slot (cantrips don't use slots)
         consumeSpellSlot(combat.currentTurnCreatureId, castLevel);
       }
 
       // Log the spell cast
-      const slotInfo = castLevel > 0 ? ` (level ${castLevel} slot)` : ' (cantrip)';
+      const slotInfo = isRitual ? ' (ritual)' : castLevel > 0 ? ` (level ${castLevel} slot)` : ' (cantrip)';
       combat.addLogEntry({
         type: 'info',
-        message: `${creatures.find(c => c.id === combat.currentTurnCreatureId)?.name} casts ${spell.name}${slotInfo}!`,
+        message: `${currentCreature?.name} casts ${spell.name}${slotInfo}!`,
       });
 
       // Handle concentration spells
@@ -566,7 +674,27 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
       }
 
       // Parse spell damage from description (simplified - would need proper spell data)
-      const damageMatch = spell.description.match(/(\d+d\d+)\s+(acid|bludgeoning|cold|fire|force|lightning|necrotic|piercing|poison|psychic|radiant|slashing|thunder)/i);
+      let damageMatch = spell.description.match(/(\d+d\d+)\s+(acid|bludgeoning|cold|fire|force|lightning|necrotic|piercing|poison|psychic|radiant|slashing|thunder)/i);
+
+      // Apply cantrip scaling for cantrips
+      let baseDamage = damageMatch?.[1] || '';
+      if (spell.level === 0 && baseDamage) {
+        baseDamage = getCantripDamageDice(baseDamage, casterLevel);
+        combat.addLogEntry({
+          type: 'info',
+          message: `Cantrip scales to ${baseDamage} at level ${casterLevel}`,
+        });
+      }
+
+      // Apply upcast bonus
+      const upcastBonus = getUpcastDamageBonus(spell, castLevel);
+      if (upcastBonus) {
+        baseDamage = baseDamage + upcastBonus;
+        combat.addLogEntry({
+          type: 'info',
+          message: `Upcasting adds ${upcastBonus} damage`,
+        });
+      }
 
       // Parse saving throw from description
       const saveMatch = spell.description.match(/(strength|dexterity|constitution|intelligence|wisdom|charisma)\s+sav/i);
@@ -633,12 +761,11 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
         const affectedIds = getCreaturesInAoE(aoeResult, creatures);
 
         // Apply damage to all affected creatures
-        if (damageMatch) {
-          const diceNotation = damageMatch[1];
+        if (baseDamage && damageMatch) {
           const damageType = damageMatch[2].toUpperCase() as import('@dnd/rules-engine').DamageType;
 
           for (const affectedId of affectedIds) {
-            let finalDamage = parseDiceRoll(diceNotation);
+            let finalDamage = parseDiceRoll(baseDamage);
 
             // Check for saving throw
             if (saveType) {
@@ -652,11 +779,10 @@ export function GameSessionContent({ sessionId }: GameSessionContentProps) {
             await handleApplyDamage(affectedId, finalDamage, damageType);
           }
         }
-      } else if (targetId && damageMatch) {
+      } else if (targetId && baseDamage && damageMatch) {
         // Single target damage spell
-        const diceNotation = damageMatch[1];
         const damageType = damageMatch[2].toUpperCase() as import('@dnd/rules-engine').DamageType;
-        let finalDamage = parseDiceRoll(diceNotation);
+        let finalDamage = parseDiceRoll(baseDamage);
 
         // Check for saving throw
         if (saveType) {

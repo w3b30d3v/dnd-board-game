@@ -231,6 +231,10 @@ model GameSession {
   // Session journal/history (for recap)
   journal       Json      @default("[]") // Array of {timestamp, type, content}
 
+  // Extended combat state (death saves, spell slots, concentration, etc.)
+  // Format: {deathSaves: {}, spellSlots: {}, concentration: {}, ...}
+  combatState   Json      @default("{}")
+
   // Metadata
   lastActivityAt DateTime @default(now()) // For cleanup of abandoned sessions
   createdAt     DateTime  @default(now())
@@ -263,6 +267,9 @@ model GameSessionParticipant {
   // Connection tracking
   isConnected   Boolean     @default(false)
   lastSeenAt    DateTime    @default(now())
+
+  // Extended metadata (spell slots, death saves, etc.)
+  metadata      Json        @default("{}")
 
   // Relations
   session       GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
